@@ -14,8 +14,8 @@ Every UI phase must follow `docs/05_UI_UX_SPEC.md` and `docs/06_DESIGN_SYSTEM.md
 ### Foundation
 
 - [x] **FOUND-01**: Local monorepo health works — Next.js app, Convex health query, and socket-server ping respond; lint/typecheck/test scripts are green
-- [ ] **FOUND-02**: Convex schema covers sessions, participants, doubts, votes, exports, and AI jobs with indexed query paths
-- [ ] **FOUND-03**: Shared Socket.IO protocol package defines versioned, validated payloads for board and viewport events usable by app and socket-server
+- [x] **FOUND-02**: Convex schema covers sessions, participants, doubts, votes, exports, and AI jobs with indexed query paths
+- [x] **FOUND-03**: Shared Socket.IO protocol package defines versioned, validated payloads for board and viewport events usable by app and socket-server
 
 ### Room Lifecycle
 
@@ -115,9 +115,9 @@ Deferred to future release. Tracked but not in current executable roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | Complete — Milestone 0 smoke and verify evidence recorded 2026-09-04 |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
+| FOUND-01 | Phase 1 | Complete — verify green 2026-09-04 |
+| FOUND-02 | Phase 1 | Complete — v1 schema + indexes 2026-09-04 |
+| FOUND-03 | Phase 1 | Complete — shared board/viewport protocol 2026-09-04 |
 | BOARD-01 | Phase 2 | Pending |
 | BOARD-02 | Phase 2 | Pending |
 | BOARD-03 | Phase 2 | Pending |
