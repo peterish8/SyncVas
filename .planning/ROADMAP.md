@@ -29,12 +29,12 @@ Deliver SyncVas v1.0 (P0 + P1) on the existing brownfield scaffold: close out fo
   2. Lint, typecheck, and unit test scripts pass on the monorepo
   3. Shared protocol package exports versioned board/viewport event types consumed by app and socket-server
   4. Convex schema includes indexed tables for sessions, participants, doubts, votes, exports, and AI jobs
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 01-01: Close Convex schema skeleton + indexes for v1 entities
-- [ ] 01-02: Harden shared Socket.IO protocol types/validators + package wiring
-- [ ] 01-03: Verify scripts and local health smoke path (app / Convex / socket-server)
+- [ ] 01-01-PLAN.md — Close Convex schema skeleton + indexes for v1 entities
+- [ ] 01-02-PLAN.md — Harden shared Socket.IO protocol types/validators + package wiring
+- [ ] 01-03-PLAN.md — Verify scripts and local health smoke path (app / Convex / socket-server)
 
 ### Phase 2: Board Proof
 **Goal**: Teacher stroke appears live on two student browsers with read-only enforcement and local pan/zoom
