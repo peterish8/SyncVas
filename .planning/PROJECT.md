@@ -12,12 +12,15 @@ Teacher stroke → students see it live; students can explore independently or f
 
 ### Validated
 
-<!-- Brownfield scaffold already present — not full product value yet. -->
+<!-- Milestone 0 is implemented and locally verified; this is not full product value yet. -->
 
-- ✓ Next.js App Router app boots locally — scaffold
-- ✓ Convex health query connected — scaffold
-- ✓ Socket-server health/ping path exists — scaffold
-- ✓ Shared protocol stubs + vitest present — scaffold
+- ✓ Next.js App Router app boots locally — `npm run build` and browser smoke passed
+- ✓ Convex health query connected — local development deployment responds
+- ✓ Socket-server health/ping path exists — live Socket.IO smoke passed
+- ✓ Shared foundation protocol + Vitest coverage present — lint/typecheck/tests passed
+- ✓ FOUND-01 — Monorepo `npm run verify` green (lint/typecheck/test/build) + foundation health UI — Validated in Phase 1: Foundation Close-out
+- ✓ FOUND-02 — Convex v1 schema with indexed sessions/participants/doubts/votes/exports/moderationEvents — Validated in Phase 1: Foundation Close-out
+- ✓ FOUND-03 — Versioned shared Socket.IO board/viewport Zod protocol consumed by app + socket-server — Validated in Phase 1: Foundation Close-out
 
 ### Active
 
@@ -47,7 +50,7 @@ Teacher stroke → students see it live; students can explore independently or f
 ## Context
 
 - **Brownfield:** Repo already has Next.js (App Router), Convex health, `socket-server` package, `shared/protocol`, and vitest. Roadmap starts at foundation close-out, not empty-repo scaffold.
-- **Docs spine:** `docs/03_MVP_SCOPE.md`, `docs/22_ROADMAP_AND_MILESTONES.md`, `docs/25_ACCEPTANCE_TESTS.md`, and `AGENTS.md` are authoritative for MVP rules.
+- **Docs spine:** `docs/03_MVP_SCOPE.md`, `docs/05_UI_UX_SPEC.md`, `docs/06_DESIGN_SYSTEM.md`, `docs/22_ROADMAP_AND_MILESTONES.md`, `docs/25_ACCEPTANCE_TESTS.md`, and `AGENTS.md` are authoritative for MVP rules.
 - **Success metric:** Teacher draws in one browser; two student browsers update live; follow/free-roam works; anonymous doubts + rate limits work; end class persists board with export path — all without P2 features.
 - **Gate:** Do not start P1 work (moderation polish / export / history UX) until P0 acceptance holds in 1 teacher + 2 student tabs.
 
@@ -60,6 +63,7 @@ Teacher stroke → students see it live; students can explore independently or f
 - **Realtime**: Versioned/validated Socket.IO payloads; never log raw doubt text or secret tokens in production telemetry
 - **AI**: Cheap deterministic checks before AI; never hardcode LLM provider in feature code — use adapter
 - **Quality**: Permission-boundary tests before polish; initial load target 100 students/room
+- **UI**: Warm-neutral, low-noise classroom chrome; softly blended color fields are contained accents only and must never cover or compete with the drawing surface
 - **Scope control**: If implementation conflicts with MVP docs, stop and report — do not silently redesign
 
 ## Key Decisions
@@ -79,6 +83,8 @@ Teacher stroke → students see it live; students can explore independently or f
 | Cheap spam/rate-limit before AI; AI only via adapter | Cost + portability | ✓ Locked |
 | Auth abstracted (Convex Auth still evolving) | Avoid lock-in | ✓ Locked |
 | v1 = P0+P1 only; P2/deferred = v2 | User-locked planning scope | ✓ Locked |
+| Tablet reference informs aesthetic, not information architecture | Preserve canvas-first classroom product; use the documented warm-neutral system rather than dashboard cards | ✓ Locked |
+| Third-party API configuration is last | Core Convex/Socket product paths are code-first; a live AI provider is optional and isolated behind the adapter after hardening | ✓ Locked |
 
 ## Evolution
 
@@ -90,4 +96,4 @@ After each phase transition:
 5. "What This Is" still accurate? → Update if drifted
 
 ---
-*Last updated: 2026-09-04 after new-project-from-ingest*
+*Last updated: 2026-09-04 — Phase 1 Foundation Close-out complete*
