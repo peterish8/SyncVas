@@ -1,0 +1,57 @@
+# GSD ingest manifest — V1-focused SyncVas docs
+# Precedence: ADR > SPEC > PRD > DOC
+docs:
+  - path: docs/26_RESEARCH_AND_ARCHITECTURE_DECISIONS.md
+    type: ADR
+    precedence: 0
+  - path: docs/08_SYSTEM_ARCHITECTURE.md
+    type: ADR
+    precedence: 1
+  - path: docs/07_TRD.md
+    type: SPEC
+    precedence: 10
+  - path: docs/09_CONVEX_DATA_MODEL.md
+    type: SPEC
+    precedence: 11
+  - path: docs/11_REALTIME_SOCKET_PROTOCOL.md
+    type: SPEC
+    precedence: 12
+  - path: docs/12_EXCALIDRAW_INTEGRATION.md
+    type: SPEC
+    precedence: 13
+  - path: docs/13_AUTH_ANONYMITY_PERMISSIONS.md
+    type: SPEC
+    precedence: 14
+  - path: docs/14_DOUBT_MODERATION_AI.md
+    type: SPEC
+    precedence: 15
+  - path: docs/16_PDF_EXPORT_AND_ARCHIVE.md
+    type: SPEC
+    precedence: 16
+  - path: docs/25_ACCEPTANCE_TESTS.md
+    type: SPEC
+    precedence: 17
+  - path: docs/17_SECURITY_PRIVACY_ABUSE.md
+    type: SPEC
+    precedence: 18
+  - path: docs/02_PRD.md
+    type: PRD
+    precedence: 20
+  - path: docs/03_MVP_SCOPE.md
+    type: PRD
+    precedence: 21
+  - path: docs/00_START_HERE.md
+    type: DOC
+    precedence: 30
+  - path: docs/04_USER_FLOWS.md
+    type: DOC
+    precedence: 31
+  - path: docs/22_ROADMAP_AND_MILESTONES.md
+    type: DOC
+    precedence: 32
+  - path: docs/30_IMPLEMENTATION_BACKLOG.md
+    type: DOC
+    precedence: 33
+  - path: AGENTS.md
+    type: DOC
+    precedence: 34
