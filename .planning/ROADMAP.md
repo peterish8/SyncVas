@@ -9,7 +9,7 @@ Deliver SyncVas v1.0 (P0 + P1) on the existing brownfield scaffold: close out fo
 
 ## Phases
 
-- [ ] **Phase 1: Foundation Close-out** - Schema, shared protocol, and verify scripts ready on brownfield scaffold
+- [x] **Phase 1: Foundation Close-out** - Schema, shared protocol, and verify scripts ready on brownfield scaffold (completed 2026-09-04)
 - [ ] **Phase 2: Board Proof** - Teacher draws in Excalidraw; two students update live read-only
 - [ ] **Phase 3: Room Lifecycle** - Auth, create/end session, short code/QR, anonymous join, student count
 - [ ] **Phase 4: Follow Teacher** - Viewport stream with local follow/free-roam and return
@@ -235,7 +235,7 @@ See REQUIREMENTS.md `## v2 Requirements` for IDs.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation Close-out | 0/3 | In progress — FOUND-01 was evidenced during Milestone 0; rerun 01-03 after schema/protocol changes | - |
+| 1. Foundation Close-out | 3/3 | Complete | 2026-09-04 |
 | 2. Board Proof | 0/1 | Not started | - |
 | 3. Room Lifecycle | 0/1 | Not started | - |
 | 4. Follow Teacher | 0/1 | Not started | - |
