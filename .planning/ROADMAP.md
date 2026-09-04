@@ -4,7 +4,7 @@
 
 Deliver SyncVas v1.0 (P0 + P1) on the existing brownfield scaffold: close out foundation, prove teacher→student live board sync, wire real room lifecycle, add Follow Teacher, ship the anonymous doubts loop, persist the final board to close P0, then layer deterministic + adapter AI moderation, export/history/reconnect UX, and hardening. P2 and explicitly deferred work stay parked under Deferred: v2.0 — not executable phases now.
 
-**Granularity:** standard (9 phases)
+**Granularity:** standard (10 phases)
 **Scope gate:** Phases 1–6 deliver P0. Do not start Phase 7+ until every P0 acceptance test holds in 1 teacher tab + 2 student tabs.
 
 ## Phases
@@ -18,6 +18,7 @@ Deliver SyncVas v1.0 (P0 + P1) on the existing brownfield scaffold: close out fo
 - [ ] **Phase 7: Moderation** - Deterministic filters + AI adapter triage with uncertain fallback
 - [ ] **Phase 8: Export, History & Reconnect UX** - Image/PDF export, history, reconnect/toasts
 - [ ] **Phase 9: Hardening** - Permission tests, 100-viewer load, deploy, XP-Pen production verify
+- [ ] **Phase 10: Optional External Integrations** - Configure and verify provider-backed AI only after all core product paths are complete
 
 ## Phase Details
 
@@ -38,12 +39,12 @@ Deliver SyncVas v1.0 (P0 + P1) on the existing brownfield scaffold: close out fo
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Close Convex schema skeleton + indexes for v1 entities
-- [ ] 01-02-PLAN.md — Harden shared Socket.IO protocol types/validators + package wiring
+- [x] 01-01-PLAN.md — Close Convex schema skeleton + indexes for v1 entities
+- [x] 01-02-PLAN.md — Harden shared Socket.IO protocol types/validators + package wiring
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-03-PLAN.md — Verify scripts and local health smoke path (app / Convex / socket-server)
+- [x] 01-03-PLAN.md — Verify scripts and local health smoke path (app / Convex / socket-server)
 
 ### Phase 2: Board Proof
 
@@ -63,9 +64,7 @@ Plans:
 
 Plans:
 
-- [ ] 02-01: Embed Excalidraw teacher canvas + stylus path
-- [ ] 02-02: Socket.IO room broadcast + student scene apply
-- [ ] 02-03: Late-join bootstrap + student read-only / local viewport enforcement
+- [ ] 02-01: Excalidraw teacher canvas, validated board broadcast, late-join bootstrap, and read-only/local-viewport proof
 
 ### Phase 3: Room Lifecycle
 
@@ -84,9 +83,7 @@ Plans:
 
 Plans:
 
-- [ ] 03-01: Teacher auth abstraction + create/end session mutations
-- [ ] 03-02: Short code + QR join flow for anonymous students
-- [ ] 03-03: Live/ended room gating + student count
+- [ ] 03-01: Auth abstraction, durable lifecycle, code/QR join, signed socket admission, and coarse presence
 
 ### Phase 4: Follow Teacher
 
@@ -105,9 +102,7 @@ Plans:
 
 Plans:
 
-- [ ] 04-01: Teacher viewport stream over Socket.IO
-- [ ] 04-02: Student follow state, exit-on-pan, and return control
-- [ ] 04-03: Viewport loss resilience checks vs board integrity
+- [ ] 04-01: Teacher viewport stream, local student follow/free-roam, and packet-loss resilience
 
 ### Phase 5: Doubts Loop
 
@@ -126,9 +121,7 @@ Plans:
 
 Plans:
 
-- [ ] 05-01: Participant records + anonymous doubt composer/submit
-- [ ] 05-02: Deterministic rate limiting + teacher reactive queue
-- [ ] 05-03: Answer/dismiss actions + same-doubt voting rules
+- [ ] 05-01: Anonymous participant records, rate-limited doubts, teacher queue, resolution, and voting
 
 ### Phase 6: P0 Final Board Persistence
 
@@ -146,8 +139,7 @@ Plans:
 
 Plans:
 
-- [ ] 06-01: End-class finalization + durable final-scene metadata
-- [ ] 06-02: Final-scene restore and P0 acceptance evidence in one teacher + two student tabs
+- [ ] 06-01: End-class finalization, durable final-scene restore, and P0 acceptance evidence
 
 ### Phase 7: Moderation
 
@@ -157,7 +149,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
 
   1. Profanity/noise rules block obvious junk before any AI call
-  2. Relevance triage runs only through the provider-agnostic AI adapter
+  2. Relevance triage is represented only through a provider-agnostic adapter contract; an unconfigured adapter safely returns an uncertain outcome
   3. Uncertain or failed AI classification does not silently lose a plausible doubt
   4. Teacher can see duplicate suggestions for similar doubts
 
@@ -166,9 +158,7 @@ Plans:
 
 Plans:
 
-- [ ] 07-01: Deterministic profanity/noise filter pipeline
-- [ ] 07-02: AI adapter + relevance triage with uncertain fallback
-- [ ] 07-03: Duplicate suggestion wiring into teacher queue UX
+- [ ] 07-01: Deterministic screening, disabled-provider adapter boundary, uncertain fallback, and duplicate suggestions
 
 ### Phase 8: Export, History & Reconnect UX
 
@@ -187,9 +177,7 @@ Plans:
 
 Plans:
 
-- [ ] 08-01: Image/PDF export jobs with visible state
-- [ ] 08-02: Teacher history page + AI-summary failure isolation
-- [ ] 08-03: Reconnect/resync UX + error toasts/empty states
+- [ ] 08-01: Export job state, teacher history, reconnect/resync, and error/empty UX
 
 ### Phase 9: Hardening
 
@@ -208,9 +196,21 @@ Plans:
 
 Plans:
 
-- [ ] 09-01: Authorization + socket permission/cross-room tests
-- [ ] 09-02: 100-viewer load smoke + results notes
-- [ ] 09-03: Production deploy + XP-Pen production verification
+- [ ] 09-01: Permission/cross-room tests, 100-viewer smoke, production runbook, and XP-Pen verification
+
+### Phase 10: Optional External Integrations
+**Goal**: A configured third-party AI provider enhances moderation through the existing adapter without becoming a dependency of classroom reliability
+**Depends on**: Phase 9
+**Requirements**: MOD-02
+**Success Criteria** (what must be TRUE):
+  1. Provider credentials remain server-only and are absent from browser bundles and logs
+  2. A configured provider receives the adapter’s minimal, validated moderation request and produces a validated result
+  3. Timeout, malformed result, rate limit, or provider outage returns the same safe uncertain fallback used when no provider is configured
+  4. The classroom, doubts queue, final-board persistence, and export paths remain operational with the integration disabled
+**Plans**: TBD
+
+Plans:
+- [ ] 10-01: Server-only provider configuration, adapter implementation, and contract/failure-mode verification
 
 ## Deferred: v2.0
 
@@ -231,16 +231,17 @@ See REQUIREMENTS.md `## v2 Requirements` for IDs.
 ## Progress
 
 **Execution Order:**
-1 → 2 → 3 → 4 → 5 → 6 → P0 acceptance gate → 7 → 8 → 9
+1 → 2 → 3 → 4 → 5 → 6 → P0 acceptance gate → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation Close-out | 1/3 | In progress — Milestone 0 health/verify completed | 2026-09-04 |
-| 2. Board Proof | 0/3 | Not started | - |
-| 3. Room Lifecycle | 0/3 | Not started | - |
-| 4. Follow Teacher | 0/3 | Not started | - |
-| 5. Doubts Loop | 0/3 | Not started | - |
-| 6. P0 Final Board Persistence | 0/2 | Not started | - |
-| 7. Moderation | 0/3 | Not started | - |
-| 8. Export, History & Reconnect UX | 0/3 | Not started | - |
-| 9. Hardening | 0/3 | Not started | - |
+| 1. Foundation Close-out | 0/3 | In progress — FOUND-01 was evidenced during Milestone 0; rerun 01-03 after schema/protocol changes | - |
+| 2. Board Proof | 0/1 | Not started | - |
+| 3. Room Lifecycle | 0/1 | Not started | - |
+| 4. Follow Teacher | 0/1 | Not started | - |
+| 5. Doubts Loop | 0/1 | Not started | - |
+| 6. P0 Final Board Persistence | 0/1 | Not started | - |
+| 7. Moderation | 0/1 | Not started | - |
+| 8. Export, History & Reconnect UX | 0/1 | Not started | - |
+| 9. Hardening | 0/1 | Not started | - |
+| 10. Optional External Integrations | 0/1 | Not started | - |
