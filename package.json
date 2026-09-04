@@ -1,0 +1,45 @@
+{
+  "name": "syncvas",
+  "version": "1.0.0",
+  "description": "This repository pack is the specification set for a classroom-first live whiteboard product.",
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev",
+    "dev:all": "concurrently --kill-others-on-fail \"npm run dev\" \"npm run dev:socket\"",
+    "dev:socket": "npm --prefix socket-server run dev",
+    "lint": "eslint app components convex shared tests socket-server",
+    "test": "vitest run",
+    "test:all": "npm run test && npm --prefix socket-server run test",
+    "typecheck": "tsc --noEmit && npm --prefix socket-server run typecheck",
+    "verify": "npm run lint && npm run typecheck && npm run test:all && npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "socket-server"
+  ],
+  "dependencies": {
+    "@excalidraw/excalidraw": "^0.18.1",
+    "convex": "^1.45.0",
+    "next": "^16.3.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "socket.io-client": "^4.8.3",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "concurrently": "^10.0.5",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.4",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.0"
+  }
+}
