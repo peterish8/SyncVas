@@ -47,6 +47,29 @@ Teacher stroke → students see it live; students can explore independently or f
 - Paid plans / org tenants — deferred
 - LMS replacement / public social features — not the product
 
+## Next Milestone: v1.1 Board Grammars
+
+**Status:** queued. Not started, and not to be started until the v1.0 exit criteria hold.
+
+**Goal:** A teacher types a short text block and the class sees compiled board content — a
+themed code card, a diagram, a tensor pipeline — instead of watching shapes get drawn by hand.
+
+**Why:** SyncVas's users are CS and AI/ML classrooms, where the things worth showing are
+structured (code, graphs, trees, tensors, automata) and are slow and ugly to draw freehand.
+Instructors interviewed about live coding report the same failures repeatedly: cognitive
+overload from typing while explaining, the mismatch between what they say and what they type,
+fear of public typos, and debugging detours that lose the room. Declarative blocks answer all
+four, because the artifact is authored once and correct every time.
+
+**Target features:**
+- Block primitive + compiler registry; each grammar is a pure function, not a feature
+- `/mermaid`, `/code` (six fixed themes), `/math` as the first grammar set
+- Step reveal, snippet library, live line pointer
+- `/ds`, `/calltree`, `/plot`, `/dp` for the DSA syllabus
+- `/tensor`, `/nn` with derived shapes and parameter counts — the AI/ML differentiator
+
+**Design reference:** `.design/dsl-catalog.html` — 18-grammar catalog, compile targets, build order.
+
 ## Context
 
 - **Brownfield:** Repo already has Next.js (App Router), Convex health, `socket-server` package, `shared/protocol`, and vitest. Roadmap starts at foundation close-out, not empty-repo scaffold.
@@ -63,7 +86,8 @@ Teacher stroke → students see it live; students can explore independently or f
 - **Realtime**: Versioned/validated Socket.IO payloads; never log raw doubt text or secret tokens in production telemetry
 - **AI**: Cheap deterministic checks before AI; never hardcode LLM provider in feature code — use adapter
 - **Quality**: Permission-boundary tests before polish; initial load target 100 students/room
-- **UI**: Warm-neutral, low-noise classroom chrome; softly blended color fields are contained accents only and must never cover or compete with the drawing surface
+- **UI**: Warm-neutral, low-noise classroom chrome with Tactile UI System physics (raised buttons press down; inputs are inset); softly blended color fields are contained accents only and must never cover or compete with the drawing surface
+- **Visual contract**: `.planning/VISUAL_DIRECTION.md` is the implementation reference for the supplied tablet aesthetic; it is atmosphere-only and never changes the canvas-first product structure
 - **Scope control**: If implementation conflicts with MVP docs, stop and report — do not silently redesign
 
 ## Key Decisions
@@ -85,6 +109,11 @@ Teacher stroke → students see it live; students can explore independently or f
 | v1 = P0+P1 only; P2/deferred = v2 | User-locked planning scope | ✓ Locked |
 | Tablet reference informs aesthetic, not information architecture | Preserve canvas-first classroom product; use the documented warm-neutral system rather than dashboard cards | ✓ Locked |
 | Third-party API configuration is last | Core Convex/Socket product paths are code-first; a live AI provider is optional and isolated behind the adapter after hardening | ✓ Locked |
+| v1.1 = Board Grammars; grammars compile to Excalidraw elements, not images, wherever possible | Compiled shapes ride the existing `board:update` / snapshot / export paths with no new Convex schema, and stay hand-annotatable — which is the whole difference between a whiteboard and a slide | ✓ Locked |
+| Block source lives in element `customData` | Keeps a block re-editable and re-themeable without a sidecar store; theme switching is just a recompile | ✓ Locked |
+| Only `/code` and `/math` render to images; everything else is native shapes | Image blocks cost transport bytes and lose annotatability; only typographic fidelity justifies them | ✓ Locked |
+| Six fixed code themes, not Shiki's full catalogue | Fine-grained Shiki bundle is ~200 KB vs 1.2 MB gzipped for the full bundle | ✓ Locked |
+| v1.1 is gated on the v1.0 exit criteria | v1.0 phases 3–10 are implementation-complete but UAT-pending; grammars are the fastest way to never finish the classroom that has to work first | ✓ Locked |
 
 ## Evolution
 
@@ -96,4 +125,4 @@ After each phase transition:
 5. "What This Is" still accurate? → Update if drifted
 
 ---
-*Last updated: 2026-09-04 — Phase 1 Foundation Close-out complete*
+*Last updated: 2026-09-05 — v1.1 Board Grammars defined and queued behind the v1.0 exit gate*

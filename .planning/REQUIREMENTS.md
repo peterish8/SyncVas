@@ -9,7 +9,7 @@ Requirements for v1.0 (P0 + P1 only). Each maps to exactly one roadmap phase.
 
 ### Cross-cutting visual system
 
-Every UI phase must follow `docs/05_UI_UX_SPEC.md` and `docs/06_DESIGN_SYSTEM.md`: the classroom remains canvas-first and high contrast; warm-neutral surfaces and contained color fields may support product state but never replace it or sit over the drawable board.
+Every UI phase must follow `docs/05_UI_UX_SPEC.md`, `docs/06_DESIGN_SYSTEM.md`, and `.planning/VISUAL_DIRECTION.md`: the classroom remains canvas-first and high contrast; warm-neutral surfaces and contained color fields may support product state but never replace it or sit over the drawable board. Interactive chrome uses Tactile UI System physics on Syncvas tokens — raised pressable buttons (inset highlight + solid bottom edge + 2px press), inset inputs with lime focus rings, fast 100–160ms motion, no hover scaling or glass/glow.
 
 ### Foundation
 
@@ -27,12 +27,12 @@ Every UI phase must follow `docs/05_UI_UX_SPEC.md` and `docs/06_DESIGN_SYSTEM.md
 
 ### Board Sync
 
-- [ ] **BOARD-01**: Teacher can draw on an Excalidraw canvas with stylus/XP-Pen in a supported desktop browser
-- [ ] **BOARD-02**: Teacher strokes appear locally immediately without waiting for network roundtrip
-- [ ] **BOARD-03**: Connected students receive live board updates from the teacher via Socket.IO
-- [ ] **BOARD-04**: Late-joining students receive current scene bootstrap without historical event replay
-- [ ] **BOARD-05**: Students cannot mutate board content (UI and socket enforcement)
-- [ ] **BOARD-06**: Student pan/zoom is local-only and never moves the teacher camera or other students
+- [x] **BOARD-01**: Teacher can draw on an Excalidraw canvas with stylus/XP-Pen in a supported desktop browser
+- [x] **BOARD-02**: Teacher strokes appear locally immediately without waiting for network roundtrip
+- [x] **BOARD-03**: Connected students receive live board updates from the teacher via Socket.IO
+- [x] **BOARD-04**: Late-joining students receive current scene bootstrap without historical event replay
+- [x] **BOARD-05**: Students cannot mutate board content (UI and socket enforcement)
+- [x] **BOARD-06**: Student pan/zoom is local-only and never moves the teacher camera or other students
 
 ### Follow Teacher
 
@@ -76,6 +76,61 @@ Every UI phase must follow `docs/05_UI_UX_SPEC.md` and `docs/06_DESIGN_SYSTEM.md
 - [ ] **SEC-04**: Automated permission-boundary tests cover teacher vs student capabilities
 - [ ] **LOAD-01**: One teacher + 100 viewer smoke/load test completed with documented results
 
+## v1.1 Requirements
+
+Milestone v1.1 — Board Grammars. **Queued, not started.** Phase 11 does not begin until
+every v1.0 P0 acceptance test holds in 1 teacher + 2 student tabs and the v1.0 UAT/deploy
+items in STATE.md are closed.
+
+Design reference: `.design/dsl-catalog.html` (18-grammar catalog, compile targets, rationale).
+
+### Block primitive & transport
+
+- [ ] **BLOCK-01**: Teacher-authored binary files (images) reach students over the socket board path
+- [ ] **BLOCK-02**: Teacher can open a block panel, type a grammar source, and render it onto the board
+- [ ] **BLOCK-03**: Compiled block output is ordinary Excalidraw content — it syncs, persists in the final snapshot, and exports through existing paths
+- [ ] **BLOCK-04**: Block source and options persist on the element so a block can be reopened, edited, and re-rendered
+- [ ] **BLOCK-05**: A compiler registry maps a grammar id to a pure compiler; an unknown grammar or a parse failure surfaces a visible error without mutating the board
+- [ ] **BLOCK-06**: Block compilation is bounded — source length, emitted element count, and scene/file byte budget are enforced before any socket emit
+
+### Grammars — first set
+
+- [ ] **GRAM-01**: `/mermaid` renders flowchart, sequence, class, ER and state as native editable shapes, and other mermaid types as an image
+- [ ] **GRAM-02**: `/code` renders syntax-highlighted code with a fixed six-theme set and per-block language selection
+- [ ] **GRAM-03**: `/code` supports line numbers, focus ranges, and diff mode
+- [ ] **GRAM-04**: `/math` renders LaTeX display equations and aligned derivations
+
+### Teaching mechanics
+
+- [ ] **TEACH-01**: A block discloses in author-defined chunks under teacher control (step reveal)
+- [ ] **TEACH-02**: Teacher can save a block to a snippet library and re-insert it in one action
+- [ ] **TEACH-03**: Teacher can highlight a line or region and connected students see it, as an ephemeral event that never bumps board version
+- [ ] **TEACH-04**: Block theme defaults to the current board theme and can be overridden per block
+
+### Grammars — CS teaching set
+
+- [ ] **GRAM-05**: `/ds` renders array, linked list, stack/queue, tree, graph, and hash table structures
+- [ ] **GRAM-06**: `/calltree` renders a recursion tree with repeated subcalls visually marked
+- [ ] **GRAM-09**: `/plot` renders complexity-growth curves and named function plots
+- [ ] **GRAM-10**: `/dp` and `/trace` render step tables with a declared fill order
+
+### Grammars — AI/ML set
+
+- [ ] **GRAM-07**: `/tensor` renders a shape pipeline with derived output shapes per layer
+- [ ] **GRAM-08**: `/nn` renders a layer stack with derived parameter counts
+
+## v1.2 Requirements
+
+Course-specific grammars. Each is small once the block primitive exists; build on request
+rather than speculatively.
+
+- **GRAM-11**: `/dfa`, `/nfa`, `/tm` — automata and regex→NFA
+- **GRAM-12**: `/mem` — stack/heap pointer diagrams
+- **GRAM-13**: `/bits` — labelled bit fields, two's complement, IEEE-754, packet layout
+- **GRAM-14**: `/confusion` — confusion matrix with derived precision/recall/F1
+- **GRAM-15**: `/truth`, `/kmap`, `/circuit` — digital logic
+- **GRAM-16**: `/sched`, `/matrix`, `/table` — scheduling gantts, matrix dimension checking, comparison tables
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current executable roadmap.
@@ -118,12 +173,12 @@ Deferred to future release. Tracked but not in current executable roadmap.
 | FOUND-01 | Phase 1 | Complete — verify green 2026-09-04 |
 | FOUND-02 | Phase 1 | Complete — v1 schema + indexes 2026-09-04 |
 | FOUND-03 | Phase 1 | Complete — shared board/viewport protocol 2026-09-04 |
-| BOARD-01 | Phase 2 | Pending |
-| BOARD-02 | Phase 2 | Pending |
-| BOARD-03 | Phase 2 | Pending |
-| BOARD-04 | Phase 2 | Pending |
-| BOARD-05 | Phase 2 | Pending |
-| BOARD-06 | Phase 2 | Pending |
+| BOARD-01 | Phase 2 | Done |
+| BOARD-02 | Phase 2 | Done |
+| BOARD-03 | Phase 2 | Done |
+| BOARD-04 | Phase 2 | Done |
+| BOARD-05 | Phase 2 | Done |
+| BOARD-06 | Phase 2 | Done |
 | ROOM-01 | Phase 3 | Pending |
 | ROOM-02 | Phase 3 | Pending |
 | ROOM-03 | Phase 3 | Pending |
@@ -153,13 +208,33 @@ Deferred to future release. Tracked but not in current executable roadmap.
 | SEC-03 | Phase 9 | Pending |
 | SEC-04 | Phase 9 | Pending |
 | LOAD-01 | Phase 9 | Pending |
+| BLOCK-01 | Phase 11 | Queued |
+| BLOCK-02 | Phase 11 | Queued |
+| BLOCK-03 | Phase 11 | Queued |
+| BLOCK-04 | Phase 11 | Queued |
+| BLOCK-05 | Phase 11 | Queued |
+| BLOCK-06 | Phase 11 | Queued |
+| GRAM-01 | Phase 12 | Queued |
+| GRAM-02 | Phase 12 | Queued |
+| GRAM-03 | Phase 12 | Queued |
+| GRAM-04 | Phase 12 | Queued |
+| TEACH-01 | Phase 13 | Queued |
+| TEACH-02 | Phase 13 | Queued |
+| TEACH-03 | Phase 13 | Queued |
+| TEACH-04 | Phase 13 | Queued |
+| GRAM-05 | Phase 14 | Queued |
+| GRAM-06 | Phase 14 | Queued |
+| GRAM-09 | Phase 14 | Queued |
+| GRAM-10 | Phase 14 | Queued |
+| GRAM-07 | Phase 15 | Queued |
+| GRAM-08 | Phase 15 | Queued |
 
 **Coverage:**
-- v1 requirements: 38 total
-- Mapped to phases: 38
-- Unmapped: 0 ✓
+- v1.0 requirements: 38 total — mapped to phases 1–10, unmapped 0 ✓
+- v1.1 requirements: 21 total — mapped to phases 11–15, unmapped 0 ✓
+- v1.2 deferred (not mapped to executable phases): 6
 - v2 deferred (not mapped to executable phases): 14
 
 ---
 *Requirements defined: 2026-09-04*
-*Last updated: 2026-09-04 after planning reconciliation*
+*Last updated: 2026-09-05 — added v1.1 Board Grammars requirements (queued behind v1.0)*

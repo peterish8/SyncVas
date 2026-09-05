@@ -10,15 +10,15 @@ Deliver SyncVas v1.0 (P0 + P1) on the existing brownfield scaffold: close out fo
 ## Phases
 
 - [x] **Phase 1: Foundation Close-out** - Schema, shared protocol, and verify scripts ready on brownfield scaffold (completed 2026-09-04)
-- [ ] **Phase 2: Board Proof** - Teacher draws in Excalidraw; two students update live read-only
-- [ ] **Phase 3: Room Lifecycle** - Auth, create/end session, short code/QR, anonymous join, student count
-- [ ] **Phase 4: Follow Teacher** - Viewport stream with local follow/free-roam and return
-- [ ] **Phase 5: Doubts Loop** - Anonymous submit, rate limits, teacher queue, answer/dismiss, same-doubt vote
-- [ ] **Phase 6: P0 Final Board Persistence** - End-class final scene survives refresh/end before the P1 gate
-- [ ] **Phase 7: Moderation** - Deterministic filters + AI adapter triage with uncertain fallback
-- [ ] **Phase 8: Export, History & Reconnect UX** - Image/PDF export, history, reconnect/toasts
-- [ ] **Phase 9: Hardening** - Permission tests, 100-viewer load, deploy, XP-Pen production verify
-- [ ] **Phase 10: Optional External Integrations** - Configure and verify provider-backed AI only after all core product paths are complete
+- [x] **Phase 2: Board Proof** - Teacher draws in Excalidraw; two students update live read-only (completed 2026-09-05)
+ - [~] **Phase 3: Room Lifecycle** - Implementation complete; live Convex/browser verification pending
+ - [~] **Phase 4: Follow Teacher** - Implementation complete; cross-device fit and UAT pending
+ - [~] **Phase 5: Doubts Loop** - Implementation complete; Convex integration fixtures/UAT pending
+ - [~] **Phase 6: P0 Final Board Persistence** - Implementation complete; deployed durability/UAT pending
+ - [~] **Phase 7: Moderation** - Implementation complete; scheduled Convex triage/UAT pending
+ - [~] **Phase 8: Export, History & Reconnect UX** - Implementation complete; hosted storage/PDF/reconnect UAT pending
+ - [~] **Phase 9: Hardening** - Code/load checks complete; lint, deploy, and XP-Pen verification pending
+ - [~] **Phase 10: Optional External Integrations** - Generic optional adapter complete; live provider smoke pending credentials
 
 ## Phase Details
 
@@ -59,12 +59,11 @@ Plans:
   4. Students cannot mutate board content even if they emit socket events manually
   5. Student pan/zoom does not move the teacher camera or another student's viewport
 
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 1 plan
 
 Plans:
 
-- [ ] 02-01: Excalidraw teacher canvas, validated board broadcast, late-join bootstrap, and read-only/local-viewport proof
+- [x] 02-01: Excalidraw teacher canvas, validated board broadcast, late-join bootstrap, and read-only/local-viewport proof
 
 ### Phase 3: Room Lifecycle
 
@@ -212,6 +211,130 @@ Plans:
 Plans:
 - [ ] 10-01: Server-only provider configuration, adapter implementation, and contract/failure-mode verification
 
+## Milestone v1.1: Board Grammars
+
+**Status: queued — not started.** Phase 11 is gated on the v1.0 exit criteria: every P0
+acceptance test holding in 1 teacher + 2 student tabs, plus the deploy-linked Convex/browser
+UAT, lint close-out, and XP-Pen sign-off tracked in STATE.md.
+
+**Goal:** A teacher types a short text block and the class sees compiled board content — a
+themed code card, a diagram, a tensor pipeline — instead of watching shapes get drawn by hand.
+
+**Core architecture:** one block primitive plus a compiler registry. Each grammar is a pure
+function `(source, opts) => { elements, files }` targeting Excalidraw's exported
+`convertToExcalidrawElements`. Block source lives in the element's `customData`, so a block
+stays re-editable and re-themeable. Compiled output is ordinary Excalidraw content, so it
+rides the existing `board:update` event, the existing final snapshot, and the existing export
+path — no new Convex schema, no change to the teacher-only-writer rule.
+
+**Design reference:** `.design/dsl-catalog.html`
+
+**Granularity:** standard (5 phases, numbering continues from v1.0)
+
+### Phase 11: Block Transport & Primitive
+
+**Goal**: A teacher can render a block onto the board and every student sees it, including image-bearing blocks
+**Depends on**: v1.0 exit criteria
+**Requirements**: BLOCK-01, BLOCK-02, BLOCK-03, BLOCK-04, BLOCK-05, BLOCK-06
+**Success Criteria** (what must be TRUE):
+
+  1. A teacher-inserted image element renders identically on a student client (closes the `files` gap)
+  2. Teacher can open a block panel, enter a source, and see compiled content appear on the board
+  3. A compiled block survives refresh, end-of-class persistence, and export like any hand-drawn content
+  4. Reopening a block recovers its original source and options for editing
+  5. An unparseable source shows an error and leaves the board unchanged
+  6. A block that would exceed the scene or file byte budget is rejected before emit
+
+**Plans**: TBD
+**UI hint**: yes
+
+Plans:
+
+- [ ] 11-01: TBD (run `/gsd:plan-phase 11`)
+
+### Phase 12: First Grammars — mermaid, code, math
+
+**Goal**: The three highest-leverage grammars work end to end on a live board
+**Depends on**: Phase 11
+**Requirements**: GRAM-01, GRAM-02, GRAM-03, GRAM-04
+**Success Criteria** (what must be TRUE):
+
+  1. A mermaid flowchart, sequence, class, ER or state diagram compiles to shapes the teacher can then annotate by hand
+  2. An unsupported mermaid type still renders, as an image, rather than failing
+  3. A code block renders with VS Code-fidelity highlighting in any of six fixed themes
+  4. A code block can show line numbers, dim to a focus range, and render a diff
+  5. A LaTeX equation renders legibly at classroom projection size
+
+**Plans**: TBD
+**UI hint**: yes
+
+Plans:
+
+- [ ] 12-01: TBD (run `/gsd:plan-phase 12`)
+
+### Phase 13: Teaching Mechanics
+
+**Goal**: Blocks become teachable — disclosed in steps, reusable, and pointable-at
+**Depends on**: Phase 12
+**Requirements**: TEACH-01, TEACH-02, TEACH-03, TEACH-04
+**Success Criteria** (what must be TRUE):
+
+  1. Teacher can reveal a block in author-defined chunks rather than all at once
+  2. Teacher can save a block and re-insert it in a later class in one action
+  3. Teacher highlighting a line is visible to students and never bumps board version or blocks on delivery
+  4. A block's theme follows the board theme by default and can be overridden per block
+
+**Plans**: TBD
+**UI hint**: yes
+
+Plans:
+
+- [ ] 13-01: TBD (run `/gsd:plan-phase 13`)
+
+### Phase 14: CS Grammars
+
+**Goal**: The data-structures and algorithms syllabus is drawable from text
+**Depends on**: Phase 13
+**Requirements**: GRAM-05, GRAM-06, GRAM-09, GRAM-10
+**Success Criteria** (what must be TRUE):
+
+  1. Array, linked list, stack/queue, tree, graph and hash table each render from a one-line source
+  2. A recursion tree expands from a call, with repeated subcalls visually distinct
+  3. Complexity-growth and named function curves render on labelled axes
+  4. A DP grid or execution trace renders as a table with a declared fill order
+
+**Plans**: TBD
+**UI hint**: yes
+
+Plans:
+
+- [ ] 14-01: TBD (run `/gsd:plan-phase 14`)
+
+### Phase 15: AI/ML Grammars
+
+**Goal**: Shape and parameter arithmetic is derived on the board, not typed
+**Depends on**: Phase 14
+**Requirements**: GRAM-07, GRAM-08
+**Success Criteria** (what must be TRUE):
+
+  1. A tensor pipeline derives each layer's output shape rather than requiring it to be written
+  2. Changing a layer parameter updates every downstream shape
+  3. A network layer stack renders with derived per-layer parameter counts
+  4. A shape mismatch is reported clearly instead of rendering a wrong diagram
+
+**Plans**: TBD
+**UI hint**: yes
+
+Plans:
+
+- [ ] 15-01: TBD (run `/gsd:plan-phase 15`)
+
+## Deferred: v1.2
+
+Course-specific grammars, built on request once the primitive exists. See REQUIREMENTS.md
+`## v1.2 Requirements` for IDs: automata, memory diagrams, bit fields, confusion matrix,
+digital logic, scheduling/matrix/table.
+
 ## Deferred: v2.0
 
 Not executable now. Do not create phases or plans for these until v1.0 ships.
@@ -231,17 +354,23 @@ See REQUIREMENTS.md `## v2 Requirements` for IDs.
 ## Progress
 
 **Execution Order:**
-1 → 2 → 3 → 4 → 5 → 6 → P0 acceptance gate → 7 → 8 → 9 → 10
+1 → 2 → 3 → 4 → 5 → 6 → P0 acceptance gate → 7 → 8 → 9 → 10 → **v1.0 exit gate** → 11 → 12 → 13 → 14 → 15
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation Close-out | 3/3 | Complete | 2026-09-04 |
-| 2. Board Proof | 0/1 | Not started | - |
-| 3. Room Lifecycle | 0/1 | Not started | - |
-| 4. Follow Teacher | 0/1 | Not started | - |
-| 5. Doubts Loop | 0/1 | Not started | - |
-| 6. P0 Final Board Persistence | 0/1 | Not started | - |
-| 7. Moderation | 0/1 | Not started | - |
-| 8. Export, History & Reconnect UX | 0/1 | Not started | - |
-| 9. Hardening | 0/1 | Not started | - |
-| 10. Optional External Integrations | 0/1 | Not started | - |
+| 2. Board Proof | 1/1 | Complete | 2026-09-05 |
+| 3. Room Lifecycle | 1/1 | Implementation complete; UAT pending | 2026-09-05 |
+| 4. Follow Teacher | 1/1 | Implementation complete; UAT pending | 2026-09-05 |
+| 5. Doubts Loop | 1/1 | Implementation complete; UAT pending | 2026-09-05 |
+| 6. P0 Final Board Persistence | 1/1 | Implementation complete; deployment pending | 2026-09-05 |
+| 7. Moderation | 1/1 | Implementation complete; deployment pending | 2026-09-05 |
+| 8. Export, History & Reconnect UX | 1/1 | Implementation complete; UAT pending | 2026-09-05 |
+| 9. Hardening | 1/1 | Code/load complete; deploy/hardware pending | 2026-09-05 |
+| 10. Optional External Integrations | 1/1 | Disabled-safe adapter complete; provider pending | 2026-09-05 |
+| — | — | *v1.0 exit gate* | — |
+| 11. Block Transport & Primitive | 0/? | Queued (v1.1) | — |
+| 12. First Grammars | 0/? | Queued (v1.1) | — |
+| 13. Teaching Mechanics | 0/? | Queued (v1.1) | — |
+| 14. CS Grammars | 0/? | Queued (v1.1) | — |
+| 15. AI/ML Grammars | 0/? | Queued (v1.1) | — |

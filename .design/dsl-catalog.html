@@ -1,0 +1,722 @@
+<title>Syncvas Board Grammars</title>
+
+<style>
+  :root {
+    /* Light — Syncvas warm paper ramp */
+    --paper:      #f7f6f3;
+    --surface:    #ffffff;
+    --surface-2:  #eeede9;
+    --inset:      #171717;
+    --inset-ink:  #e8e7e0;
+    --ink:        #171717;
+    --ink-mid:    #45443f;
+    --ink-muted:  #6f6d66;
+    --border:     #dddcd7;
+    --border-2:   #c9c7c0;
+    --lime:       #d7f500;
+    --lime-deep:  #4c5a00;
+    --lime-soft:  #f4fcb8;
+    --coral:      #f47b68;
+    --coral-soft: #fff1ed;
+    --coral-ink:  #8a3021;
+    --green:      #39a954;
+    --green-soft: #e8f5e9;
+    --green-ink:  #1d5a2c;
+    --apricot:    #f6c96d;
+    --apricot-soft:#fff6e3;
+    --apricot-ink:#6d5a1f;
+    --sky:        #b9d9f5;
+
+    --mono: ui-monospace, "Cascadia Code", "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #181917;
+      --surface:    #232421;
+      --surface-2:  #2c2d29;
+      --inset:      #121311;
+      --inset-ink:  #e8e7e0;
+      --ink:        #f3f2eb;
+      --ink-mid:    #d3d1c8;
+      --ink-muted:  #a3a199;
+      --border:     #41423d;
+      --border-2:   #5b5c55;
+      --lime:       #d7f500;
+      --lime-deep:  #dae870;
+      --lime-soft:  #2e3410;
+      --coral:      #f47b68;
+      --coral-soft: #3a1f1a;
+      --coral-ink:  #f6a898;
+      --green:      #5cc078;
+      --green-soft: #16301d;
+      --green-ink:  #8ad9a0;
+      --apricot:    #f6c96d;
+      --apricot-soft:#332a12;
+      --apricot-ink:#f0d79c;
+      --sky:        #7fb4de;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #181917;
+    --surface:    #232421;
+    --surface-2:  #2c2d29;
+    --inset:      #121311;
+    --inset-ink:  #e8e7e0;
+    --ink:        #f3f2eb;
+    --ink-mid:    #d3d1c8;
+    --ink-muted:  #a3a199;
+    --border:     #41423d;
+    --border-2:   #5b5c55;
+    --lime:       #d7f500;
+    --lime-deep:  #dae870;
+    --lime-soft:  #2e3410;
+    --coral:      #f47b68;
+    --coral-soft: #3a1f1a;
+    --coral-ink:  #f6a898;
+    --green:      #5cc078;
+    --green-soft: #16301d;
+    --green-ink:  #8ad9a0;
+    --apricot:    #f6c96d;
+    --apricot-soft:#332a12;
+    --apricot-ink:#f0d79c;
+    --sky:        #7fb4de;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 78rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4.5rem) clamp(1.1rem, 4vw, 3rem) 6rem;
+  }
+
+  .col { max-width: var(--measure); }
+
+  /* ---- type ---- */
+  h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.025em; line-height: 1.15; }
+  h1 { font-size: clamp(2.1rem, 5.2vw, 3.4rem); font-weight: 640; }
+  h2 { font-size: clamp(1.4rem, 2.6vw, 1.85rem); font-weight: 620; }
+  h3 { font-size: 1.02rem; font-weight: 620; letter-spacing: -0.01em; }
+  p  { margin: 0; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--ink-muted);
+    margin: 0;
+  }
+
+  .lede { font-size: clamp(1.05rem, 1.7vw, 1.22rem); line-height: 1.55; color: var(--ink-mid); }
+  .muted { color: var(--ink-muted); }
+  .small { font-size: 0.875rem; }
+
+  a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--border-2); }
+  a:hover { text-decoration-color: var(--ink-muted); }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--lime-deep); outline-offset: 3px; border-radius: 3px; }
+
+  code { font-family: var(--mono); font-size: 0.88em; }
+  p code, li code, td code {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.08em 0.36em;
+  }
+
+  /* ---- rhythm ---- */
+  .stack   { display: flex; flex-direction: column; gap: 1rem; }
+  .stack-s { display: flex; flex-direction: column; gap: 0.55rem; }
+  .stack-l { display: flex; flex-direction: column; gap: 1.9rem; }
+  section  { display: flex; flex-direction: column; gap: 1.6rem; }
+  .sections { display: flex; flex-direction: column; gap: clamp(3.2rem, 6vw, 5rem); }
+
+  /* ---- masthead ---- */
+  .masthead { display: flex; flex-direction: column; gap: 1.5rem; padding-bottom: 2.4rem; }
+  .rule-lime { height: 5px; background: var(--lime); border-radius: 99px; width: 4.5rem; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem;
+    font-family: var(--mono); font-size: 0.74rem;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-muted);
+    border-top: 1px solid var(--border); padding-top: 1rem;
+  }
+
+  /* ---- callouts ---- */
+  .note {
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--ink-muted);
+    background: var(--surface);
+    border-radius: 0 10px 10px 0;
+    padding: 1rem 1.15rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .note-warn { border-left-color: var(--coral); background: var(--coral-soft); }
+  .note-warn .note-tag { color: var(--coral-ink); }
+  .note-key  { border-left-color: var(--lime); background: var(--lime-soft); }
+  .note-key .note-tag { color: var(--lime-deep); }
+  .note-tag {
+    font-family: var(--mono); font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.13em;
+  }
+
+  /* ---- code sample ---- */
+  pre {
+    margin: 0;
+    background: var(--inset);
+    color: var(--inset-ink);
+    border-radius: 9px;
+    padding: 0.85rem 1rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.795rem;
+    line-height: 1.62;
+    tab-size: 2;
+  }
+  pre .c { color: #8f8d84; }
+  pre .k { color: var(--lime); }
+  pre .s { color: #f6c96d; }
+
+  /* ---- chips ---- */
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+  .chip {
+    font-family: var(--mono); font-size: 0.66rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.09em;
+    padding: 0.2rem 0.5rem; border-radius: 5px;
+    border: 1px solid var(--border-2); color: var(--ink-muted);
+    white-space: nowrap;
+  }
+  .chip-native { background: var(--green-soft); border-color: transparent; color: var(--green-ink); }
+  .chip-image  { background: var(--apricot-soft); border-color: transparent; color: var(--apricot-ink); }
+  .chip-s { background: var(--surface-2); border-color: transparent; color: var(--ink-mid); }
+
+  /* ---- catalog ---- */
+  .catalog {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 23rem), 1fr));
+    gap: 1rem;
+  }
+  .entry {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.15rem;
+    display: flex; flex-direction: column; gap: 0.8rem;
+  }
+  .entry-head { display: flex; flex-direction: column; gap: 0.45rem; }
+  .entry-name {
+    font-family: var(--mono); font-size: 0.95rem; font-weight: 700;
+    letter-spacing: -0.01em; color: var(--ink);
+  }
+  .entry-job { font-size: 0.9rem; line-height: 1.5; color: var(--ink-mid); }
+  .entry-out {
+    font-size: 0.795rem; color: var(--ink-muted);
+    border-top: 1px dashed var(--border-2); padding-top: 0.7rem; margin-top: auto;
+  }
+  .entry-out b { color: var(--ink-mid); font-weight: 600; }
+
+  /* ---- wave header ---- */
+  .wave {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1rem;
+    border-bottom: 2px solid var(--ink); padding-bottom: 0.7rem;
+  }
+  .wave-tag {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.13em;
+    background: var(--lime); color: #171717;
+    padding: 0.22rem 0.55rem; border-radius: 5px;
+  }
+
+  /* ---- table ---- */
+  .scroller { overflow-x: auto; border: 1px solid var(--border); border-radius: 11px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 40rem; font-size: 0.875rem; }
+  th, td { text-align: left; padding: 0.68rem 0.9rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th {
+    font-family: var(--mono); font-size: 0.68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-muted);
+    background: var(--surface-2); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ---- pain list ---- */
+  .pains { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: 0.9rem; list-style: none; padding: 0; margin: 0; }
+  .pain {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 11px; padding: 1rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .pain q { font-style: italic; color: var(--ink-mid); display: block; font-size: 0.9rem; line-height: 1.5; }
+  .pain .fix { font-size: 0.83rem; color: var(--ink-muted); border-top: 1px solid var(--border); padding-top: 0.55rem; }
+  .pain .fix b { color: var(--lime-deep); font-weight: 700; }
+
+  ul.plain { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.45rem; }
+  ul.plain li { line-height: 1.55; }
+
+  details { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 0.9rem 1.15rem; }
+  summary { cursor: pointer; font-weight: 600; font-size: 0.95rem; }
+  details[open] summary { margin-bottom: 0.8rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="rule-lime"></div>
+    <p class="eyebrow">Syncvas · design exploration</p>
+    <h1>Board grammars for a CS&nbsp;classroom</h1>
+    <p class="lede col">Short text blocks that compile into real board content, so a teacher types six lines and the class sees a diagram, a themed code card, or a tensor pipeline — instead of watching a rectangle get drawn by hand.</p>
+    <div class="meta-row">
+      <span>18 grammars</span>
+      <span>3 build waves</span>
+      <span>Scope: post-v1</span>
+      <span>Sept 2026</span>
+    </div>
+  </header>
+
+  <div class="sections">
+
+    <!-- ============ THE IDEA ============ -->
+    <section>
+      <div class="stack-s col">
+        <p class="eyebrow">The architecture</p>
+        <h2>Build one block, then only ever add compilers</h2>
+      </div>
+
+      <div class="col stack">
+        <p>Every item in this catalog is the same feature wearing a different grammar. The teacher opens a block panel, types a short source, and presses render. A registry looks up the grammar and calls a pure function:</p>
+      </div>
+
+      <pre><span class="c">// lib/blocks/registry.ts</span>
+<span class="k">type</span> Compiler = (source: string, opts: BlockOpts) =&gt;
+  { elements: ExcalidrawElement[]; files?: BinaryFiles };
+
+<span class="c">// The source survives on the element, so a block stays re-editable</span>
+<span class="c">// and re-themeable long after it is on the board.</span>
+element.customData = { sv: { lang: <span class="s">"code"</span>, source, opts } };</pre>
+
+      <div class="col stack">
+        <p>That one decision is what makes the rest cheap. Compiled output is ordinary Excalidraw content, so it rides the <code>board:update</code> event you already have, lands in the final snapshot you already persist, and exports through the path you already built. No new socket events. No Convex schema change. The teacher-only-writer rule is untouched.</p>
+        <p>Each new grammar is then a self-contained pure function with a unit test and no infrastructure work — which is the only way a solo dev ships eighteen of anything.</p>
+      </div>
+
+      <div class="note note-key col">
+        <span class="note-tag">Why this beats an image</span>
+        <p>A compiled block is made of real shapes, so the teacher can circle a node, draw an arrow to it, or drag it apart mid-explanation. That is the entire difference between a whiteboard and a slide deck, and it is the reason to compile rather than paste a picture.</p>
+      </div>
+    </section>
+
+    <!-- ============ TWO TARGETS ============ -->
+    <section>
+      <div class="stack-s col">
+        <p class="eyebrow">Cost model</p>
+        <h2>Two compile targets</h2>
+        <p class="muted">Which target a grammar hits is the single biggest driver of what it costs to build and what it costs to sync.</p>
+      </div>
+
+      <div class="catalog">
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A · native shapes</span></span>
+            <span class="entry-name">→ convertToExcalidrawElements()</span>
+          </div>
+          <p class="entry-job">Boxes, arrows, ellipses and text laid out by your compiler and handed to Excalidraw's public skeleton API. Fully editable, annotatable, and a few KB of JSON.</p>
+          <p class="entry-out"><b>Use for</b> anything structural: graphs, trees, layer stacks, tables, state machines, plots.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-image">Target B · image + source</span></span>
+            <span class="entry-name">→ SVG element + customData</span>
+          </div>
+          <p class="entry-job">For content needing real typographic fidelity — syntax colour, mathematical typesetting. Renders to an image element; the source stays in <code>customData</code> so it re-renders on a theme change.</p>
+          <p class="entry-out"><b>Use for</b> code cards and LaTeX only. Everything else should be Target A.</p>
+        </article>
+      </div>
+
+      <div class="note note-warn col">
+        <span class="note-tag">Blocker · fix before any Target B work</span>
+        <p><code>components/board/board-canvas.tsx:317</code> does <code>void files;</code> and <code>publishScene</code> in <code>use-board-sync.ts</code> sends only <code>{ elements, appState }</code>. Binary files are never transmitted, so today an image-bearing element would render for the teacher and appear blank for every student. Your protocol already allows it — <code>boardUpdateSchema</code> has an optional <code>files</code> field capped at 2&nbsp;MB — the client just never fills it.</p>
+        <p>Wire that first, and render blocks to <strong>SVG rather than PNG</strong>. A themed code card is a few KB as SVG and several hundred KB as a retina bitmap; the 2&nbsp;MB cap is reached fast otherwise.</p>
+      </div>
+    </section>
+
+    <!-- ============ WAVE 1 ============ -->
+    <section>
+      <div class="wave">
+        <span class="wave-tag">Wave 1</span>
+        <h2>Near-free wins</h2>
+        <span class="small muted">Two of these are mostly integration work on libraries that already exist.</span>
+      </div>
+
+      <div class="catalog">
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-image">Target B</span><span class="chip chip-s">Effort M</span></span>
+            <span class="entry-name">/code</span>
+            <p class="entry-job">A themed code card — the thing you asked for. Shiki uses VS&nbsp;Code's own TextMate grammars, so the colours are literally the editor's.</p>
+          </div>
+          <pre><span class="k">/code</span> python theme=one-dark title=quicksort.py focus=5-7
+def quicksort(a):
+    <span class="k">if</span> len(a) &lt;= 1: <span class="k">return</span> a
+    p = a[len(a) // 2]
+    left  = [x <span class="k">for</span> x <span class="k">in</span> a <span class="k">if</span> x &lt; p]
+    mid   = [x <span class="k">for</span> x <span class="k">in</span> a <span class="k">if</span> x == p]
+    <span class="k">return</span> quicksort(left) + mid + quicksort(right)</pre>
+          <p class="entry-out"><b>Options</b> line numbers, <code>focus=</code> to dim everything else, <code>reveal=</code> for progressive disclosure, <code>diff</code> mode for before/after. <b>Themes</b> six fixed: one-dark-pro, github-light, github-dark, nord, catppuccin-latte, monokai.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort S</span></span>
+            <span class="entry-name">/mermaid</span>
+            <p class="entry-job">Straight passthrough to <code>@excalidraw/mermaid-to-excalidraw</code> (MIT, actively maintained). The cheapest large capability on this page.</p>
+          </div>
+          <pre><span class="k">/mermaid</span>
+sequenceDiagram
+  Client-&gt;&gt;Server: SYN
+  Server--&gt;&gt;Client: SYN-ACK
+  Client-&gt;&gt;Server: ACK</pre>
+          <p class="entry-out"><b>Native</b> flowchart, sequence, class, ER, state. <b>Image fallback</b> gitgraph, gantt, mindmap, timeline, pie, quadrant, sankey, xychart. Covers control flow, protocols, OOP design, schemas and lifecycles in one grammar.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-image">Target B</span><span class="chip chip-s">Effort S</span></span>
+            <span class="entry-name">/math</span>
+            <p class="entry-job">KaTeX. Non-negotiable for any ML course — every loss, gradient and attention definition is notation.</p>
+          </div>
+          <pre><span class="k">/math</span> reveal=step
+\text{Attention}(Q,K,V) =
+  \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V</pre>
+          <p class="entry-out"><b>Key mode</b> <code>reveal=step</code> on an <code>align</code> block shows one line of a derivation at a time. Backprop and probability proofs are exactly where students fall off, and where a full wall of algebra loses them.</p>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============ WAVE 2 ============ -->
+    <section>
+      <div class="wave">
+        <span class="wave-tag">Wave 2</span>
+        <h2>The ones nobody else does live</h2>
+        <span class="small muted">These are the differentiators. All Target A, all pure layout functions.</span>
+      </div>
+
+      <div class="catalog">
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort L</span></span>
+            <span class="entry-name">/tensor</span>
+            <p class="entry-job">A shape pipeline that <em>computes</em> the output shapes. Research on ML teaching keeps landing on the same thing: 4-D shape confusion is where students stall.</p>
+          </div>
+          <pre><span class="k">/tensor</span>
+x: (32, 3, 224, 224)   <span class="c"># N, C, H, W</span>
+conv2d 64 k=3 s=2 p=1  <span class="c">→ (32, 64, 112, 112)</span>
+maxpool k=2            <span class="c">→ (32, 64, 56, 56)</span>
+flatten                <span class="c">→ (32, 200704)</span>
+linear 10              <span class="c">→ (32, 10)</span></pre>
+          <p class="entry-out"><b>Why it wins</b> the arrows are derived, not typed. A teacher changes the stride and the whole chain updates live — which answers "why did my dimensions break" better than any static slide.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort M</span></span>
+            <span class="entry-name">/ds</span>
+            <p class="entry-job">Data structures as shapes. Python Tutor's documented weakness is exactly this: it shows variable state well and trees or graphs badly.</p>
+          </div>
+          <pre><span class="k">/ds</span> bst
+50 -&gt; 30, 70
+30 -&gt; 20, 40
+70 -&gt; 60, 80
+mark path 50,70,60
+
+<span class="k">/ds</span> array [5,2,9,1,7] index highlight=1,3
+<span class="k">/ds</span> list 3 -&gt; 7 -&gt; 11 -&gt; null
+<span class="k">/ds</span> graph directed weighted
+A -&gt; B : 4</pre>
+          <p class="entry-out"><b>Covers</b> array, linked list, stack, queue, BST, heap, graph, hash table with buckets. The single highest-volume drawing in any DSA course.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort M</span></span>
+            <span class="entry-name">/calltree</span>
+            <p class="entry-job">Expands a recursion tree from a call. Repeated subcalls get tinted, so the case for memoisation makes itself visually.</p>
+          </div>
+          <pre><span class="k">/calltree</span> fib(5) memo=off
+<span class="c"># toggle memo=on and the duplicate</span>
+<span class="c"># subtrees collapse to cache hits</span></pre>
+          <p class="entry-out"><b>Why it wins</b> recursion is taught by drawing this tree by hand every single term, badly, under time pressure.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort M</span></span>
+            <span class="entry-name">/dp · /trace</span>
+            <p class="entry-job">Filled tables with a declared fill order — dynamic programming grids and loop-execution traces.</p>
+          </div>
+          <pre><span class="k">/dp</span> lcs "ABCBDAB" "BDCABA" fill=row
+<span class="k">/trace</span> cols=i,j,swap?
+0,1,no
+1,2,yes</pre>
+          <p class="entry-out"><b>Pairs with</b> step reveal — walk the grid one cell at a time while talking, instead of pre-drawing a finished table nobody watched get built.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort M</span></span>
+            <span class="entry-name">/plot</span>
+            <p class="entry-job">Curves from a formula or a list. Complexity growth, activation shapes, loss curves, gradient descent on a contour.</p>
+          </div>
+          <pre><span class="k">/plot</span> bigo n, n*log(n), n^2, 2^n  n=1..40
+<span class="k">/plot</span> fn sigmoid, relu, tanh  x=-6..6
+<span class="k">/plot</span> loss train=[...] val=[...] mark=overfit</pre>
+          <p class="entry-out"><b>Covers</b> the two most-drawn graphs in the building: why <em>O(n²)</em> hurts, and what overfitting looks like.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort M</span></span>
+            <span class="entry-name">/nn · /attention</span>
+            <p class="entry-job">Layer stacks with parameter counts, and attention score grids. The existing tools here are LaTeX packages (PlotNeuralNet) or click-only web apps (NN-SVG) — neither works live on a board.</p>
+          </div>
+          <pre><span class="k">/nn</span>
+input 784
+dense 128 relu   <span class="c"># 100,480 params</span>
+dropout 0.2
+dense 10 softmax <span class="c"># 1,290 params</span>
+
+<span class="k">/attention</span> seq=6 heads=8 dim=512 show=qk</pre>
+          <p class="entry-out"><b>Why it wins</b> the parameter arithmetic is the lesson. Auto-computing it makes "where do 100k weights come from" a two-second answer.</p>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============ WAVE 3 ============ -->
+    <section>
+      <div class="wave">
+        <span class="wave-tag">Wave 3</span>
+        <h2>Course-specific, add on demand</h2>
+        <span class="small muted">Each is small once the block primitive exists. Ship the ones your actual teachers ask for.</span>
+      </div>
+
+      <div class="catalog">
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort S</span></span>
+            <span class="entry-name">/dfa · /nfa · /tm</span>
+            <p class="entry-job">Automata for theory of computation, including regex&nbsp;→&nbsp;NFA expansion.</p>
+          </div>
+          <pre><span class="k">/dfa</span>
+start q0 ; accept q2
+q0 -a-&gt; q1
+q1 -b-&gt; q2
+q2 -a,b-&gt; q2</pre>
+          <p class="entry-out"><b>Note</b> double-circle accept states and self-loops are fiddly freehand and trivial to generate.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort S</span></span>
+            <span class="entry-name">/mem</span>
+            <p class="entry-job">Stack and heap with pointer arrows — the classic C/C++ box-and-arrow diagram.</p>
+          </div>
+          <pre><span class="k">/mem</span>
+stack: main → head*
+heap: 0x1a{val:3, next:0x2b}
+      0x2b{val:7, next:null}</pre>
+          <p class="entry-out"><b>Fills</b> the gap Python Tutor leaves for anything pointer-heavy or non-Python.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort S</span></span>
+            <span class="entry-name">/bits</span>
+            <p class="entry-job">Labelled bit fields — two's complement, IEEE-754 layout, masks, packet headers.</p>
+          </div>
+          <pre><span class="k">/bits</span> 0xC0A80101 width=32 group=8
+<span class="k">/bits</span> float32 -3.75 label=sign,exp,mantissa</pre>
+          <p class="entry-out"><b>For</b> systems, architecture and networking courses.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort S</span></span>
+            <span class="entry-name">/confusion</span>
+            <p class="entry-job">Confusion matrix that derives precision, recall, F1 and accuracy from the four cells.</p>
+          </div>
+          <pre><span class="k">/confusion</span> [[45,5],[8,42]] labels=spam,ham
+<span class="c"># P .849  R .900  F1 .874  Acc .870</span></pre>
+          <p class="entry-out"><b>Why it wins</b> students memorise the formulas and still can't place them on the grid. Showing both together fixes that.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort S</span></span>
+            <span class="entry-name">/truth · /kmap · /circuit</span>
+            <p class="entry-job">Digital logic: truth tables, Karnaugh maps with groupings, and gate diagrams from a boolean expression.</p>
+          </div>
+          <pre><span class="k">/circuit</span> out = (a AND b) OR (NOT c)
+<span class="k">/kmap</span> f(a,b,c,d) = Σm(0,1,4,5,12,13)</pre>
+          <p class="entry-out"><b>For</b> first-year digital design, where the drawing is most of the work.</p>
+        </article>
+
+        <article class="entry">
+          <div class="entry-head">
+            <span class="chips"><span class="chip chip-native">Target A</span><span class="chip chip-s">Effort S</span></span>
+            <span class="entry-name">/sched · /matrix · /table</span>
+            <p class="entry-job">The remainder: CPU scheduling gantts and page tables for OS; matrix ops with dimension checking for linear algebra; plain comparison tables everywhere.</p>
+          </div>
+          <pre><span class="k">/sched</span> rr quantum=4
+P1 burst=10 ; P2 burst=5
+
+<span class="k">/matrix</span> A(3x4) @ B(4x2) check</pre>
+          <p class="entry-out"><b>Note</b> <code>/matrix ... check</code> highlighting the matching inner dimensions is a one-hour build that prevents a term's worth of confusion.</p>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============ TEACHING MECHANICS ============ -->
+    <section>
+      <div class="stack-s col">
+        <p class="eyebrow">Cross-cutting</p>
+        <h2>Three mechanics worth more than any single grammar</h2>
+        <p class="muted">Instructors interviewed about live coding describe the same failures. These three answer them directly, and each applies to every block on the page.</p>
+      </div>
+
+      <ul class="pains">
+        <li class="pain">
+          <q>When I say we now make a loop, I have to write something completely different than what I'm saying.</q>
+          <p class="fix"><b>Step reveal.</b> Author the whole block up front, disclose it in chunks. The teacher talks over a stable artefact instead of racing their own typing.</p>
+        </li>
+        <li class="pain">
+          <q>When the code gets complex, I tend to focus too much on the debugging and I lose the audience.</q>
+          <p class="fix"><b>Snippet library.</b> Pre-authored blocks per class, inserted in one action. No typos, no dead air, no unplanned debugging detour.</p>
+        </li>
+        <li class="pain">
+          <q>The feeling of being observed by hundreds of students creates a psychological pressure.</q>
+          <p class="fix"><b>Live line pointer.</b> The teacher taps a line and every student sees it highlight. It is an ephemeral event like your teacher viewport — no board version bump, no persistence, ~20 lines of protocol.</p>
+        </li>
+      </ul>
+
+      <div class="note col">
+        <span class="note-tag">Fits an existing pattern</span>
+        <p>The line pointer is the same shape as <code>teacher:viewport</code>: volatile, lossy-safe, teacher-only, never touching <code>boardVersion</code>. You already have the validation, the room scoping and the writer check — it is one more entry in <code>SOCKET_EVENTS</code>.</p>
+      </div>
+    </section>
+
+    <!-- ============ PRIORITY ============ -->
+    <section>
+      <div class="stack-s col">
+        <p class="eyebrow">Sequencing</p>
+        <h2>What to build, in order</h2>
+      </div>
+
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr><th>Step</th><th>Ships</th><th>Target</th><th>Effort</th><th>Unblocks</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="num">0</td><td>Sync <code>files</code> over the socket</td><td>—</td><td class="num">S</td><td>Every image-bearing block</td></tr>
+            <tr><td class="num">1</td><td>Block primitive + compiler registry</td><td>—</td><td class="num">M</td><td>All 18 grammars</td></tr>
+            <tr><td class="num">2</td><td><code>/mermaid</code></td><td>A</td><td class="num">S</td><td>5 diagram families at once</td></tr>
+            <tr><td class="num">3</td><td><code>/code</code> + 6 themes</td><td>B</td><td class="num">M</td><td>The headline feature</td></tr>
+            <tr><td class="num">4</td><td><code>/math</code></td><td>B</td><td class="num">S</td><td>Any ML or theory course</td></tr>
+            <tr><td class="num">5</td><td>Step reveal + snippet library</td><td>—</td><td class="num">M</td><td>Applies to all of the above</td></tr>
+            <tr><td class="num">6</td><td><code>/ds</code> + <code>/calltree</code></td><td>A</td><td class="num">M</td><td>Whole DSA syllabus</td></tr>
+            <tr><td class="num">7</td><td><code>/tensor</code> + <code>/nn</code></td><td>A</td><td class="num">L</td><td>The AI/ML differentiator</td></tr>
+            <tr><td class="num">8</td><td>Wave 3, by request</td><td>A</td><td class="num">S each</td><td>Per-course depth</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note note-warn col">
+        <span class="note-tag">Honest scoping</span>
+        <p>None of this belongs before v1.0. The roadmap still has phases 3–10 at "implementation complete, UAT pending", the teacher path runs on <code>ALLOW_DEV_TEACHER</code> dev identity, and <code>triageDoubt</code> is not wired to anything. Board grammars are the strongest post-v1 direction on the table — they are also the fastest way to never finish the classroom that has to work first.</p>
+      </div>
+    </section>
+
+    <!-- ============ DETAILS ============ -->
+    <section>
+      <div class="stack-s col">
+        <p class="eyebrow">Implementation notes</p>
+        <h2>Details that will bite</h2>
+      </div>
+
+      <div class="stack col">
+        <details>
+          <summary>Why code cards must be images, not text elements</summary>
+          <div class="stack-s" style="margin-top:.6rem">
+            <p>Excalidraw ships <code>FONT_FAMILY.Cascadia</code>, so plain monochrome code could be a native text element in a proper monospace face. But a single text element carries one colour. Syntax highlighting would need one element per token, which explodes element count and makes the scene painful to select and move.</p>
+            <p>Render to SVG instead and keep the source in <code>customData</code>. You lose in-place text editing and gain correct colour, correct ligatures, and a scene that stays manageable. Re-opening the block panel gives editing back.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Shiki bundle size and the six-theme decision</summary>
+          <div class="stack-s" style="margin-top:.6rem">
+            <p>Shiki's full bundle is 1.2&nbsp;MB gzipped — unusable here. The fine-grained bundle, composing languages and themes individually, lands around 200&nbsp;KB for a realistic set. That is the whole reason to fix the theme list at six rather than expose Shiki's full catalogue.</p>
+            <p>Pick languages the same way: Python, C, C++, Java, JavaScript, TypeScript, SQL, and a plain-text fallback covers essentially every CS course. Load them lazily on first block insert so the classroom's initial paint is unaffected.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Theme defaults, and a projector caveat</summary>
+          <div class="stack-s" style="margin-top:.6rem">
+            <p>Default a code card to match the board theme — dark board, dark card — and let the teacher override per block. That is the behaviour people expect and it costs nothing.</p>
+            <p>Worth surfacing in the UI though: dark themes wash out badly on cheap classroom projectors, and instructors report tuning text size and syntax highlighting specifically for back-of-room legibility. <code>github-light</code> at a large size is the safest lecture-hall default even when the teacher's own board is dark.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Keeping compiled blocks out of the doubts and moderation path</summary>
+          <div class="stack-s" style="margin-top:.6rem">
+            <p>Block sources are teacher-authored and go nowhere near the moderation adapter. Keep it that way — no block content in moderation requests, and no block source in telemetry, matching the rule already applied to doubt text.</p>
+            <p>Do bound the source: cap block source length and compiled element count per block, and reject a compile that would push the scene past the existing 900&nbsp;KB envelope limit rather than emitting an oversized <code>board:update</code> the relay will drop.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ============ SOURCES ============ -->
+    <section>
+      <div class="stack-s col">
+        <p class="eyebrow">Grounding</p>
+        <h2>Sources</h2>
+      </div>
+      <ul class="plain col small muted">
+        <li><a href="https://arxiv.org/html/2506.03402">Live Coding in Programming Classes: Instructors' Perspectives</a> — the quoted pain points and the tooling wishes instructors named.</li>
+        <li><a href="https://github.com/excalidraw/mermaid-to-excalidraw">excalidraw/mermaid-to-excalidraw</a> — MIT; native converters for flowchart, sequence, class, ER and state, SVG fallback otherwise.</li>
+        <li><a href="https://shiki.style/guide/bundles">Shiki bundles</a> and <a href="https://shiki.style/guide/best-performance">performance guide</a> — full vs. fine-grained bundle sizes.</li>
+        <li><a href="https://pytorch.org/blog/inside-the-matrix/">Inside the Matrix (PyTorch)</a> and <a href="https://dl.acm.org/doi/10.1145/3772318.3791725">Transformer Explainer (CHI 2026)</a> — tensor-shape and attention comprehension as the documented ML teaching bottleneck.</li>
+        <li><a href="https://arxiv.org/pdf/2510.16594">SimpliPy</a> — Python Tutor's documented weakness with graph and tree abstractions.</li>
+        <li><a href="https://github.com/HarisIqbal88/PlotNeuralNet">PlotNeuralNet</a> and <a href="https://typst.app/universe/package/neural-netz/">neural-netz</a> — existing NN-diagram DSLs, both offline document toolchains rather than live tools.</li>
+      </ul>
+    </section>
+
+  </div>
+</div>
