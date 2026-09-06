@@ -20,6 +20,8 @@ import {
   TeacherSessionControls,
   type TeacherSessionState,
 } from "@/components/room/teacher-session-controls";
+import { SaveTemplateButton } from "@/components/templates/save-template-button";
+import { TemplateLibrary, type PreparedBoard } from "@/components/templates/template-library";
 import { AppShell } from "@/components/ui/app-shell";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -38,6 +40,8 @@ type LatestScene = {
 
 export default function TeacherPage() {
   const [liveBoard, setLiveBoard] = useState<LiveBoard | null>(null);
+  // Phase 11: the prepared board this class opens on, chosen before it starts.
+  const [preparedBoard, setPreparedBoard] = useState<PreparedBoard | null>(null);
   const latestSceneRef = useRef<LatestScene | null>(null);
   const saveFinalBoard = useMutation(api.boardSnapshots.saveFinal);
   const saveFinalBoardLocal = useMutation(api.boardSnapshots.saveFinalAsLocalTeacher);
@@ -70,7 +74,10 @@ export default function TeacherPage() {
   const onSessionEnded = useCallback(() => {
     latestSceneRef.current = null;
     setLiveBoard(null);
+    setPreparedBoard(null);
   }, []);
+
+  const currentScene = useCallback(() => latestSceneRef.current?.scene ?? null, []);
 
   const isLive = liveBoard?.session.status === "live";
 
@@ -82,6 +89,9 @@ export default function TeacherPage() {
         <div className="flex items-center gap-2">
           <Link href="/teacher/sign-in" className="syncvas-btn syncvas-btn-ghost syncvas-btn-sm">
             Teacher sign in
+          </Link>
+          <Link href="/teacher/dashboard" className="syncvas-btn syncvas-btn-ghost syncvas-btn-sm">
+            Dashboard
           </Link>
           <Link href="/teacher/history" className="syncvas-btn syncvas-btn-ghost syncvas-btn-sm">
             History
@@ -98,27 +108,63 @@ export default function TeacherPage() {
 
         <div className="min-h-0 flex-1 p-3 sm:p-4">
           {isLive && liveBoard ? (
-            <BoardRoom
-              sessionId={liveBoard.session.sessionId}
-              role="teacher"
-              roomToken={liveBoard.roomToken}
-              refreshRoomToken={liveBoard.refreshRoomToken}
-              onSceneChange={onSceneChange}
-            />
+            <div className="flex h-full min-h-0 flex-col gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {preparedBoard ? (
+                  <p className="text-xs text-ink-muted">
+                    Opened on <span className="font-medium text-ink">{preparedBoard.title}</span>
+                  </p>
+                ) : (
+                  <span />
+                )}
+                <SaveTemplateButton getScene={currentScene} defaultTitle={preparedBoard?.title} />
+              </div>
+              <div className="min-h-0 flex-1">
+                <BoardRoom
+                  sessionId={liveBoard.session.sessionId}
+                  role="teacher"
+                  roomToken={liveBoard.roomToken}
+                  refreshRoomToken={liveBoard.refreshRoomToken}
+                  onSceneChange={onSceneChange}
+                  initialScene={preparedBoard?.scene}
+                />
+              </div>
+            </div>
           ) : (
-            <div className="grid h-full place-items-center rounded-panel border border-dashed border-border bg-surface-muted/40 px-6 text-center">
-              <div className="max-w-sm">
-                <p className="text-base font-medium tracking-[-0.02em]">Board waiting</p>
-                <p className="mt-2 text-sm leading-6 text-ink-muted">
-                  Create and start a room to open the live canvas. Students join with the room
-                  code.
-                </p>
-                <Link
-                  href="/student/proof-session"
-                  className="mt-4 inline-flex text-sm font-medium text-ink underline-offset-2 hover:underline"
-                >
-                  Open canvas-only proof
-                </Link>
+            <div className="grid h-full place-items-center rounded-panel border border-dashed border-border bg-surface-muted/40 px-6">
+              <div className="w-full max-w-md">
+                <div className="text-center">
+                  <p className="text-base font-medium tracking-[-0.02em]">Board waiting</p>
+                  <p className="mt-2 text-sm leading-6 text-ink-muted">
+                    Create and start a room to open the live canvas. Students join with the room
+                    code.
+                  </p>
+                  {preparedBoard ? (
+                    <p className="mt-3 text-sm text-ink">
+                      Starting on <span className="font-medium">{preparedBoard.title}</span>.{" "}
+                      <button
+                        type="button"
+                        className="underline underline-offset-2"
+                        onClick={() => setPreparedBoard(null)}
+                      >
+                        Use a blank board instead
+                      </button>
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="mt-6 border-t border-border pt-4 text-left">
+                  <TemplateLibrary onOpen={setPreparedBoard} />
+                </div>
+
+                <div className="mt-4 text-center">
+                  <Link
+                    href="/student/proof-session"
+                    className="inline-flex text-sm font-medium text-ink underline-offset-2 hover:underline"
+                  >
+                    Open canvas-only proof
+                  </Link>
+                </div>
               </div>
             </div>
           )}

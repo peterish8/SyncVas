@@ -67,6 +67,12 @@ export type BoardCanvasProps = {
   refreshRoomToken?: () => Promise<string>;
   /** Local snapshot callback used only when the teacher ends a session. */
   onSceneChange?: (scene: unknown, boardVersion: number) => void;
+  /**
+   * Phase 11: a prepared board the class opens on. Seeded into the canvas as
+   * ordinary elements, so the teacher's first change publishes it down the
+   * existing board path and every element stays editable.
+   */
+  initialScene?: unknown;
 };
 
 type SceneData = {
@@ -94,13 +100,15 @@ function sceneData(value: unknown): SceneData {
   };
 }
 
-export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refreshRoomToken, onSceneChange }: BoardCanvasProps) {
+export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refreshRoomToken, onSceneChange, initialScene }: BoardCanvasProps) {
   const isTeacher = role === "teacher";
+  // Only the writer may open a class on a prepared board.
+  const preparedElements = isTeacher ? sceneData(initialScene).elements : [];
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const mountedRef = useRef(false);
   const canvasInitFrameRef = useRef<number | null>(null);
   const applyingRemoteRef = useRef(false);
-  const sceneElementsRef = useRef<readonly ExcalidrawElement[]>([]);
+  const sceneElementsRef = useRef<readonly ExcalidrawElement[]>(preparedElements);
   const sceneFilesRef = useRef<BinaryFiles>({});
   const pendingRemoteSceneRef = useRef<{ scene: unknown; files?: BinaryFiles } | null>(null);
   const pendingRef = useRef<{
@@ -133,7 +141,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
   const [sceneSeed, setSceneSeed] = useState<{
     elements: readonly ExcalidrawElement[];
     files: BinaryFiles;
-  }>({ elements: [], files: {} });
+  }>({ elements: preparedElements, files: {} });
   const [blockHighlight, setBlockHighlight] = useState<BlockHighlight | null>(null);
   const [revealState, setRevealState] = useState<{ all: ExcalidrawElement[]; visible: number } | null>(null);
 

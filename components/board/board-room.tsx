@@ -23,9 +23,11 @@ export type BoardRoomProps = {
   refreshRoomToken?: () => Promise<string>;
   /** Local snapshot callback used only when the teacher ends a session. */
   onSceneChange?: (scene: unknown, boardVersion: number) => void;
+  /** Phase 11: prepared board this class opens on. */
+  initialScene?: unknown;
 };
 
-export function BoardRoom({ sessionId, role, roomToken, refreshRoomToken, onSceneChange }: BoardRoomProps) {
+export function BoardRoom({ sessionId, role, roomToken, refreshRoomToken, onSceneChange, initialScene }: BoardRoomProps) {
   return (
     <section className="flex h-full min-h-0 flex-col" aria-label="Classroom board">
       <BoardCanvas
@@ -34,6 +36,7 @@ export function BoardRoom({ sessionId, role, roomToken, refreshRoomToken, onScen
         roomToken={roomToken}
         refreshRoomToken={refreshRoomToken}
         onSceneChange={onSceneChange}
+        initialScene={initialScene}
       />
     </section>
   );

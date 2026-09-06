@@ -4,20 +4,7 @@ import { v } from "convex/values";
 import { mutation, query, internalQuery, type MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { requireLocalDevSessionOwner, requireSessionOwner } from "./auth";
-
-const MAX_SCENE_JSON_BYTES = 900_000;
-
-function validateSceneJson(sceneJson: string): void {
-  if (new TextEncoder().encode(sceneJson).byteLength > MAX_SCENE_JSON_BYTES) {
-    throw new Error("SCENE_TOO_LARGE: Final board scene is too large to persist.");
-  }
-  try {
-    const parsed = JSON.parse(sceneJson) as { elements?: unknown };
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.elements)) throw new Error("invalid");
-  } catch {
-    throw new Error("INVALID_SCENE: Final board scene must be valid Excalidraw JSON.");
-  }
-}
+import { validateSceneJson } from "../shared/board/scene";
 
 async function save(ctx: MutationCtx, sessionId: Id<"sessions">, boardVersion: number, sceneJson: string) {
   if (!Number.isInteger(boardVersion) || boardVersion < 0) {
