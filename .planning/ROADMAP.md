@@ -2,10 +2,11 @@
 
 ## Overview
 
-Deliver SyncVas v1.0 (P0 + P1) on the existing brownfield scaffold: close out foundation, prove teacher→student live board sync, wire real room lifecycle, add Follow Teacher, ship the anonymous doubts loop, persist the final board to close P0, then layer deterministic + adapter AI moderation, export/history/reconnect UX, and hardening. P2 and explicitly deferred work stay parked under Deferred: v2.0 — not executable phases now.
+Deliver SyncVas v1.0 on the existing brownfield scaffold, then ship the completed v1.1/v1.2 board grammars and the planned v1.3 AI Lesson Studio/MCP interoperability layer. Phases 1–10 deliver P0 + P1: close out foundation, prove teacher→student live board sync, wire real room lifecycle, add Follow Teacher, ship the anonymous doubts loop, persist the final board to close P0, then layer deterministic + adapter AI moderation, export/history/reconnect UX, and hardening. Phases 11–16 add the prepared-class layer: template library, AI board authoring, the interactive quiz subsystem with leaderboards, and an MCP server that lets external AI clients author lessons into a teacher account. P2 and explicitly deferred work stay parked under Deferred: v2.0 — not executable phases now.
 
-**Granularity:** standard (10 phases)
+**Granularity:** standard (23 phases across v1.0, v1.1, v1.2, and planned v1.3)
 **Scope gate:** Phases 1–6 deliver P0. Do not start Phase 7+ until every P0 acceptance test holds in 1 teacher tab + 2 student tabs.
+**Second gate:** Do not start Phase 11+ until P1 (phases 7–9) is verified. The prepared-class layer assumes a working live classroom underneath it.
 
 ## Phases
 
@@ -19,6 +20,13 @@ Deliver SyncVas v1.0 (P0 + P1) on the existing brownfield scaffold: close out fo
  - [~] **Phase 8: Export, History & Reconnect UX** - Implementation complete; hosted storage/PDF/reconnect UAT pending
  - [~] **Phase 9: Hardening** - Code/load checks complete; lint, deploy, and XP-Pen verification pending
  - [~] **Phase 10: Optional External Integrations** - Generic optional adapter complete; live provider smoke pending credentials
+ - [ ] **Phase 11: Prepared Boards & Template Library** - Teacher authors a board ahead of class and starts a session on it
+ - [ ] **Phase 12: AI Board Authoring** - Adapter-backed generation of diagrams and questions with reserved writing space
+ - [ ] **Phase 13: Quiz Core** - Named participants, question model, reveal, answer, server-side grading
+ - [ ] **Phase 14: Leaderboards & Locked Quiz Mode** - Speed-weighted scoring, leaderboards, full-screen locked quiz
+ - [ ] **Phase 15: Quiz Persistence & History** - Quiz results freeze into the ended session alongside the final board
+ - [ ] **Phase 16: MCP Lesson Authoring** - External AI clients author lessons and quizzes into a teacher account as reviewable drafts
+ - [ ] **Phase 23: AI Lesson Studio & MCP Interoperability** - In-app AI and remote ChatGPT/Claude MCP create the same teacher-reviewed lesson drafts
 
 ## Phase Details
 
@@ -211,11 +219,130 @@ Plans:
 Plans:
 - [ ] 10-01: Server-only provider configuration, adapter implementation, and contract/failure-mode verification
 
+### Phase 11: Prepared Boards & Template Library
+
+**Goal**: A teacher authors a board before class, saves it, and starts a session already showing it
+**Depends on**: Phase 9 (P1 verified)
+**Requirements**: PREP-01, PREP-02, PREP-03, PREP-04, PREP-05
+**Success Criteria** (what must be TRUE):
+
+  1. Teacher can save the current board as a reusable named template owned by them
+  2. Teacher can list, open, rename and delete their own templates, and cannot see another teacher's
+  3. Starting a session from a template opens the class with that scene already on the board
+  4. Students joining that session receive the prepared scene through the existing `board:current` bootstrap with no student-side change
+  5. Every element of a prepared board remains freely movable and editable by the teacher during class
+
+**Plans**: TBD
+**UI hint**: yes
+
+Plans:
+
+- [ ] 11-01: TBD (run `/gsd:plan-phase 11`)
+
+### Phase 12: AI Board Authoring
+
+**Goal**: A teacher describes a lesson and gets a usable starting board with space left to write
+**Depends on**: Phase 11
+**Requirements**: AIB-01, AIB-02, AIB-03, AIB-04
+**Success Criteria** (what must be TRUE):
+
+  1. Teacher can describe a topic and receive a generated draft board they can accept, edit, or discard
+  2. Generation runs through a provider-agnostic adapter with server-only credentials; an unconfigured provider degrades to a clear unavailable state rather than an error
+  3. Generated content is emitted as checkable source (mermaid and structured question data), never as raw Excalidraw element JSON
+  4. Element placement is computed by a deterministic layout function, not by the model, and requested writing zones are verifiably empty of elements
+
+**Plans**: TBD
+**UI hint**: yes
+
+Plans:
+
+- [ ] 12-01: TBD (run `/gsd:plan-phase 12`)
+
+### Phase 13: Quiz Core
+
+**Goal**: A teacher can place questions, reveal them, and have students answer with correct grading
+**Depends on**: Phase 10, Phase 11
+**Requirements**: QUIZ-01, QUIZ-02, QUIZ-03, QUIZ-04, QUIZ-05, QUIZ-06
+**Success Criteria** (what must be TRUE):
+
+  1. Student supplies a display name at join, screened by the existing deterministic filter; doubts remain anonymous and never carry that name
+  2. Teacher can author MCQ and true/false questions against a session and anchor them to a board position
+  3. A hidden question's prompt, options and answer key are absent from every student-facing payload — verified by inspecting the network response, not by visual blur
+  4. Revealing a question makes its prompt and options available to students and places it on the board
+  5. A participant can answer a given question at most once, enforced by a unique index
+  6. Grading happens server-side inside the mutation; `correctIndex` never appears in a student projection
+
+**Plans**: TBD
+**UI hint**: yes
+
+Plans:
+
+- [ ] 13-01: TBD (run `/gsd:plan-phase 13`)
+
+### Phase 14: Leaderboards & Locked Quiz Mode
+
+**Goal**: Answers produce a speed-weighted score and a leaderboard both sides can see; a final quiz can take over the room
+**Depends on**: Phase 13
+**Requirements**: QUIZ-07, LEAD-01, LEAD-02, LEAD-03, LEAD-04
+**Success Criteria** (what must be TRUE):
+
+  1. A correct answer scores points that decrease with elapsed time, down to a floor; an incorrect answer scores zero
+  2. Score is maintained per answer in constant time; the leaderboard is an indexed read, not a scan over all answers
+  3. Student can open a leaderboard at any time and see their own standing
+  4. Teacher can project a per-question and a cumulative leaderboard
+  5. Teacher can lock the room into full-screen quiz mode; students lose canvas interaction, and a student refreshing mid-quiz returns to the quiz rather than a stale board
+  6. Board-anchored and full-screen questions can both be used within one class
+
+**Plans**: TBD
+**UI hint**: yes
+
+Plans:
+
+- [ ] 14-01: TBD (run `/gsd:plan-phase 14`)
+
+### Phase 15: Quiz Persistence & History
+
+**Goal**: Ending a class freezes quiz results next to the final board
+**Depends on**: Phase 14, Phase 8
+**Requirements**: QUIZ-08, LEAD-05
+**Success Criteria** (what must be TRUE):
+
+  1. Ending a class closes any open question and freezes the final leaderboard
+  2. An ended session's history entry shows both the final board and the final quiz results
+  3. Quiz results are included in the teacher's export path
+  4. A quiz that was never run does not create empty results or block end-of-class finalization
+
+**Plans**: TBD
+**UI hint**: yes
+
+Plans:
+
+- [ ] 15-01: TBD (run `/gsd:plan-phase 15`)
+
+### Phase 16: MCP Lesson Authoring
+
+**Goal**: An external AI client (Claude, ChatGPT) can author lessons and quizzes into a teacher's SyncVas account, as reviewable drafts
+**Depends on**: Phase 12, Phase 13
+**Requirements**: MCP-01, MCP-02, MCP-03, MCP-04, MCP-05, MCP-06
+**Success Criteria** (what must be TRUE):
+
+  1. SyncVas exposes a remote MCP server implementing spec `2026-07-28` — stateless, no session header, with a working `server/discover`
+  2. A teacher can connect the server from Claude and from ChatGPT and authorize it against their own account
+  3. An external client can create a lesson draft containing diagram source and quiz questions, and read back what it created
+  4. Every write lands as a **draft the teacher reviews** — no MCP tool can publish to a live room or reveal a question
+  5. No student data is reachable through any MCP tool: no doubts, no participants, no answers, no leaderboards
+  6. A revoked token immediately stops working, and tokens are scoped to one teacher
+
+**Plans**: TBD
+**UI hint**: yes
+
+Plans:
+
+- [ ] 16-01: TBD (run `/gsd:plan-phase 16`)
+
 ## Milestone v1.1: Board Grammars
 
-**Status: queued — not started.** Phase 11 is gated on the v1.0 exit criteria: every P0
-acceptance test holding in 1 teacher + 2 student tabs, plus the deploy-linked Convex/browser
-UAT, lint close-out, and XP-Pen sign-off tracked in STATE.md.
+**Status: complete — implemented locally 2026-09-05.** Hosted Convex/browser and XP-Pen acceptance remain tracked v1.0 environment gates.
 
 **Goal:** A teacher types a short text block and the class sees compiled board content — a
 themed code card, a diagram, a tensor pipeline — instead of watching shapes get drawn by hand.
@@ -229,12 +356,12 @@ path — no new Convex schema, no change to the teacher-only-writer rule.
 
 **Design reference:** `.design/dsl-catalog.html`
 
-**Granularity:** standard (5 phases, numbering continues from v1.0)
+**Granularity:** standard (5 phases, completed in one bounded implementation pass)
 
-### Phase 11: Block Transport & Primitive
+### Phase 17: Block Transport & Primitive
 
 **Goal**: A teacher can render a block onto the board and every student sees it, including image-bearing blocks
-**Depends on**: v1.0 exit criteria
+**Depends on**: v1.0 exit criteria (phases 1–16)
 **Requirements**: BLOCK-01, BLOCK-02, BLOCK-03, BLOCK-04, BLOCK-05, BLOCK-06
 **Success Criteria** (what must be TRUE):
 
@@ -245,17 +372,17 @@ path — no new Convex schema, no change to the teacher-only-writer rule.
   5. An unparseable source shows an error and leaves the board unchanged
   6. A block that would exceed the scene or file byte budget is rejected before emit
 
-**Plans**: TBD
+**Plans**: 1 plan
 **UI hint**: yes
 
 Plans:
 
-- [ ] 11-01: TBD (run `/gsd:plan-phase 11`)
+- [x] 17-01: Block compiler registry, bounded transport, binary file bootstrap, and block panel
 
-### Phase 12: First Grammars — mermaid, code, math
+### Phase 18: First Grammars — mermaid, code, math
 
 **Goal**: The three highest-leverage grammars work end to end on a live board
-**Depends on**: Phase 11
+**Depends on**: Phase 17
 **Requirements**: GRAM-01, GRAM-02, GRAM-03, GRAM-04
 **Success Criteria** (what must be TRUE):
 
@@ -265,17 +392,17 @@ Plans:
   4. A code block can show line numbers, dim to a focus range, and render a diff
   5. A LaTeX equation renders legibly at classroom projection size
 
-**Plans**: TBD
+**Plans**: 1 plan
 **UI hint**: yes
 
 Plans:
 
-- [ ] 12-01: TBD (run `/gsd:plan-phase 12`)
+- [x] 18-01: Mermaid, code, math grammars with safe SVG fallback and six themes
 
-### Phase 13: Teaching Mechanics
+### Phase 19: Teaching Mechanics
 
 **Goal**: Blocks become teachable — disclosed in steps, reusable, and pointable-at
-**Depends on**: Phase 12
+**Depends on**: Phase 18
 **Requirements**: TEACH-01, TEACH-02, TEACH-03, TEACH-04
 **Success Criteria** (what must be TRUE):
 
@@ -284,17 +411,17 @@ Plans:
   3. Teacher highlighting a line is visible to students and never bumps board version or blocks on delivery
   4. A block's theme follows the board theme by default and can be overridden per block
 
-**Plans**: TBD
+**Plans**: 1 plan
 **UI hint**: yes
 
 Plans:
 
-- [ ] 13-01: TBD (run `/gsd:plan-phase 13`)
+- [x] 19-01: Step reveal, snippet library, line pointer, and theme defaults
 
-### Phase 14: CS Grammars
+### Phase 20: CS Grammars
 
 **Goal**: The data-structures and algorithms syllabus is drawable from text
-**Depends on**: Phase 13
+**Depends on**: Phase 19
 **Requirements**: GRAM-05, GRAM-06, GRAM-09, GRAM-10
 **Success Criteria** (what must be TRUE):
 
@@ -303,17 +430,17 @@ Plans:
   3. Complexity-growth and named function curves render on labelled axes
   4. A DP grid or execution trace renders as a table with a declared fill order
 
-**Plans**: TBD
+**Plans**: 1 plan
 **UI hint**: yes
 
 Plans:
 
-- [ ] 14-01: TBD (run `/gsd:plan-phase 14`)
+- [x] 20-01: Data structures, call trees, plots, DP and trace grammars
 
-### Phase 15: AI/ML Grammars
+### Phase 21: AI/ML Grammars
 
 **Goal**: Shape and parameter arithmetic is derived on the board, not typed
-**Depends on**: Phase 14
+**Depends on**: Phase 20
 **Requirements**: GRAM-07, GRAM-08
 **Success Criteria** (what must be TRUE):
 
@@ -322,18 +449,40 @@ Plans:
   3. A network layer stack renders with derived per-layer parameter counts
   4. A shape mismatch is reported clearly instead of rendering a wrong diagram
 
-**Plans**: TBD
+**Plans**: 1 plan
 **UI hint**: yes
 
 Plans:
 
-- [ ] 15-01: TBD (run `/gsd:plan-phase 15`)
+- [x] 21-01: Tensor and neural-network shape/parameter grammars
 
-## Deferred: v1.2
+## v1.2: Course-specific grammars
 
-Course-specific grammars, built on request once the primitive exists. See REQUIREMENTS.md
-`## v1.2 Requirements` for IDs: automata, memory diagrams, bit fields, confusion matrix,
-digital logic, scheduling/matrix/table.
+**Status: complete — implemented locally 2026-09-05.** Automata, memory diagrams, bit fields, confusion matrix, digital logic, scheduling, matrix, and table compilers are registered and bounded. See `docs/37_BOARD_GRAMMARS.md`.
+
+## Milestone v1.3: AI Lesson Studio & MCP Interop
+
+**Status:** planned — design contract added 2026-09-05.
+**Goal:** A teacher can generate a complete, reviewable lesson in SyncVas or from ChatGPT/Claude, then teach it from a prepared board and quiz.
+**Depends on:** v1.0 prepared-class layer, v1.1/v1.2 grammar registry, authenticated teacher path, and hosted MCP HTTPS/OAuth.
+**Source of truth:** `docs/38_AI_LESSON_STUDIO_AND_MCP.md` and `.planning/AI-LESSON-MCP-DECISIONS.md`.
+
+### Phase 23: AI Lesson Studio & MCP Interoperability
+
+**Requirements:** AI-LESSON-01..08
+
+**Success criteria:**
+
+1. In-app AI and remote MCP create the same validated `LessonDraft` through one authoring service.
+2. Drafts contain grammar source, explanations, writing zones, and quiz data; raw Excalidraw JSON and coordinates are rejected.
+3. Teacher review, edit, publish, and discard are explicit; no model can write to a live room.
+4. ChatGPT custom-app and Claude remote MCP discovery/OAuth/tool calls work against the hosted Streamable HTTP endpoint where the client plan supports custom writes.
+5. Long generations resume by idempotent parts; failures leave a resumable draft and never partially publish.
+6. Student projections omit answer keys, grants, prompts, and other teacher-only metadata.
+7. Connections UI shows client, scopes, last use, and immediate revoke.
+8. Origin validation, PKCE, rate limits, sanitized errors, no-store responses, hashed tokens, and audit events pass security tests.
+
+**Plans:** TBD — run `/gsd:plan-phase 23` when implementation begins.
 
 ## Deferred: v2.0
 
@@ -354,7 +503,11 @@ See REQUIREMENTS.md `## v2 Requirements` for IDs.
 ## Progress
 
 **Execution Order:**
-1 → 2 → 3 → 4 → 5 → 6 → P0 acceptance gate → 7 → 8 → 9 → 10 → **v1.0 exit gate** → 11 → 12 → 13 → 14 → 15
+1 → 2 → 3 → 4 → 5 → 6 → **P0 gate** → 7 → 8 → 9 → 10 → **P1 gate** → 11 → 12 → 13 → 14 → 15 → 16 → **v1.0 exit gate** → 17 → 18 → 19 → 20 → 21 → **v1.1/v1.2 complete** → 23
+
+Phase 12 (AI authoring) depends only on mermaid, not on the v1.1 block primitive, so it does
+not wait for phase 16. Phase 13 (quiz core) depends on phase 11 for board-anchored questions
+and on phase 10 for the moderation screen applied to student display names.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -368,9 +521,18 @@ See REQUIREMENTS.md `## v2 Requirements` for IDs.
 | 8. Export, History & Reconnect UX | 1/1 | Implementation complete; UAT pending | 2026-09-05 |
 | 9. Hardening | 1/1 | Code/load complete; deploy/hardware pending | 2026-09-05 |
 | 10. Optional External Integrations | 1/1 | Disabled-safe adapter complete; provider pending | 2026-09-05 |
+| — | — | *P1 gate* | — |
+| 11. Prepared Boards & Template Library | 0/? | Not started (v1.0) | — |
+| 12. AI Board Authoring | 0/? | Not started (v1.0) | — |
+| 13. Quiz Core | 0/? | Not started (v1.0) | — |
+| 14. Leaderboards & Locked Quiz Mode | 0/? | Not started (v1.0) | — |
+| 15. Quiz Persistence & History | 0/? | Not started (v1.0) | — |
+| 16. MCP Lesson Authoring | 0/? | Not started (v1.0) | — |
 | — | — | *v1.0 exit gate* | — |
-| 11. Block Transport & Primitive | 0/? | Queued (v1.1) | — |
-| 12. First Grammars | 0/? | Queued (v1.1) | — |
-| 13. Teaching Mechanics | 0/? | Queued (v1.1) | — |
-| 14. CS Grammars | 0/? | Queued (v1.1) | — |
-| 15. AI/ML Grammars | 0/? | Queued (v1.1) | — |
+| 17. Block Transport & Primitive | 1/1 | Complete | 2026-09-05 |
+| 18. First Grammars | 1/1 | Complete | 2026-09-05 |
+| 19. Teaching Mechanics | 1/1 | Complete | 2026-09-05 |
+| 20. CS Grammars | 1/1 | Complete | 2026-09-05 |
+| 21. AI/ML Grammars | 1/1 | Complete | 2026-09-05 |
+| 22. Course Grammars | 1/1 | Complete | 2026-09-05 |
+| 23. AI Lesson Studio & MCP Interoperability | 0/? | Planned | — |

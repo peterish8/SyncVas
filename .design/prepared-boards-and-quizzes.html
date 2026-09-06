@@ -1,0 +1,540 @@
+<title>Prepared Boards and Live Quizzes</title>
+
+<style>
+  :root {
+    --paper:#f7f6f3; --surface:#ffffff; --surface-2:#eeede9;
+    --inset:#171717; --inset-ink:#e8e7e0;
+    --ink:#171717; --ink-mid:#45443f; --ink-muted:#6f6d66;
+    --border:#dddcd7; --border-2:#c9c7c0;
+    --lime:#d7f500; --lime-deep:#4c5a00; --lime-soft:#f4fcb8;
+    --coral:#f47b68; --coral-soft:#fff1ed; --coral-ink:#8a3021;
+    --green:#39a954; --green-soft:#e8f5e9; --green-ink:#1d5a2c;
+    --apricot:#f6c96d; --apricot-soft:#fff6e3; --apricot-ink:#6d5a1f;
+    --sky:#b9d9f5; --sky-soft:#eef6fd; --sky-ink:#1f4f77;
+    --mono: ui-monospace,"Cascadia Code","Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --measure: 68ch;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:#181917; --surface:#232421; --surface-2:#2c2d29;
+      --inset:#121311; --inset-ink:#e8e7e0;
+      --ink:#f3f2eb; --ink-mid:#d3d1c8; --ink-muted:#a3a199;
+      --border:#41423d; --border-2:#5b5c55;
+      --lime:#d7f500; --lime-deep:#dae870; --lime-soft:#2e3410;
+      --coral:#f47b68; --coral-soft:#3a1f1a; --coral-ink:#f6a898;
+      --green:#5cc078; --green-soft:#16301d; --green-ink:#8ad9a0;
+      --apricot:#f6c96d; --apricot-soft:#332a12; --apricot-ink:#f0d79c;
+      --sky:#7fb4de; --sky-soft:#16283a; --sky-ink:#a8cfec;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#181917; --surface:#232421; --surface-2:#2c2d29;
+    --inset:#121311; --inset-ink:#e8e7e0;
+    --ink:#f3f2eb; --ink-mid:#d3d1c8; --ink-muted:#a3a199;
+    --border:#41423d; --border-2:#5b5c55;
+    --lime:#d7f500; --lime-deep:#dae870; --lime-soft:#2e3410;
+    --coral:#f47b68; --coral-soft:#3a1f1a; --coral-ink:#f6a898;
+    --green:#5cc078; --green-soft:#16301d; --green-ink:#8ad9a0;
+    --apricot:#f6c96d; --apricot-soft:#332a12; --apricot-ink:#f0d79c;
+    --sky:#7fb4de; --sky-soft:#16283a; --sky-ink:#a8cfec;
+  }
+
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans);
+         font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:78rem; margin:0 auto; padding:clamp(2rem,5vw,4.5rem) clamp(1.1rem,4vw,3rem) 6rem; }
+  .col { max-width:var(--measure); }
+
+  h1,h2,h3 { text-wrap:balance; margin:0; letter-spacing:-0.025em; line-height:1.15; }
+  h1 { font-size:clamp(2.1rem,5.2vw,3.4rem); font-weight:640; }
+  h2 { font-size:clamp(1.4rem,2.6vw,1.85rem); font-weight:620; }
+  h3 { font-size:1.02rem; font-weight:620; letter-spacing:-0.01em; }
+  p { margin:0; }
+  .eyebrow { font-family:var(--mono); font-size:0.7rem; text-transform:uppercase;
+             letter-spacing:0.16em; color:var(--ink-muted); margin:0; }
+  .lede { font-size:clamp(1.05rem,1.7vw,1.22rem); line-height:1.55; color:var(--ink-mid); }
+  .muted { color:var(--ink-muted); }
+  .small { font-size:0.875rem; }
+  a { color:inherit; text-underline-offset:3px; text-decoration-color:var(--border-2); }
+  a:hover { text-decoration-color:var(--ink-muted); }
+  a:focus-visible, summary:focus-visible { outline:2px solid var(--lime-deep); outline-offset:3px; border-radius:3px; }
+
+  code { font-family:var(--mono); font-size:0.88em; }
+  p code, li code, td code, .entry-out code {
+    background:var(--surface-2); border:1px solid var(--border);
+    border-radius:4px; padding:0.08em 0.36em; }
+
+  .stack { display:flex; flex-direction:column; gap:1rem; }
+  .stack-s { display:flex; flex-direction:column; gap:0.55rem; }
+  section { display:flex; flex-direction:column; gap:1.6rem; }
+  .sections { display:flex; flex-direction:column; gap:clamp(3.2rem,6vw,5rem); }
+
+  .masthead { display:flex; flex-direction:column; gap:1.5rem; padding-bottom:2.4rem; }
+  .rule-lime { height:5px; background:var(--lime); border-radius:99px; width:4.5rem; }
+  .meta-row { display:flex; flex-wrap:wrap; gap:0.5rem 1.5rem; font-family:var(--mono);
+              font-size:0.74rem; text-transform:uppercase; letter-spacing:0.1em;
+              color:var(--ink-muted); border-top:1px solid var(--border); padding-top:1rem; }
+
+  .note { border:1px solid var(--border); border-left:4px solid var(--ink-muted);
+          background:var(--surface); border-radius:0 10px 10px 0; padding:1rem 1.15rem;
+          display:flex; flex-direction:column; gap:0.5rem; }
+  .note-warn { border-left-color:var(--coral); background:var(--coral-soft); }
+  .note-warn .note-tag { color:var(--coral-ink); }
+  .note-key { border-left-color:var(--lime); background:var(--lime-soft); }
+  .note-key .note-tag { color:var(--lime-deep); }
+  .note-info { border-left-color:var(--sky); background:var(--sky-soft); }
+  .note-info .note-tag { color:var(--sky-ink); }
+  .note-tag { font-family:var(--mono); font-size:0.7rem; font-weight:700;
+              text-transform:uppercase; letter-spacing:0.13em; }
+
+  pre { margin:0; background:var(--inset); color:var(--inset-ink); border-radius:9px;
+        padding:0.85rem 1rem; overflow-x:auto; font-family:var(--mono);
+        font-size:0.795rem; line-height:1.62; tab-size:2; }
+  pre .c { color:#8f8d84; } pre .k { color:var(--lime); } pre .s { color:#f6c96d; }
+  pre .r { color:#f47b68; }
+
+  .wave { display:flex; flex-wrap:wrap; align-items:baseline; gap:0.5rem 1rem;
+          border-bottom:2px solid var(--ink); padding-bottom:0.7rem; }
+  .wave-tag { font-family:var(--mono); font-size:0.72rem; font-weight:700;
+              text-transform:uppercase; letter-spacing:0.13em;
+              background:var(--lime); color:#171717; padding:0.22rem 0.55rem; border-radius:5px; }
+
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,21rem),1fr)); gap:1rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+          padding:1.15rem; display:flex; flex-direction:column; gap:0.75rem; }
+  .card-bad { border-color:var(--coral); background:var(--coral-soft); }
+  .card-good { border-color:var(--green); background:var(--green-soft); }
+  .card-title { font-family:var(--mono); font-size:0.8rem; font-weight:700;
+                text-transform:uppercase; letter-spacing:0.1em; }
+  .card-bad .card-title { color:var(--coral-ink); }
+  .card-good .card-title { color:var(--green-ink); }
+
+  .scroller { overflow-x:auto; border:1px solid var(--border); border-radius:11px; background:var(--surface); }
+  table { border-collapse:collapse; width:100%; min-width:42rem; font-size:0.875rem; }
+  th,td { text-align:left; padding:0.68rem 0.9rem; border-bottom:1px solid var(--border); vertical-align:top; }
+  th { font-family:var(--mono); font-size:0.68rem; font-weight:700; text-transform:uppercase;
+       letter-spacing:0.1em; color:var(--ink-muted); background:var(--surface-2); white-space:nowrap; }
+  tbody tr:last-child td { border-bottom:none; }
+  td.num { font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  .chips { display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center; }
+  .chip { font-family:var(--mono); font-size:0.66rem; font-weight:700; text-transform:uppercase;
+          letter-spacing:0.09em; padding:0.2rem 0.5rem; border-radius:5px;
+          border:1px solid var(--border-2); color:var(--ink-muted); white-space:nowrap; }
+  .chip-reuse { background:var(--green-soft); border-color:transparent; color:var(--green-ink); }
+  .chip-new { background:var(--apricot-soft); border-color:transparent; color:var(--apricot-ink); }
+
+  ul.plain { margin:0; padding-left:1.15rem; display:flex; flex-direction:column; gap:0.45rem; }
+  ul.plain li { line-height:1.55; }
+
+  details { background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:0.9rem 1.15rem; }
+  summary { cursor:pointer; font-weight:600; font-size:0.95rem; }
+  details[open] summary { margin-bottom:0.8rem; }
+
+  .diagram { background:var(--surface); border:1px solid var(--border);
+             border-radius:12px; padding:1.2rem; overflow-x:auto; }
+  .mermaid { background:transparent !important; }
+
+  /* board mock */
+  .board-mock { position:relative; background:var(--surface); border:1px solid var(--border-2);
+                border-radius:10px; height:11rem; overflow:hidden; }
+  .board-mock .ink-line { position:absolute; height:3px; background:var(--ink-muted);
+                          opacity:.35; border-radius:99px; }
+  .qcard { position:absolute; border-radius:8px; padding:.45rem .6rem;
+           font-family:var(--mono); font-size:.62rem; font-weight:700; letter-spacing:.06em;
+           border:2px dashed var(--border-2); color:var(--ink-muted); background:var(--surface-2); }
+  .qcard-live { border-style:solid; border-color:var(--lime-deep);
+                background:var(--lime-soft); color:var(--lime-deep); }
+  .free-zone { position:absolute; border:2px dashed var(--sky); border-radius:8px;
+               background:color-mix(in srgb, var(--sky) 12%, transparent);
+               font-family:var(--mono); font-size:.58rem; letter-spacing:.08em;
+               color:var(--sky-ink); display:grid; place-items:center; text-transform:uppercase; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="rule-lime"></div>
+    <p class="eyebrow">Syncvas · architecture proposal</p>
+    <h1>Prepared boards and live quizzes</h1>
+    <p class="lede col">Two features that look like new subsystems and are mostly reuse. The prepared board enters the room through the board path you already have; the quiz runs entirely on Convex reactivity and adds no socket events at all.</p>
+    <div class="meta-row">
+      <span>3 new tables</span>
+      <span>0 new socket events</span>
+      <span>1 locked decision to revisit</span>
+      <span>Sept 2026</span>
+    </div>
+  </header>
+
+  <div class="sections">
+
+    <!-- ================= THESIS ================= -->
+    <section>
+      <div class="stack-s col">
+        <p class="eyebrow">The shape of it</p>
+        <h2>Where each feature actually lives</h2>
+        <p class="muted">You already made the load-bearing decision — Convex is durable state, Socket.IO is the ephemeral pen path. Both features fall cleanly on one side or the other, which is why neither needs new transport.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <span class="chips"><span class="chip chip-reuse">Rides board:update</span></span>
+          <h3>Prepared board → Socket path</h3>
+          <p class="small">A prepared scene is just a scene. The teacher's client loads it, pushes it into Excalidraw, and publishes it as board version 1. Students receive it through the <em>same</em> <code>board:current</code> bootstrap that already serves late joiners.</p>
+          <p class="small muted"><strong>Student-side code changes: none.</strong></p>
+        </div>
+        <div class="card">
+          <span class="chips"><span class="chip chip-reuse">Rides Convex reactivity</span></span>
+          <h3>Quiz → Convex path</h3>
+          <p class="small">A reveal happens a handful of times per class, must survive a refresh, and must never expose the answer. That is durable low-frequency state — exactly what Convex is for, and exactly what Socket.IO is wrong for.</p>
+          <p class="small muted"><strong>New socket events: none.</strong></p>
+        </div>
+      </div>
+
+      <div class="note note-key col">
+        <span class="note-tag">The one rule that keeps this cheap</span>
+        <p>Anything that happens more than a few times per second goes over the socket. Anything that must be durable, authorized, or secret goes through Convex. Neither of these features has a high-frequency component, so neither one earns new transport. That is the whole resource story.</p>
+      </div>
+    </section>
+
+    <!-- ================= FEATURE 1 ================= -->
+    <section>
+      <div class="wave">
+        <span class="wave-tag">Feature 1</span>
+        <h2>Prepared boards</h2>
+        <span class="small muted">Author at home, walk in, start teaching.</span>
+      </div>
+
+      <div class="col stack">
+        <p>A teacher builds a board the night before — diagrams drawn, questions placed, whitespace left where they intend to write live. In the morning they pick it from a library and the class opens on it.</p>
+      </div>
+
+      <h3>Data model — one new table</h3>
+      <pre><span class="c">// A template is owned by the teacher and reusable across sections.</span>
+<span class="c">// It is NOT a boardSnapshot: snapshots belong to one session,</span>
+<span class="c">// templates outlive sessions and get used many times.</span>
+boardTemplates: defineTable({
+  teacherId:   v.id(<span class="s">"users"</span>),
+  title:       v.string(),
+  subject:     v.optional(v.string()),
+  sceneJson:   v.string(),        <span class="c">// same validator as boardSnapshots</span>
+  blockSources: v.optional(v.string()), <span class="c">// grammar sources, for re-render</span>
+  origin:      v.union(v.literal(<span class="s">"authored"</span>), v.literal(<span class="s">"ai-assisted"</span>)),
+  createdAt:   v.number(),
+  updatedAt:   v.number(),
+}).index(<span class="s">"by_teacher_updated"</span>, [<span class="s">"teacherId"</span>, <span class="s">"updatedAt"</span>])</pre>
+
+      <div class="note note-info col">
+        <span class="note-tag">Why not reuse boardSnapshots</span>
+        <p>Tempting, because the scene shape and the 900&nbsp;KB validator are identical. But <code>boardSnapshots.sessionId</code> is required and a template has no session — you would end up with a nullable foreign key and a <code>kind</code> union doing two unrelated jobs. That makes <code>boardSnapshots</code> shallower, not the codebase smaller. Separate table; <em>share the validator</em>, not the row.</p>
+      </div>
+
+      <h3>How the prepared scene enters the room</h3>
+      <div class="diagram">
+        <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant T as Teacher client
+    participant C as Convex
+    participant R as Socket relay
+    participant S as Student
+    T->>C: sessions.startFromTemplate(templateId)
+    C-->>T: session live + template sceneJson
+    T->>T: Excalidraw.updateScene(prepared elements)
+    T->>R: board:update  v1  (existing event)
+    Note over R: hot state seeded, unchanged code
+    S->>R: board:request-current (existing)
+    R-->>S: board:current  v1
+        </pre>
+      </div>
+      <p class="small muted col">Every arrow after step 2 already exists and already has tests. The feature is steps 1 and 2.</p>
+
+      <h3>AI assistance — the important call</h3>
+
+      <div class="grid2">
+        <div class="card card-bad">
+          <span class="card-title">✗ AI emits Excalidraw JSON</span>
+          <p class="small">Megabytes of element objects with coordinates, seeds and version counters. Unreviewable, expensive per call, and a malformed field produces a corrupt scene that fails somewhere deep in the canvas.</p>
+        </div>
+        <div class="card card-good">
+          <span class="card-title">✓ AI emits grammar source</span>
+          <p class="small">A few hundred bytes of <code>/mermaid</code>, <code>/ds</code>, <code>/code</code>. Cheap, diffable, human-reviewable. Malformed output fails at your compiler with a clear message and never reaches the board. The teacher edits intent, not output.</p>
+        </div>
+      </div>
+
+      <pre><span class="c">// What the model returns — small, checkable, and yours to compile.</span>
+{ <span class="s">"blocks"</span>: [
+    { <span class="s">"grammar"</span>: <span class="s">"mermaid"</span>, <span class="s">"source"</span>: <span class="s">"flowchart LR\n A[Input]-->B[Hidden]-->C[Output]"</span> },
+    { <span class="s">"grammar"</span>: <span class="s">"math"</span>,    <span class="s">"source"</span>: <span class="s">"\\sigma(x)=\\frac{1}{1+e^{-x}}"</span> },
+    { <span class="s">"grammar"</span>: <span class="s">"quiz"</span>,    <span class="s">"source"</span>: <span class="s">"Q: Which activation saturates?\n* sigmoid\n- relu"</span> }
+  ],
+  <span class="s">"writingZones"</span>: 2 }
+<span class="c">// Note what is absent: no x, no y, no width. Coordinates are never the model's job.</span></pre>
+
+      <div class="note note-key col">
+        <span class="note-tag">Layout is ours, not the model's</span>
+        <p>The model produces content and a count of writing zones. A deterministic layout function places the compiled blocks on a grid and reserves the requested whitespace by construction. Language models are bad at spatial arithmetic and good at content; asking for coordinates gets you overlapping boxes and no free space. Asking for content and doing the geometry yourself gets you a usable board every time.</p>
+      </div>
+
+      <h3>What "free space to write" looks like</h3>
+      <div class="diagram">
+        <div class="board-mock" role="img" aria-label="A prepared board: two compiled diagram blocks at top left and right, a reserved writing zone across the middle, and a locked quiz card bottom right.">
+          <div class="qcard" style="left:5%; top:9%; width:26%;">DIAGRAM · compiled</div>
+          <div class="qcard" style="right:5%; top:9%; width:26%;">EQUATION · compiled</div>
+          <div class="free-zone" style="left:5%; top:40%; width:62%; height:30%;">reserved for live writing</div>
+          <div class="qcard qcard-live" style="right:5%; bottom:12%; width:24%;">Q3 · locked</div>
+          <div class="ink-line" style="left:8%; top:52%; width:34%;"></div>
+          <div class="ink-line" style="left:8%; top:60%; width:22%;"></div>
+        </div>
+      </div>
+      <p class="small muted col">The reserved zone holds no elements, so the teacher's stylus lands on empty canvas exactly where they planned. The locked card bottom-right is a quiz anchor, covered next.</p>
+    </section>
+
+    <!-- ================= FEATURE 2 ================= -->
+    <section>
+      <div class="wave">
+        <span class="wave-tag">Feature 2</span>
+        <h2>Live quizzes</h2>
+        <span class="small muted">Two presentations, one data model, one answer path.</span>
+      </div>
+
+      <div class="col stack">
+        <p>You described two experiences: blurred question cards on the board that students roam to find, and a locked full-screen final quiz. Modelling those as two subsystems would be a mistake — they are the same questions, the same answers, the same scoring, and the same leaderboard. Only the presentation differs, so presentation is a field.</p>
+      </div>
+
+      <pre>quizQuestions: defineTable({
+  sessionId:    v.id(<span class="s">"sessions"</span>),
+  order:        v.number(),
+  kind:         v.union(v.literal(<span class="s">"mcq"</span>), v.literal(<span class="s">"truefalse"</span>)),
+  presentation: v.union(v.literal(<span class="s">"board"</span>), v.literal(<span class="s">"fullscreen"</span>)), <span class="c">// ← the only difference</span>
+  prompt:       v.string(),
+  options:      v.array(v.string()),
+  correctIndex: v.number(),        <span class="r">// NEVER leaves the server</span>
+  status:       v.union(v.literal(<span class="s">"hidden"</span>), v.literal(<span class="s">"revealed"</span>), v.literal(<span class="s">"closed"</span>)),
+  anchorX:      v.optional(v.number()),  <span class="c">// board mode: where the card sits</span>
+  anchorY:      v.optional(v.number()),
+  revealedAt:   v.optional(v.number()),
+}).index(<span class="s">"by_session_order"</span>, [<span class="s">"sessionId"</span>, <span class="s">"order"</span>])</pre>
+
+      <h3>The security model — get this wrong and the quiz is pointless</h3>
+
+      <div class="grid2">
+        <div class="card card-bad">
+          <span class="card-title">✗ Blur it on the board</span>
+          <p class="small">Put the question and options into the scene, render them with a CSS blur, unblur on reveal. The scene is broadcast to every student, so the answer is already sitting in their browser. Any student opens devtools and reads it. Any student saves the scene.</p>
+          <p class="small"><strong>A visual blur is not a security boundary.</strong></p>
+        </div>
+        <div class="card card-good">
+          <span class="card-title">✓ Withhold it on the server</span>
+          <p class="small">The board carries only an anchor card — a placeholder element whose <code>customData</code> holds a question id and nothing else. Prompt and options are delivered by a Convex query that returns them only when <code>status !== "hidden"</code>. <code>correctIndex</code> is never in any student-facing projection at all.</p>
+          <p class="small"><strong>Grading happens inside the mutation.</strong></p>
+        </div>
+      </div>
+
+      <pre><span class="c">// The student-facing projection. correctIndex is not in the return type,</span>
+<span class="c">// so it cannot leak by accident later.</span>
+<span class="k">export const</span> listForStudent = query({
+  args: { sessionId: v.id(<span class="s">"sessions"</span>) },
+  handler: <span class="k">async</span> (ctx, args) =&gt; {
+    <span class="k">const</span> rows = <span class="k">await</span> ctx.db.query(<span class="s">"quizQuestions"</span>)
+      .withIndex(<span class="s">"by_session_order"</span>, q =&gt; q.eq(<span class="s">"sessionId"</span>, args.sessionId))
+      .collect();
+    <span class="k">return</span> rows.map((q) =&gt; q.status === <span class="s">"hidden"</span>
+      ? { questionId: q._id, order: q.order, status: q.status }        <span class="c">// anchor only</span>
+      : { questionId: q._id, order: q.order, status: q.status,
+          kind: q.kind, prompt: q.prompt, options: q.options });       <span class="c">// no answer key</span>
+  },
+});</pre>
+
+      <h3>Reveal flow, board mode</h3>
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TD
+    A["Teacher clicks Reveal Q3"] --> B["Convex: revealQuestion mutation<br/>status hidden → revealed"]
+    B --> C["Student panel re-renders<br/>via existing reactive query"]
+    B --> D["Teacher client compiles prompt<br/>into elements at anchor"]
+    D --> E["board:update — existing event"]
+    E --> F["Students see the question<br/>appear on the board"]
+    C --> G["Student roams canvas, finds answer,<br/>taps an option in the dock"]
+    G --> H["Convex: submitAnswer<br/>graded server-side"]
+    H --> I["Score patched O(1)<br/>leaderboard is an indexed read"]
+        </pre>
+      </div>
+
+      <p class="small muted col">The teacher's client publishes the revealed question as a normal board update, so the teacher-only-writer rule holds and students need no new write capability. Students answer in a docked panel, not by clicking the canvas — no scene-to-screen coordinate maths, and it works identically in both presentation modes.</p>
+
+      <h3>One answer per student, and a leaderboard that does not melt</h3>
+
+      <pre>quizAnswers: defineTable({
+  sessionId: v.id(<span class="s">"sessions"</span>), questionId: v.id(<span class="s">"quizQuestions"</span>),
+  participantId: v.id(<span class="s">"participants"</span>),
+  choiceIndex: v.number(), isCorrect: v.boolean(),
+  answeredAt: v.number(), elapsedMs: v.number(),
+}).index(<span class="s">"by_question_participant"</span>, [<span class="s">"questionId"</span>, <span class="s">"participantId"</span>])
+  <span class="c">// ↑ exactly the doubtVotes by_doubt_participant pattern you already ship</span>
+
+quizScores: defineTable({
+  sessionId: v.id(<span class="s">"sessions"</span>), participantId: v.id(<span class="s">"participants"</span>),
+  displayName: v.string(),
+  points: v.number(), correctCount: v.number(), totalMs: v.number(),
+}).index(<span class="s">"by_session_points"</span>, [<span class="s">"sessionId"</span>, <span class="s">"points"</span>])</pre>
+
+      <h3>Scoring — speed is part of the score</h3>
+      <pre>elapsed = clamp(answeredAt - revealedAt, 0, windowMs)
+points  = isCorrect ? round(BASE * (1 - <span class="k">0.5</span> * elapsed / windowMs)) : 0
+
+<span class="c">// BASE 1000, windowMs 30_000.  Correct at t=0 → 1000.  At the window edge → 500.</span>
+<span class="c">// Wrong → 0 regardless of speed.  Rank by points, ties broken by total time.</span></pre>
+      <p class="small col">The 50% floor is doing real work. Pure speed scoring rewards fast guessing, which is the wrong incentive in a classroom; correctness-only scoring makes the race pointless. Scaling down to a floor rewards the student who knows it cold while keeping a considered correct answer clearly worth more than a wrong fast one.</p>
+
+      <div class="note note-info col">
+        <span class="note-tag">Why a scores table instead of deriving it</span>
+        <p>Deriving the leaderboard means scanning every answer on every read. With 100 students each holding a live leaderboard subscription, one answer invalidates 100 recomputes over a growing table. Patching one score row inside the same mutation that writes the answer is O(1), and the leaderboard becomes an indexed descending read of the top N. This is the one place denormalisation earns its keep, because both writes happen in the same transaction and cannot drift.</p>
+      </div>
+
+      <h3>Locked mode</h3>
+      <pre><span class="c">// One field on sessions drives the whole locked experience.</span>
+roomMode: v.union(v.literal(<span class="s">"board"</span>), v.literal(<span class="s">"quiz-locked"</span>))</pre>
+      <p class="small col">The student shell already subscribes to session state. When <code>roomMode</code> flips, it swaps the board for the full-screen quiz and stops rendering canvas controls. Because it lives in Convex rather than in a socket event, a student who refreshes mid-quiz lands back in the quiz instead of on a stale board — which is the actual failure you would hit with an ephemeral signal.</p>
+    </section>
+
+    <!-- ================= CONFLICT ================= -->
+    <section>
+      <div class="stack-s col">
+        <p class="eyebrow">Decision to revisit</p>
+        <h2>A leaderboard conflicts with a locked decision</h2>
+      </div>
+
+      <div class="note note-warn col">
+        <span class="note-tag">Contradicts PROJECT.md</span>
+        <p><em>"Anonymous student join; doubts anonymous in teacher UI; pseudonymous participant IDs backend"</em> is marked ✓&nbsp;Locked. A leaderboard of SHA-256 hashes is neither fun nor legible, so this feature cannot ship without reopening that decision.</p>
+      </div>
+
+      <div class="col stack">
+        <p>The resolution keeps the part that matters. Anonymity exists in this product to protect shy students asking questions — that is what the doubts loop is for, and it should not change. A quiz leaderboard is a different social contract, and students opting into a game is not the same as students being identified when they admit confusion.</p>
+        <p><strong>Decided:</strong> students type their own display name at join. It passes through <code>deterministicScreen()</code> in <code>convex/moderation.ts</code> before storage, so the profanity and noise rules you already wrote cover it. The name is used on quiz leaderboards and nowhere else — the doubts queue still shows nothing.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>What stays true</h3>
+          <ul class="plain small">
+            <li>No accounts, no login, no email</li>
+            <li><strong>Doubts carry no name</strong> — the protection that mattered is intact</li>
+            <li>Backend identity is still the pseudonymous participant hash</li>
+            <li>Names are screened by code you already wrote</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>What changes</h3>
+          <ul class="plain small">
+            <li><code>participants</code> gains a <code>displayName</code> field</li>
+            <li>Join gains a name field; PROJECT.md gains a scoped amendment, not a reversal</li>
+            <li>Leaderboards show names, never hashes</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note note-warn col">
+        <span class="note-tag">Accepted risk</span>
+        <p>Self-chosen names allow impersonation — a student can type a classmate's name, or the teacher's. Screening catches profanity, not identity theft. Give the teacher a way to rename or remove a participant from the leaderboard, and treat that as the mitigation rather than trying to prevent it at entry.</p>
+      </div>
+    </section>
+
+    <!-- ================= RESOURCE LEDGER ================= -->
+    <section>
+      <div class="stack-s col">
+        <p class="eyebrow">Resource ledger</p>
+        <h2>What this deliberately does not build</h2>
+        <p class="muted">The cheap version and the correct version are the same version here, which is the good case.</p>
+      </div>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Tempting</th><th>Instead</th><th>Saves</th></tr></thead>
+          <tbody>
+            <tr><td>Socket events for quiz reveal &amp; lock</td><td>Convex reactive fields</td><td>A whole protocol surface, plus the refresh bug an ephemeral signal would cause</td></tr>
+            <tr><td>New import/broadcast path for prepared boards</td><td>Publish as board version 1 on <code>board:update</code></td><td>All student-side work; reuses tested bootstrap</td></tr>
+            <tr><td>AI returns Excalidraw element JSON</td><td>AI returns grammar source</td><td>Roughly 100× the payload per generation, and every malformed-scene failure mode</td></tr>
+            <tr><td>AI decides layout coordinates</td><td>Deterministic layout function</td><td>Overlapping boxes; guarantees the writing zones actually stay empty</td></tr>
+            <tr><td>Leaderboard derived from all answers</td><td>O(1) score patch + indexed read</td><td>100 full-table recomputes per submitted answer</td></tr>
+            <tr><td>Separate board-quiz and final-quiz subsystems</td><td>One model, <code>presentation</code> field</td><td>Half the tables, functions, and UI; mixing both in one class becomes free</td></tr>
+            <tr><td>Blur answers client-side</td><td>Withhold server-side</td><td>Not a saving — the blur version simply does not work</td></tr>
+            <tr><td>New table for templates inside <code>boardSnapshots</code></td><td>Own table, shared validator</td><td>Keeps <code>boardSnapshots</code> doing one job</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="small muted col"><strong>Totals:</strong> 3 new tables (<code>boardTemplates</code>, <code>quizQuestions</code>, <code>quizAnswers</code>, <code>quizScores</code> — 4 if you count scores separately), 2 new fields on existing tables, 0 new socket events, 0 changes to the relay.</p>
+    </section>
+
+    <!-- ================= SCOPE ================= -->
+    <section>
+      <div class="stack-s col">
+        <p class="eyebrow">Scope</p>
+        <h2>Where this belongs</h2>
+      </div>
+
+      <div class="col stack">
+        <p>You asked for v1. Here is the honest arithmetic, and then a way to get you what you actually want.</p>
+        <p>v1.0 is P0+P1 across ten phases, and phases 3–10 are still implementation-complete-but-UAT-pending. Adding a quiz subsystem and a template library to it does not accelerate anything; it moves the finish line while the current one is unverified.</p>
+        <p>But there is a real dependency that settles the question. <strong>AI-assisted prepared boards need the block grammars from v1.1</strong> — that is what makes AI generation cheap, checkable and safe. Prepared boards and grammars are not two milestones competing for position; they are one feature and its enabling layer.</p>
+      </div>
+
+      <div class="note note-key col">
+        <span class="note-tag">Decided — these are v1.0</span>
+        <p>They ship in v1.0 as phases 11–15, gated behind P1 (phases 7–9) being verified. Board Grammars moves to phases 16–20.</p>
+        <p>That creates one dependency to resolve: AI authoring was going to lean on the block grammars. Scoping v1.0's AI output to <strong>mermaid only</strong> breaks that link — <code>mermaid-to-excalidraw</code> is a standalone MIT library that needs no block primitive — so phase 12 does not wait on phase 16. Richer grammars in generated boards arrive with v1.1.</p>
+      </div>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Phase</th><th>Delivers</th><th>Depends on</th><th>Milestone</th></tr></thead>
+          <tbody>
+            <tr><td class="num">11</td><td><strong>Prepared boards &amp; template library</strong></td><td>P1 verified</td><td>v1.0</td></tr>
+            <tr><td class="num">12</td><td><strong>AI board authoring</strong> (adapter-backed, mermaid output)</td><td>11</td><td>v1.0</td></tr>
+            <tr><td class="num">13</td><td><strong>Quiz core</strong> — names, model, reveal, answer, grading</td><td>10, 11</td><td>v1.0</td></tr>
+            <tr><td class="num">14</td><td><strong>Leaderboards &amp; locked mode</strong></td><td>13</td><td>v1.0</td></tr>
+            <tr><td class="num">15</td><td><strong>Quiz persistence &amp; history</strong></td><td>14, 8</td><td>v1.0</td></tr>
+            <tr><td class="num">16</td><td>Block transport &amp; primitive</td><td>v1.0 complete</td><td>v1.1</td></tr>
+            <tr><td class="num">17</td><td>First grammars — mermaid, code, math</td><td>16</td><td>v1.1</td></tr>
+            <tr><td class="num">18</td><td>Teaching mechanics — reveal, snippets, pointer</td><td>17</td><td>v1.1</td></tr>
+            <tr><td class="num">19</td><td>CS grammars — ds, calltree, plot, dp</td><td>18</td><td>v1.1</td></tr>
+            <tr><td class="num">20</td><td>AI/ML grammars — tensor, nn</td><td>19</td><td>v1.1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small muted col">Quiz core lands at 13 rather than last, because it is the feature most likely to change how the room behaves and that pressure belongs on the architecture early, not after nine more phases are stacked on top.</p>
+    </section>
+
+    <!-- ================= OPEN QUESTIONS ================= -->
+    <section>
+      <div class="stack-s col">
+        <p class="eyebrow">Before planning</p>
+        <h2>Open questions</h2>
+      </div>
+      <div class="stack col">
+        <details>
+          <summary>Does a late joiner get to answer already-revealed questions?</summary>
+          <p class="small" style="margin-top:.6rem">Affects fairness and the leaderboard. Recommendation: no — a question closes for scoring when the teacher closes it, and a student who joins after reveal can see it but scores zero. Simple, explainable to a room, and needs no retroactive grading.</p>
+        </details>
+        <details open>
+          <summary>Is speed part of the score? — <strong>Decided: yes, directly</strong></summary>
+          <p class="small" style="margin-top:.6rem">Speed scales the points for a correct answer, it is not just a tiebreak. Correct answers run from 1000 down to a floor of 500 across the question window; wrong answers score zero however fast they arrive. The floor is what stops it becoming a guessing race. See the scoring formula above.</p>
+        </details>
+        <details>
+          <summary>Can a teacher reuse a quiz across sections, like a board template?</summary>
+          <p class="small" style="margin-top:.6rem">Very likely yes, and it is the same shape as <code>boardTemplates</code>. Worth deciding before phase 16 so questions are authored into a reusable set from the start rather than migrated later.</p>
+        </details>
+        <details>
+          <summary>What happens to an in-flight quiz when the class ends?</summary>
+          <p class="small" style="margin-top:.6rem"><code>sessions.end</code> already refuses to finalise without a snapshot. Quiz state should close open questions and freeze the leaderboard into the ended session, so history shows both the final board and the final scores.</p>
+        </details>
+      </div>
+    </section>
+
+  </div>
+</div>

@@ -33,6 +33,11 @@ Teacher stroke → students see it live; students can explore independently or f
 - [ ] Deterministic moderation + AI triage via adapter
 - [ ] End-class persistence, image/PDF export, history, reconnect UX
 - [ ] Permission tests + 100-viewer load smoke + deploy hardening
+- [ ] Prepared boards — teacher authors a board ahead of class, saves it as a reusable template, and starts a session on it
+- [ ] AI board authoring — adapter-backed draft boards with diagrams and questions, leaving reserved space to write live
+- [ ] Live quizzes — MCQ and true/false, board-anchored reveal or locked full-screen, one answer per student, graded server-side
+- [ ] Leaderboards — speed-weighted scoring, student-viewable any time, teacher-projectable, frozen into class history
+- [ ] MCP lesson authoring — Claude and ChatGPT write lessons and quizzes into a teacher's account as reviewable drafts
 
 ### Out of Scope
 
@@ -49,7 +54,9 @@ Teacher stroke → students see it live; students can explore independently or f
 
 ## Next Milestone: v1.1 Board Grammars
 
-**Status:** queued. Not started, and not to be started until the v1.0 exit criteria hold.
+**Status:** phases 17–21. Compilers, block panel and transport were implemented locally on
+2026-09-05 ahead of schedule — see `.planning/PHASE-V1.1-V1.2-COMPLETION.md`. Deployment and
+XP-Pen acceptance remain environment gates, and v1.0 phases 11–16 are still the priority.
 
 **Goal:** A teacher types a short text block and the class sees compiled board content — a
 themed code card, a diagram, a tensor pipeline — instead of watching shapes get drawn by hand.
@@ -102,7 +109,7 @@ four, because the artifact is authored once and correct every time.
 | Teacher-only board editor | Core product rule | ✓ Locked |
 | Student pan/zoom local only | Must never move teacher or other students | ✓ Locked |
 | Follow mirrors teacher viewport only while enabled; manual pan/zoom exits follow locally | Product rule | ✓ Locked |
-| Anonymous student join; doubts anonymous in teacher UI; pseudonymous participant IDs backend | Abuse controls without identity exposure | ✓ Locked |
+| ~~Anonymous student join~~ → **Students supply a display name at join**; doubts still anonymous in teacher UI; pseudonymous participant IDs backend | Amended 2026-09-05 for quiz leaderboards, which need legible identity. The protection that mattered is retained: the doubts queue never shows a name, so a shy student asking a question is still unidentified. Names are screened by `deterministicScreen()` before storage. | ✓ Locked (amended) |
 | Do not persist raw HF pen pointer events to Convex | Cost/perf | ✓ Locked |
 | Cheap spam/rate-limit before AI; AI only via adapter | Cost + portability | ✓ Locked |
 | Auth abstracted (Convex Auth still evolving) | Avoid lock-in | ✓ Locked |
@@ -114,6 +121,16 @@ four, because the artifact is authored once and correct every time.
 | Only `/code` and `/math` render to images; everything else is native shapes | Image blocks cost transport bytes and lose annotatability; only typographic fidelity justifies them | ✓ Locked |
 | Six fixed code themes, not Shiki's full catalogue | Fine-grained Shiki bundle is ~200 KB vs 1.2 MB gzipped for the full bundle | ✓ Locked |
 | v1.1 is gated on the v1.0 exit criteria | v1.0 phases 3–10 are implementation-complete but UAT-pending; grammars are the fastest way to never finish the classroom that has to work first | ✓ Locked |
+| Prepared boards, AI authoring, quizzes, leaderboards and MCP authoring are v1.0 (phases 11–16); Board Grammars moves to phases 17–21 | User decision 2026-09-05 — these are first-release features, not a follow-on | ✓ Locked |
+| Quiz reveal, lock and scoring run on Convex, not Socket.IO | Low-frequency, must be durable and authorized; a student refreshing mid-quiz must land back in the quiz, which an ephemeral signal cannot guarantee. Adds zero socket events. | ✓ Locked |
+| Hidden question content is withheld server-side, never blurred client-side | The scene is broadcast to every student, so anything in it is already in their browser. A visual blur is not a security boundary. `correctIndex` never appears in a student-facing projection. | ✓ Locked |
+| A prepared board enters the room as board version 1 over the existing `board:update` | Students receive it through the `board:current` bootstrap that already serves late joiners — no student-side change, no new transport | ✓ Locked |
+| AI emits checkable source (mermaid + structured question data), never Excalidraw element JSON; layout is a deterministic function, not the model's job | ~100× smaller payloads, reviewable output, malformed generations fail at the compiler instead of corrupting a scene; models are bad at spatial arithmetic and would not reliably leave the writing zones empty | ✓ Locked |
+| Quiz score is speed-weighted, not correctness-only | User decision 2026-09-05. Correct answers scale from full points down to a floor as time elapses; incorrect scores zero. The floor keeps slow-but-right worth attempting, so the incentive is not to guess fast. | ✓ Locked |
+| SyncVas exposes a remote Streamable HTTP MCP endpoint for external AI clients; the same authoring core serves both the in-app adapter and MCP | Request handling is stateless while durable drafts, grants, idempotency, and audit records live in Convex. Handle client lifecycle messages for interoperability, advertise the deployed SDK version, and test ChatGPT custom-app plus Claude connector flows rather than assuming a historical profile. | ✓ Locked |
+| No MCP tool touches a live classroom or reads student data | An external model can be prompt-injected by anything in the teacher's chat. Blast radius must be a bad draft the teacher declines, never content appearing in front of students. No doubts, participants, answers or leaderboards are reachable. | ✓ Locked |
+| MCP identity comes from the OAuth grant, never from a tool argument | A tool argument naming a teacher is an attack, not a parameter. Mirrors the reference implementation at `C:\Users\nithy\nk`, which resolves workspace from the grant and never from input. | ✓ Locked |
+| Quiz score is patched per answer, not derived from all answers on read | O(1) write vs. re-scanning a growing answer table for every one of ~100 live leaderboard subscribers; both writes happen in one transaction so they cannot drift | ✓ Locked |
 
 ## Evolution
 
@@ -126,3 +143,8 @@ After each phase transition:
 
 ---
 *Last updated: 2026-09-05 — v1.1 Board Grammars defined and queued behind the v1.0 exit gate*
+
+
+### AI lesson authoring decision (2026-09-05)
+
+The in-app AI and ChatGPT/Claude MCP paths create the same `LessonDraft`: ordered grammar sources, explanations, writing zones, and quiz data. The teacher reviews and explicitly publishes a prepared template. No model can write to a live room or read student data. See `.planning/AI-LESSON-MCP-DECISIONS.md` and `docs/38_AI_LESSON_STUDIO_AND_MCP.md`.
