@@ -26,5 +26,6 @@ Student identities, raw doubt text, and invasive engagement analytics are intent
 
 - Light theme uses a neutral gray dashboard canvas, white surfaces, black type, soft borders, and lime/coral/green/apricot accents as small signals.
 - Dark theme uses a near-black dashboard canvas and near-black cards; accents remain restrained so text and classroom controls stay readable.
+- The workspace navigation uses a solid accent active state with a dark label and numbered icon markers so it remains legible in both themes. The page heading is the dashboard title; the header does not repeat it as a pill.
 - The contained color field is limited to the canvas spotlight card. It never covers the drawable Excalidraw region.
 - All radii, spacing, color roles, and shadows resolve through `app/styles/tokens.css` and `app/styles/components.css`.

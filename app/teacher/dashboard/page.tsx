@@ -48,7 +48,6 @@ export default function TeacherDashboardPage() {
 
   return (
     <AppShell
-      title="Teacher dashboard"
       trailing={
         <div className="flex items-center gap-2">
           <Link href="/teacher" className="syncvas-btn syncvas-btn-accent syncvas-btn-sm">
@@ -73,15 +72,15 @@ export default function TeacherDashboardPage() {
             </div>
             <nav className="mt-8 grid gap-1" aria-label="Dashboard sections">
               <Link href="/teacher/dashboard" className="syncvas-dashboard-nav-link syncvas-dashboard-nav-link-active">
-                <span aria-hidden="true">◈</span>
+                <span className="syncvas-dashboard-nav-icon" aria-hidden="true">01</span>
                 Overview
               </Link>
               <Link href="/teacher" className="syncvas-dashboard-nav-link">
-                <span aria-hidden="true">＋</span>
+                <span className="syncvas-dashboard-nav-icon" aria-hidden="true">＋</span>
                 Live classroom
               </Link>
               <Link href="/teacher/history" className="syncvas-dashboard-nav-link">
-                <span aria-hidden="true">◷</span>
+                <span className="syncvas-dashboard-nav-icon" aria-hidden="true">02</span>
                 Canvas history
               </Link>
             </nav>

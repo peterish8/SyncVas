@@ -17,3 +17,5 @@ Teachers need a fast way to understand what they have taught and which canvases 
 ## Design boundary
 
 The dashboard follows the supplied reference direction: light mode is gray and white with black type and small soft color accents; dark mode is near-black with the same semantic accents. The atmosphere remains inside the dashboard spotlight card and does not enter the whiteboard surface.
+
+Navigation uses a solid accent active state with a dark label and compact icon markers for reliable contrast in both themes. The dashboard heading is the page title, so the global header does not duplicate it in a pill.
