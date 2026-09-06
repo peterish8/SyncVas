@@ -21,7 +21,7 @@ Deliver SyncVas v1.0 on the existing brownfield scaffold, then ship the complete
  - [~] **Phase 9: Hardening** - Code/load checks complete; lint, deploy, and XP-Pen verification pending
  - [~] **Phase 10: Optional External Integrations** - Generic optional adapter complete; live provider smoke pending credentials
  - [x] **Phase 11: Prepared Boards & Template Library** - Teacher authors a board ahead of class and starts a session on it
- - [ ] **Phase 12: AI Board Authoring** - Adapter-backed generation of diagrams and questions with reserved writing space
+ - [x] **Phase 12: AI Board Authoring** - Adapter-backed generation of diagrams and questions with reserved writing space
  - [ ] **Phase 13: Quiz Core** - Named participants, question model, reveal, answer, server-side grading
  - [ ] **Phase 14: Leaderboards & Locked Quiz Mode** - Speed-weighted scoring, leaderboards, full-screen locked quiz
  - [ ] **Phase 15: Quiz Persistence & History** - Quiz results freeze into the ended session alongside the final board

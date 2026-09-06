@@ -20,6 +20,7 @@ import {
   TeacherSessionControls,
   type TeacherSessionState,
 } from "@/components/room/teacher-session-controls";
+import { BoardDraftPanel } from "@/components/ai/board-draft-panel";
 import { SaveTemplateButton } from "@/components/templates/save-template-button";
 import { TemplateLibrary, type PreparedBoard } from "@/components/templates/template-library";
 import { AppShell } from "@/components/ui/app-shell";
@@ -155,6 +156,10 @@ export default function TeacherPage() {
 
                 <div className="mt-6 border-t border-border pt-4 text-left">
                   <TemplateLibrary onOpen={setPreparedBoard} />
+                </div>
+
+                <div className="mt-6 border-t border-border pt-4 text-left">
+                  <BoardDraftPanel />
                 </div>
 
                 <div className="mt-4 text-center">

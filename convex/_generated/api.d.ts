@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as authBootstrap from "../authBootstrap.js";
 import type * as board from "../board.js";
 import type * as boardAssets from "../boardAssets.js";
+import type * as boardAuthoring from "../boardAuthoring.js";
 import type * as boardSnapshots from "../boardSnapshots.js";
 import type * as boardTemplates from "../boardTemplates.js";
 import type * as doubts from "../doubts.js";
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   authBootstrap: typeof authBootstrap;
   board: typeof board;
   boardAssets: typeof boardAssets;
+  boardAuthoring: typeof boardAuthoring;
   boardSnapshots: typeof boardSnapshots;
   boardTemplates: typeof boardTemplates;
   doubts: typeof doubts;
