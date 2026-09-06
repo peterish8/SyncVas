@@ -8,3 +8,4 @@ socket-server/dist/
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 
+.gstack/

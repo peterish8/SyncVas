@@ -1,0 +1,26 @@
+{
+  "artboards": [
+    { "file": "Landing.dc.html", "x": 0, "y": 0, "w": 1440, "h": 2000, "title": "Landing" },
+    { "file": "Main.dc.html", "x": 1560, "y": 0, "w": 1440, "h": 900, "title": "Teacher board — live class" },
+    { "file": "Join.dc.html", "x": 1560, "y": 1040, "w": 390, "h": 844, "title": "Join (phone)" },
+    { "file": "StudentBoard.dc.html", "x": 2030, "y": 1040, "w": 390, "h": 844, "title": "Student board (phone)" },
+    { "file": "System.dc.html", "x": 3120, "y": 0, "w": 1200, "h": 2000, "title": "Interface system" }
+  ],
+  "annotations": [
+    {
+      "id": "direction",
+      "x": 0,
+      "y": -186,
+      "w": 460,
+      "text": "Direction: Sarvam-style gradient as atmosphere, Vyra-style tactility as objects.\n\nThe gradient is the ground plane on marketing and entry surfaces. Everything you press is a solid raised object sitting on top of it — hairline border, inset top highlight, a 2px bottom edge, and a real 2px drop on press."
+    },
+    {
+      "id": "board-rule",
+      "x": 1560,
+      "y": -186,
+      "w": 480,
+      "text": "The one hard rule: the gradient stops at the board edge.\n\nInside a live class the field appears only as a 3px line under the header and as the room-code card in the rail. The canvas stays warm paper at full contrast — it has to survive a projector and 45 minutes of reading."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

@@ -30,6 +30,9 @@ import type { DataModel } from "./dataModel.js";
 type Env = {
   readonly CONVEX_CLOUD_URL: string;
   readonly CONVEX_SITE_URL: string;
+  readonly ALLOW_DEV_TEACHER: string | undefined;
+  readonly SOCKET_INTERNAL_SECRET: string | undefined;
+  readonly SOCKET_SERVICE_INTERNAL_URL: string | undefined;
 };
 
 /**

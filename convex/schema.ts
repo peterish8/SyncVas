@@ -1,3 +1,10 @@
+/**
+ * @phase 1 (FOUND-02 done)
+ * Full v1 tables/indexes. Later phases add functions, not raw HF pen streams.
+ * Phase 3: sessions/participants mutations. Phase 5: doubts/votes.
+ * Phase 6: boardSnapshots finalization. Phase 7: moderationEvents.
+ * Phase 8: exports job rows.
+ */
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 

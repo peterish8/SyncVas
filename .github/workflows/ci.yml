@@ -1,0 +1,20 @@
+# @scaffold true
+# @phase 9 — Hardening CI
+# IMPLEMENT: run npm run verify on PR; optional socket-server job; no secrets in logs.
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm --prefix socket-server ci
+      - run: npm run verify

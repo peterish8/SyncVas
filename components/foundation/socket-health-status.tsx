@@ -56,7 +56,7 @@ export function SocketHealthStatus() {
 
   return (
     <div className="flex items-start gap-3">
-      <span aria-hidden="true" className={`mt-1.5 size-2.5 shrink-0 rounded-full ${ready ? "bg-[#39A954]" : "bg-[#D7F500] ring-1 ring-black/15"}`} />
+      <span aria-hidden="true" className={`mt-1.5 size-2.5 shrink-0 rounded-full ${ready ? "bg-green" : "bg-lime ring-1 ring-ink/15"}`} />
       <div>
         <p className="font-medium">Socket service</p>
         <p className="mt-1 text-sm leading-6 text-ink-muted">{copy}</p>

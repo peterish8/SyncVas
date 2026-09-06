@@ -28,6 +28,8 @@ Teacher stroke → students see it live; students can explore independently or f
 | Do not persist raw high-frequency pen pointer events to Convex | Cost/perf | Locked |
 | Cheap spam/rate-limit before AI; never hardcode LLM provider — use AI adapter | Cost + portability | Locked |
 | Auth abstracted (Convex Auth still evolving) | Avoid lock-in | Locked |
+| Warm-neutral, canvas-first UI system | Tablet reference guides atmosphere only; solid surfaces and contained color fields never compete with handwriting | Locked |
+| Tactile UI System for control physics | Raised press / inset inputs / fast timing on Syncvas tokens; palette stays Syncvas, not foreign brand colors | Locked |
 
 ## v1 requirements (P0 + P1)
 
@@ -76,9 +78,10 @@ Map to GSD phases for **v1.0 only**. Scaffold (Next.js, Convex health, socket-se
 3. Room lifecycle (auth, create/end, code/QR, anonymous join)
 4. Follow teacher (viewport stream + local follow state)
 5. Doubts loop without AI (submit, rate limit, queue, answer/dismiss, same-doubt vote)
-6. Moderation (deterministic filters + AI adapter triage)
-7. Persistence/export/history (finalize, image/PDF export, history page, reconnect UX polish)
-8. Hardening (permission tests, 100-viewer load, deploy, XP-Pen prod verify)
+6. P0 final-board persistence (end-class finalize and restore evidence before the P1 gate)
+7. Moderation (deterministic filters + AI adapter triage)
+8. Export/history/reconnect UX (image/PDF export, history page, reconnect/error-state polish)
+9. Hardening (permission tests, 100-viewer load, deploy, XP-Pen prod verify)
 
 ## Non-goals for v1
 
@@ -93,7 +96,9 @@ Multi-teacher editing, student drawing, audio/video conferencing, LMS replacemen
 - Never log raw doubt text or secret tokens in production telemetry
 - Permission-boundary tests before polish
 - Initial load target: 100 students / room
+- Canvas-first, warm-neutral UI system from docs/05 and docs/06; contained color fields are never a substitute for accessible state/copy
+- Tactile control physics (`.planning/VISUAL_DIRECTION.md`): raised buttons, inset inputs, no hover scale / glass / continuous pulse
 
 ## Existing codebase note
 
-Brownfield: Next.js App Router app, Convex health query, socket-server package, shared protocol stubs, vitest already present. Do not treat as greenfield empty repo.
+Milestone 0 is verified: Next.js App Router app, local Convex health query, socket-server ping, shared protocol foundation, lint/typecheck/tests/build, and browser smoke all passed. Do not treat the repository as greenfield, and do not treat Foundation Close-out as complete until the schema and expanded protocol requirements pass.

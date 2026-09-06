@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --canvas:#f7f6f3; --surface:#ffffff; --ink:#171717; --ink-muted:#66645f;
+      --border:#dddcd7; --border-strong:#c9c7c0; --lime:#d7f500; --lime-soft:#f4fcb8;
+      --coral:#f47b68; --green:#39a954;
+      --ease-press:cubic-bezier(.2,0,0,1);
+      --mono:"Geist Mono", ui-monospace, Menlo, monospace;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:"Geist", ui-sans-serif, system-ui, "Segoe UI", sans-serif; color:var(--ink); background:var(--canvas); -webkit-font-smoothing:antialiased; }
+    a { color:inherit; text-decoration:none; }
+    a:hover { color:#3f3d38; }
+    p, h1, h2, h3 { margin:0; }
+    .mono { font-family:var(--mono); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:9px; width:100%; min-height:48px; padding:0 16px; border:1px solid transparent; border-radius:12px; font-family:inherit; font-size:14px; font-weight:600; letter-spacing:-.015em; cursor:pointer; transition:transform 110ms var(--ease-press), box-shadow 110ms ease; }
+    .btn-primary { background:#171717; color:#fff; border-color:#2e2e2e; box-shadow:inset 0 1px 0 rgb(255 255 255 / .2), inset 0 -1px 0 rgb(0 0 0 / .35), 0 2px 0 #0c0c0c, 0 5px 12px rgb(23 23 23 / .2); }
+    .btn-secondary { background:linear-gradient(180deg,#fff 0%,#fdfdfc 100%); color:#171717; border-color:var(--border); box-shadow:inset 0 1px 0 #fff, inset 0 -1px 0 rgb(23 23 23 / .06), 0 2px 0 var(--border-strong), 0 4px 10px rgb(23 23 23 / .08); }
+    .btn-ghost { background:transparent; border-color:transparent; color:var(--ink-muted); box-shadow:none; font-weight:500; }
+    .field { background:
+        radial-gradient(circle at 18% 88%, rgb(57 169 84 / 42%), transparent 44%),
+        radial-gradient(circle at 78% 82%, rgb(244 123 104 / 38%), transparent 42%),
+        radial-gradient(circle at 58% 12%, rgb(215 245 0 / 48%), transparent 42%),
+        linear-gradient(140deg, rgb(246 201 109 / 46%), rgb(185 217 245 / 40%)); }
+    /* Inset control: recessed, focus adds a lime ring rather than motion */
+    .cell { flex:0 0 auto; display:grid; width:44px; height:58px; place-items:center; border:1px solid var(--border); border-radius:10px; background:var(--canvas); box-shadow:inset 0 2px 4px rgb(23 23 23 / .07), 0 1px 0 rgb(255 255 255 / .85); font-family:var(--mono); font-size:23px; font-weight:600; color:var(--ink); }
+    .cell-focus { border-color:#dae870; box-shadow:0 0 0 3px rgb(215 245 0 / .3), inset 0 2px 4px rgb(23 23 23 / .07); }
+  </style>
+</helmet>
+
+<div style="width:390px; height:844px; overflow:hidden; display:flex; flex-direction:column; background:#f7f6f3;">
+
+  <!-- Real status bar renders here; nothing painted. -->
+  <div style="height:44px; flex:0 0 auto;"></div>
+
+  <header style="display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 18px; flex:0 0 auto;">
+    <span style="font-size:16px; font-weight:800; letter-spacing:-.075em;">Syncvas</span>
+    <span style="display:grid; width:44px; height:44px; place-items:center; margin-right:-10px; color:#66645f;">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M16 11.4A6.6 6.6 0 0 1 8.6 4a6.6 6.6 0 1 0 7.4 7.4Z"/></svg>
+    </span>
+  </header>
+
+  <div style="flex:1 1 auto; min-height:0; padding:14px 18px 0;">
+
+    <!-- The atmosphere sits behind the card; the card and its controls stay solid -->
+    <div class="field" style="padding:1px; border-radius:24px; border:1px solid rgb(255 255 255 / .6); box-shadow:0 10px 28px rgb(23 23 23 / .1);">
+      <div style="padding:24px 20px 22px; border-radius:23px; background:rgb(255 255 255 / .95);">
+
+        <p class="mono" style="font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#6f6d66;">Student entry</p>
+        <h1 style="margin-top:9px; font-size:32px; font-weight:600; letter-spacing:-.06em; line-height:1;">Join class</h1>
+        <p style="margin-top:12px; color:#5f5d57; font-size:14px; line-height:1.5;">Type the six characters your teacher has on the board.</p>
+
+        <div style="display:flex; gap:8px; margin-top:22px;">
+          <span class="cell">Q</span>
+          <span class="cell">N</span>
+          <span class="cell">4</span>
+          <span class="cell">7</span>
+          <span class="cell cell-focus">X</span>
+          <span class="cell" style="color:#c3c1b9;"></span>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;">
+          <p class="mono" style="font-size:11px; color:#6f6d66;">Letters and digits 2&ndash;9</p>
+          <p class="mono" style="font-size:11px; color:#6f6d66;">5 / 6</p>
+        </div>
+
+        <div style="margin-top:18px;"><span class="btn btn-primary">Join class</span></div>
+
+        <div style="display:flex; align-items:flex-start; gap:9px; margin-top:16px; padding:11px 12px; border:1px solid #dfe6c8; border-radius:12px; background:#fbfde9;">
+          <span style="flex:0 0 auto; display:grid; width:18px; height:18px; place-items:center; margin-top:1px; border:1px solid #b7cc2e; border-radius:50%; background:#f4fcb8; color:#4c5a00; font-size:10px; font-weight:700;">&#10003;</span>
+          <p style="font-size:12px; line-height:1.45; color:#4f5b1e;">No account, no email, no name. The teacher sees a headcount, never who you are.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:12px; margin:22px 2px 18px;">
+      <span style="flex:1; height:1px; background:#dddcd7;"></span>
+      <span class="mono" style="font-size:10px; letter-spacing:.12em; color:#6f6d66;">OR</span>
+      <span style="flex:1; height:1px; background:#dddcd7;"></span>
+    </div>
+
+    <span class="btn btn-secondary">
+      <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="6" height="6" rx="1.4"/><rect x="11" y="3" width="6" height="6" rx="1.4"/><rect x="3" y="11" width="6" height="6" rx="1.4"/><path d="M11 11h2.5v2.5H11zM14.5 14.5H17V17h-2.5z" stroke-linejoin="round"/></svg>
+      Scan the teacher&#39;s QR
+    </span>
+
+    <div style="margin-top:16px; padding:13px 14px; border:1px dashed #dddcd7; border-radius:13px; background:#ffffff;">
+      <p style="font-size:12.5px; line-height:1.5; color:#66645f;"><b style="color:#171717; font-weight:600;">Class not open yet?</b> The code only works while the teacher has the room live. Try again when they start.</p>
+    </div>
+  </div>
+
+  <div style="flex:0 0 auto; padding:10px 18px 26px;">
+    <span class="btn btn-ghost">Back home</span>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

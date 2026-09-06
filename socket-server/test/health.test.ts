@@ -4,7 +4,7 @@ import { io as createClient } from "socket.io-client";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { SOCKET_EVENTS, SOCKET_PROTOCOL_VERSION, foundationPongSchema } from "../../shared/protocol/socket.js";
-import { createSocketServer } from "../src/server.js";
+import { createSocketServer, mintRoomToken } from "../src/server.js";
 
 describe("foundation socket service", () => {
   const cleanups: Array<() => Promise<void>> = [];
@@ -45,6 +45,39 @@ describe("foundation socket service", () => {
     expect(foundationPongSchema.parse(pong)).toMatchObject({
       v: SOCKET_PROTOCOL_VERSION,
       sentAt: 42,
+    });
+  });
+
+  it("allows only one teacher writer per room", async () => {
+    const previousSecret = process.env.SOCKET_INTERNAL_SECRET;
+    process.env.SOCKET_INTERNAL_SECRET = "x".repeat(32);
+    const httpServer = createServer();
+    const io = createSocketServer(httpServer, ["http://localhost:3000"]);
+    await new Promise<void>((resolve) => httpServer.listen(0, "127.0.0.1", resolve));
+    const address = httpServer.address();
+    if (!address || typeof address === "string") throw new Error("Expected a TCP address.");
+    cleanups.push(() => new Promise((resolve) => {
+      io.close(() => httpServer.close(() => {
+        if (previousSecret === undefined) delete process.env.SOCKET_INTERNAL_SECRET;
+        else process.env.SOCKET_INTERNAL_SECRET = previousSecret;
+        resolve();
+      }));
+    }));
+
+    const token = (subjectId: string) => mintRoomToken("session_writer", "teacher", subjectId, "x".repeat(32));
+    const first = createClient(`http://127.0.0.1:${address.port}`, { transports: ["websocket"], auth: { token: token("teacher-a") } });
+    await new Promise<void>((resolve, reject) => { first.once("connect", () => resolve()); first.once("connect_error", reject); });
+    const second = createClient(`http://127.0.0.1:${address.port}`, { transports: ["websocket"], auth: { token: token("teacher-b") } });
+    cleanups.push(async () => { first.disconnect(); second.disconnect(); });
+
+    await new Promise<void>((resolve, reject) => {
+      second.once(SOCKET_EVENTS.protocolError, (payload) => {
+        try {
+          expect(payload).toMatchObject({ code: "WRITER_ALREADY_ACTIVE", sessionId: "session_writer" });
+          resolve();
+        } catch (error) { reject(error); }
+      });
+      second.once("connect_error", reject);
     });
   });
 });

@@ -9,31 +9,43 @@ docs:
     precedence: 1
   - path: docs/07_TRD.md
     type: SPEC
+    precedence: 12
+  - path: docs/05_UI_UX_SPEC.md
+    type: SPEC
     precedence: 10
-  - path: docs/09_CONVEX_DATA_MODEL.md
+  - path: docs/06_DESIGN_SYSTEM.md
     type: SPEC
     precedence: 11
-  - path: docs/11_REALTIME_SOCKET_PROTOCOL.md
-    type: SPEC
-    precedence: 12
-  - path: docs/12_EXCALIDRAW_INTEGRATION.md
+  - path: docs/09_CONVEX_DATA_MODEL.md
     type: SPEC
     precedence: 13
-  - path: docs/13_AUTH_ANONYMITY_PERMISSIONS.md
+  - path: docs/11_REALTIME_SOCKET_PROTOCOL.md
     type: SPEC
     precedence: 14
-  - path: docs/14_DOUBT_MODERATION_AI.md
+  - path: docs/12_EXCALIDRAW_INTEGRATION.md
     type: SPEC
     precedence: 15
-  - path: docs/16_PDF_EXPORT_AND_ARCHIVE.md
+  - path: docs/13_AUTH_ANONYMITY_PERMISSIONS.md
     type: SPEC
     precedence: 16
-  - path: docs/25_ACCEPTANCE_TESTS.md
+  - path: docs/14_DOUBT_MODERATION_AI.md
     type: SPEC
     precedence: 17
-  - path: docs/17_SECURITY_PRIVACY_ABUSE.md
+  - path: docs/16_PDF_EXPORT_AND_ARCHIVE.md
     type: SPEC
     precedence: 18
+  - path: docs/18_TESTING_QA.md
+    type: SPEC
+    precedence: 19
+  - path: docs/25_ACCEPTANCE_TESTS.md
+    type: SPEC
+    precedence: 20
+  - path: docs/17_SECURITY_PRIVACY_ABUSE.md
+    type: SPEC
+    precedence: 21
+  - path: docs/28_API_AND_EVENT_ERROR_CODES.md
+    type: SPEC
+    precedence: 22
   - path: docs/02_PRD.md
     type: PRD
     precedence: 20
@@ -52,6 +64,9 @@ docs:
   - path: docs/30_IMPLEMENTATION_BACKLOG.md
     type: DOC
     precedence: 33
-  - path: AGENTS.md
+  - path: docs/24_CODING_STANDARDS.md
     type: DOC
     precedence: 34
+  - path: AGENTS.md
+    type: DOC
+    precedence: 35

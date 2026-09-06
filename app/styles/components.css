@@ -1,0 +1,775 @@
+/**
+ * Syncvas product components (`syncvas-*`).
+ *
+ * Every value here resolves from tokens.css. No literal hex, radius, or
+ * duration belongs in this file — if you need one, add it to the token layer.
+ *
+ * Physics: raised controls carry a hairline border, an inset top highlight, a
+ * solid bottom edge and one ambient shadow; pressing drops them by
+ * --press-travel and removes the edge. Inputs are recessed and never move.
+ */
+
+/* ---------------------------------------------------------------- surfaces */
+
+.syncvas-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: var(--highlight-top), var(--shadow-panel);
+}
+
+.syncvas-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--highlight-top), var(--sv-elev-1);
+}
+
+.syncvas-sunken {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface-sunken);
+}
+
+/* Contained atmosphere. Never over the board. */
+.syncvas-color-field {
+  background: var(--field-gradient);
+}
+
+.syncvas-divider {
+  height: 1px;
+  border: 0;
+  margin: 0;
+  background: var(--border);
+}
+
+/* ------------------------------------------------------------------ inputs */
+
+.syncvas-control {
+  min-height: var(--sv-control-md);
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  color: var(--ink);
+  padding: var(--sv-space-2) var(--sv-space-3);
+  font-family: inherit;
+  font-size: var(--sv-text-base);
+  box-shadow: inset 0 2px 4px rgb(23 23 23 / 0.07), 0 1px 0 rgb(255 255 255 / 0.85);
+  transition:
+    border-color var(--duration-hover) var(--ease-out),
+    box-shadow var(--duration-hover) var(--ease-out),
+    background-color var(--duration-hover) var(--ease-out);
+}
+
+.syncvas-control::placeholder {
+  color: var(--ink-subtle);
+}
+
+.syncvas-control:hover:not(:disabled):not(:focus) {
+  border-color: var(--border-strong);
+}
+
+.syncvas-control:focus,
+.syncvas-control:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: var(--focus-ring), inset 0 2px 4px rgb(23 23 23 / 0.07);
+}
+
+.syncvas-control[aria-invalid="true"] {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+}
+
+textarea.syncvas-control {
+  padding-top: var(--sv-space-3);
+  padding-bottom: var(--sv-space-3);
+  resize: none;
+}
+
+.syncvas-label {
+  display: block;
+  font-size: var(--sv-text-sm);
+  font-weight: var(--sv-weight-semibold);
+  letter-spacing: var(--sv-tracking-tight);
+  color: var(--ink);
+}
+
+.syncvas-hint {
+  font-size: var(--sv-text-xs);
+  line-height: var(--sv-leading-normal);
+  color: var(--ink-muted);
+}
+
+.syncvas-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--sv-text-2xs);
+  font-weight: var(--sv-weight-semibold);
+  letter-spacing: var(--sv-tracking-widest);
+  text-transform: uppercase;
+  color: var(--ink-subtle);
+}
+
+/* ----------------------------------------------------------------- buttons */
+
+.syncvas-btn {
+  /* Variant slots — every variant sets only these. */
+  --btn-bg: var(--surface);
+  --btn-fg: var(--ink);
+  --btn-border: var(--border);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sv-space-2);
+  min-height: var(--sv-control-md);
+  border-radius: var(--radius-control);
+  padding: 0 var(--sv-space-4);
+  font-family: inherit;
+  font-weight: var(--sv-weight-semibold);
+  font-size: var(--sv-text-sm);
+  letter-spacing: var(--sv-tracking-tight);
+  line-height: 1.25;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  transform: translateY(0);
+  box-shadow: var(--tactile-raised);
+  transition:
+    transform var(--duration-press) var(--ease-press),
+    box-shadow var(--duration-press) ease,
+    background-color var(--duration-hover) ease,
+    border-color var(--duration-hover) ease,
+    color var(--duration-hover) ease;
+}
+
+.syncvas-btn:active:not(:disabled) {
+  transform: translateY(var(--press-travel));
+  box-shadow: var(--tactile-pressed);
+}
+
+.syncvas-btn:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+.syncvas-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.syncvas-btn-sm {
+  min-height: var(--sv-control-sm);
+  padding: 0 var(--sv-space-3);
+  font-size: var(--sv-text-xs);
+  border-radius: var(--radius-icon);
+}
+
+.syncvas-btn-lg {
+  min-height: var(--sv-control-lg);
+  padding: 0 var(--sv-space-5);
+  font-size: var(--sv-text-base);
+}
+
+.syncvas-btn-block {
+  width: 100%;
+}
+
+.syncvas-btn-primary {
+  --btn-bg: var(--ink);
+  --btn-fg: var(--surface);
+  --btn-border: color-mix(in srgb, var(--ink) 88%, white);
+  --tactile-highlight: rgb(255 255 255 / 0.2);
+  --tactile-lowlight: rgb(0 0 0 / 0.35);
+  --tactile-edge: color-mix(in srgb, var(--ink) 60%, black);
+  --tactile-ambient: 0 5px 12px rgb(23 23 23 / 0.2);
+}
+
+.syncvas-btn-primary:hover:not(:disabled) {
+  --btn-bg: color-mix(in srgb, var(--ink) 90%, white);
+}
+
+.syncvas-btn-secondary {
+  --btn-bg: var(--surface);
+  --btn-border: var(--border);
+  --tactile-edge: var(--border-strong);
+}
+
+.syncvas-btn-secondary:hover:not(:disabled) {
+  --btn-bg: var(--surface-muted);
+  --btn-border: var(--border-strong);
+}
+
+.syncvas-btn-accent {
+  --btn-bg: var(--accent-soft);
+  --btn-border: var(--accent-border);
+  --tactile-edge: color-mix(in srgb, var(--accent) 45%, var(--border-strong));
+}
+
+.syncvas-btn-accent:hover:not(:disabled) {
+  --btn-bg: color-mix(in srgb, var(--accent) 40%, white);
+}
+
+.syncvas-btn-success {
+  --btn-bg: var(--success);
+  --btn-fg: #fff;
+  --btn-border: color-mix(in srgb, var(--success) 80%, black);
+  --tactile-highlight: rgb(255 255 255 / 0.28);
+  --tactile-lowlight: rgb(0 0 0 / 0.2);
+  --tactile-edge: color-mix(in srgb, var(--success) 55%, black);
+}
+
+.syncvas-btn-success:hover:not(:disabled) {
+  --btn-bg: color-mix(in srgb, var(--success) 88%, black);
+}
+
+.syncvas-btn-danger {
+  --btn-bg: var(--danger);
+  --btn-fg: #fff;
+  --btn-border: color-mix(in srgb, var(--danger) 80%, black);
+  --tactile-highlight: rgb(255 255 255 / 0.22);
+  --tactile-lowlight: rgb(0 0 0 / 0.25);
+  --tactile-edge: color-mix(in srgb, var(--danger) 55%, black);
+}
+
+.syncvas-btn-danger:hover:not(:disabled) {
+  --btn-bg: color-mix(in srgb, var(--danger) 88%, black);
+}
+
+/* Destructive but quiet: reads as danger only on approach. */
+.syncvas-btn-danger-quiet {
+  --btn-bg: var(--surface);
+  --btn-fg: var(--danger);
+  --btn-border: color-mix(in srgb, var(--danger) 28%, var(--border));
+  --tactile-edge: color-mix(in srgb, var(--danger) 22%, var(--border-strong));
+}
+
+.syncvas-btn-danger-quiet:hover:not(:disabled) {
+  --btn-bg: var(--danger-soft);
+  --btn-border: color-mix(in srgb, var(--danger) 45%, var(--border));
+}
+
+.syncvas-btn-ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--ink-muted);
+  --btn-border: transparent;
+  box-shadow: none;
+}
+
+.syncvas-btn-ghost:hover:not(:disabled) {
+  --btn-bg: var(--surface-muted);
+  --btn-fg: var(--ink);
+}
+
+.syncvas-btn-ghost:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+/* --------------------------------------------------------- icon + toggles */
+
+.syncvas-icon-btn {
+  display: grid;
+  place-items: center;
+  width: var(--sv-control-sm);
+  height: var(--sv-control-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-icon);
+  background: var(--surface);
+  color: var(--ink-muted);
+  box-shadow: var(--highlight-top), 0 1px 0 var(--border-strong);
+  cursor: pointer;
+  transition:
+    transform var(--duration-press) var(--ease-press),
+    background-color var(--duration-hover) ease,
+    border-color var(--duration-hover) ease,
+    color var(--duration-hover) ease;
+}
+
+.syncvas-icon-btn:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.syncvas-icon-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.syncvas-icon-btn:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+.syncvas-icon-btn-lg {
+  width: var(--sv-control-md);
+  height: var(--sv-control-md);
+  border-radius: var(--radius-control);
+}
+
+.syncvas-theme-toggle {
+  min-height: var(--sv-control-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sv-space-2);
+  padding: 0 var(--sv-space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-icon);
+  background: var(--surface);
+  color: var(--ink-muted);
+  box-shadow: var(--highlight-top), 0 1px 0 var(--border-strong);
+  font-family: inherit;
+  font-size: var(--sv-text-xs);
+  font-weight: var(--sv-weight-semibold);
+  cursor: pointer;
+  transition:
+    transform var(--duration-press) var(--ease-press),
+    box-shadow var(--duration-press) ease,
+    background-color var(--duration-hover) ease,
+    color var(--duration-hover) ease;
+}
+
+.syncvas-theme-toggle:hover {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.syncvas-theme-toggle:active {
+  transform: translateY(var(--press-travel));
+  box-shadow: var(--tactile-pressed);
+}
+
+.syncvas-theme-toggle:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+/* ------------------------------------------------------------------- chips */
+
+.syncvas-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sv-space-2);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  padding: var(--sv-space-1) var(--sv-space-3);
+  font-size: var(--sv-text-xs);
+  font-weight: var(--sv-weight-medium);
+  color: var(--ink-muted);
+  line-height: 1.4;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8);
+}
+
+.syncvas-pill-accent {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: var(--sv-weight-semibold);
+}
+
+.syncvas-pill-warning {
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+  background: var(--warning-soft);
+  color: var(--warning-ink);
+  font-weight: var(--sv-weight-semibold);
+}
+
+.syncvas-pill-danger {
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: var(--sv-weight-semibold);
+}
+
+.syncvas-live-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  border-radius: var(--radius-pill);
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent);
+}
+
+.syncvas-code {
+  font-family: var(--font-mono);
+  font-weight: var(--sv-weight-semibold);
+  letter-spacing: var(--sv-tracking-widest);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------- board + workspace */
+
+/* Syncvas status sits in a reserved lane beneath Excalidraw's native toolbar.
+   The wrapper is transparent to canvas gestures; only our explicit action
+   button can receive pointer input. */
+.syncvas-board-chrome {
+  pointer-events: none;
+  max-width: min(19rem, calc(100% - var(--sv-space-4)));
+}
+
+.syncvas-auth-mark,
+.syncvas-google-mark {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-icon);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: var(--sv-weight-bold);
+}
+
+.syncvas-auth-mark {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1rem;
+}
+
+.syncvas-google-mark {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  color: #4285f4;
+  font-family: Arial, sans-serif;
+  font-size: .85rem;
+}
+
+.syncvas-board-chrome .syncvas-icon-btn {
+  pointer-events: auto;
+}
+
+.syncvas-board-alert {
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border));
+  border-radius: var(--radius-control);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: var(--sv-text-xs);
+  font-weight: var(--sv-weight-semibold);
+  line-height: 1.35;
+  box-shadow: var(--highlight-top), var(--shadow-soft);
+}
+
+.syncvas-board-alert svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.syncvas-board-highlight {
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  color: var(--ink);
+  font-size: var(--sv-text-xs);
+  font-weight: var(--sv-weight-semibold);
+  line-height: 1.2;
+  box-shadow: var(--highlight-top), var(--shadow-soft);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+}
+
+.syncvas-highlight-dot {
+  width: .45rem;
+  height: .45rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* The board frame: same curve language as every other surface, but the paper
+   inside it never takes an accent, a gradient, or a tint. */
+.syncvas-board-frame {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--board-paper);
+  box-shadow: var(--highlight-top), var(--shadow-soft);
+}
+
+.syncvas-board-frame:fullscreen,
+.syncvas-board-frame:-webkit-full-screen {
+  border-radius: 0;
+  border: 0;
+  background: var(--board-paper);
+}
+
+/* Excalidraw paints its paper into a bitmap. Keep a local scrim as a visual
+   fallback so a theme switch repaints the paper immediately, even while the
+   native canvas is settling its next render. It only participates in dark
+   mode and never intercepts drawing input. */
+.syncvas-board-theme-scrim {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: none;
+  pointer-events: none;
+  background: var(--board-paper);
+  mix-blend-mode: multiply;
+}
+
+.syncvas-board-frame[data-board-theme="dark"] .syncvas-board-theme-scrim {
+  display: block;
+}
+
+.syncvas-board-frame .layer-ui__wrapper {
+  z-index: 2;
+}
+
+/* Expanded room actions stay compact enough for a laptop viewport while the
+   board remains visible behind them. */
+.syncvas-room-panel {
+  width: min(100%, 34rem);
+  max-height: min(26rem, calc(100svh - 7rem));
+  overflow: auto;
+  overscroll-behavior: contain;
+  box-shadow: var(--highlight-top), var(--shadow-float);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+}
+
+/* The live room is intentionally icon-first. A single tactile target keeps
+   the drawing surface clear; details expand only when the teacher asks for
+   them. */
+.syncvas-dock-collapsed {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--sv-control-lg);
+  height: var(--sv-control-lg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  color: var(--ink);
+  box-shadow: var(--highlight-top), var(--shadow-float);
+  backdrop-filter: blur(14px) saturate(125%);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+  cursor: pointer;
+  transition:
+    transform var(--duration-press) var(--ease-press),
+    background-color var(--duration-hover) ease,
+    border-color var(--duration-hover) ease,
+    box-shadow var(--duration-hover) ease;
+}
+
+.syncvas-dock-collapsed:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+  box-shadow: var(--highlight-top), var(--shadow-raised);
+}
+
+.syncvas-dock-collapsed:active {
+  transform: translateY(var(--press-travel));
+  box-shadow: var(--tactile-pressed);
+}
+
+.syncvas-dock-collapsed:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+.syncvas-dock-collapsed .syncvas-live-dot {
+  position: absolute;
+  top: var(--sv-space-2);
+  right: var(--sv-space-2);
+  width: 0.45rem;
+  height: 0.45rem;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .syncvas-room-panel {
+    max-height: min(24rem, calc(100svh - 5.5rem));
+  }
+}
+
+/* Floating dock that replaces the setup panel once a room is live. */
+.syncvas-dock {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--sv-space-2);
+  max-width: 100%;
+  padding: var(--sv-space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--highlight-top), var(--shadow-float);
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+}
+
+.syncvas-dock-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sv-space-2);
+  min-height: var(--sv-control-sm);
+  padding: 0 var(--sv-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--sv-text-xs);
+  font-weight: var(--sv-weight-semibold);
+  cursor: pointer;
+  transition:
+    transform var(--duration-press) var(--ease-press),
+    background-color var(--duration-hover) ease,
+    border-color var(--duration-hover) ease;
+}
+
+.syncvas-dock-trigger:hover {
+  background: var(--surface-muted);
+  border-color: var(--border);
+}
+
+.syncvas-dock-trigger:active {
+  transform: translateY(1px);
+}
+
+.syncvas-dock-trigger:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+.syncvas-dock-trigger[aria-expanded="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent-ink);
+}
+
+/* ---------------------------------------------------------------- overlays */
+
+.syncvas-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--sv-space-6);
+  background: rgb(12 12 11 / 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: syncvas-overlay-in var(--duration-modal) var(--ease-out) both;
+}
+
+.syncvas-modal {
+  position: relative;
+  width: min(100%, 40rem);
+  max-height: calc(100svh - var(--sv-space-10));
+  overflow: auto;
+  padding: var(--sv-space-7);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+  box-shadow: var(--shadow-overlay);
+  animation: syncvas-modal-in var(--duration-modal) var(--ease-out) both;
+}
+
+.syncvas-modal-close {
+  position: absolute;
+  top: var(--sv-space-4);
+  right: var(--sv-space-4);
+}
+
+@keyframes syncvas-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes syncvas-modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .syncvas-overlay,
+  .syncvas-modal {
+    animation: none;
+  }
+}
+
+/* QR presentation: sized to be scanned from the back of a room. */
+.syncvas-qr-stage {
+  display: grid;
+  justify-items: center;
+  gap: var(--sv-space-5);
+  text-align: center;
+}
+
+.syncvas-qr-frame {
+  display: grid;
+  place-items: center;
+  padding: var(--sv-space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: #ffffff; /* QR contrast is a scanning requirement, not a theme choice. */
+  box-shadow: var(--highlight-top), var(--shadow-raised);
+}
+
+.syncvas-qr-frame img {
+  display: block;
+  width: clamp(12rem, 34vmin, 22rem);
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.syncvas-qr-code {
+  font-family: var(--font-mono);
+  font-size: clamp(var(--sv-text-2xl), 7vmin, 4rem);
+  font-weight: var(--sv-weight-semibold);
+  letter-spacing: var(--sv-tracking-widest);
+  line-height: 1;
+  color: var(--ink);
+}
+
+.syncvas-qr-url {
+  font-size: var(--sv-text-base);
+  color: var(--ink-muted);
+  word-break: break-all;
+}
+
+/* Fullscreen QR presentation: the stage becomes the whole display. */
+.syncvas-qr-stage:fullscreen,
+.syncvas-qr-stage:-webkit-full-screen {
+  align-content: center;
+  width: 100vw;
+  height: 100vh;
+  padding: var(--sv-space-8);
+  background: var(--surface);
+}
+
+.syncvas-qr-stage:fullscreen .syncvas-qr-frame img {
+  width: clamp(16rem, 52vmin, 42rem);
+}
+
+.syncvas-qr-stage:fullscreen .syncvas-qr-code {
+  font-size: clamp(var(--sv-text-3xl), 10vmin, 6rem);
+}
+
+/* Screen-reader-only text that still receives focus when needed. */
+.syncvas-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

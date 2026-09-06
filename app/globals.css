@@ -1,70 +1,71 @@
+/**
+ * Syncvas stylesheet root.
+ *
+ * This file composes layers and maps tokens onto Tailwind utilities. It should
+ * stay short — put values in styles/tokens.css and rules in the layer they
+ * belong to:
+ *
+ *   styles/tokens.css      primitives -> semantic roles -> dark theme
+ *   styles/base.css        element defaults, focus, reduced motion
+ *   styles/components.css  syncvas-* product components
+ *   styles/landing.css     origin-* marketing surface
+ *
+ * Adding a fifth parallel system is what produced the dead `landing-*` and
+ * `landing-v2-*` blocks removed in this pass. Extend a layer instead.
+ */
+
 @import "tailwindcss";
 
-:root {
-  --canvas: #f7f6f3;
-  --surface: #ffffff;
-  --surface-muted: #eeede9;
-  --ink: #171717;
-  --ink-muted: #66645f;
-  --border: #dddcd7;
-  --lime: #d7f500;
-  --coral: #f47b68;
-  --apricot: #f6c96d;
-  --green: #39a954;
-  --sky: #b9d9f5;
-}
+@import "./styles/tokens.css";
+@import "./styles/base.css";
+@import "./styles/components.css";
+@import "./styles/landing.css";
 
+/**
+ * Tailwind utility surface. Every entry points at a SEMANTIC token, so
+ * `bg-surface`, `text-ink-muted` and `rounded-panel` move with the theme.
+ */
 @theme inline {
   --color-canvas: var(--canvas);
+  --color-paper: var(--paper);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
+  --color-surface-sunken: var(--surface-sunken);
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
   --color-border: var(--border);
-}
+  --color-border-strong: var(--border-strong);
 
-* {
-  box-sizing: border-box;
-}
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-border: var(--accent-border);
+  --color-accent-ink: var(--accent-ink);
+  --color-lime: var(--accent);
+  --color-coral: var(--info);
+  --color-apricot: var(--warning);
+  --color-green: var(--success);
+  --color-sky: var(--cool);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success-soft: var(--success-soft);
+  --color-warning-soft: var(--warning-soft);
 
-html {
-  background: var(--canvas);
-}
+  --radius-icon: var(--radius-icon);
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-panel: var(--radius-panel);
+  --radius-surface: var(--radius-surface);
+  --radius-feature: var(--radius-feature);
 
-body {
-  min-height: 100svh;
-  margin: 0;
-  background: var(--canvas);
-  color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
-  text-rendering: optimizeLegibility;
-}
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 
-::selection {
-  background: var(--lime);
-  color: var(--ink);
-}
+  --shadow-soft: var(--shadow-soft);
+  --shadow-panel: var(--shadow-panel);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-float: var(--shadow-float);
 
-:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 3px;
-}
-
-.syncvas-color-field {
-  background:
-    radial-gradient(circle at 22% 82%, rgb(57 169 84 / 82%), transparent 42%),
-    radial-gradient(circle at 72% 80%, rgb(244 123 104 / 82%), transparent 40%),
-    radial-gradient(circle at 58% 18%, rgb(215 245 0 / 72%), transparent 40%),
-    linear-gradient(135deg, rgb(246 201 109 / 76%), rgb(185 217 245 / 64%));
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-  }
+  --ease-press: var(--ease-press);
+  --ease-out: var(--ease-out);
 }

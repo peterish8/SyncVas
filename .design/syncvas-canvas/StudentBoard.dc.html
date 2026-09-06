@@ -1,0 +1,117 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --canvas:#f7f6f3; --surface:#ffffff; --ink:#171717; --ink-muted:#66645f;
+      --border:#dddcd7; --border-strong:#c9c7c0; --lime:#d7f500; --lime-soft:#f4fcb8;
+      --coral:#f47b68; --green:#39a954;
+      --ease-press:cubic-bezier(.2,0,0,1);
+      --mono:"Geist Mono", ui-monospace, Menlo, monospace;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:"Geist", ui-sans-serif, system-ui, "Segoe UI", sans-serif; color:var(--ink); background:var(--canvas); -webkit-font-smoothing:antialiased; }
+    a { color:inherit; text-decoration:none; }
+    a:hover { color:#3f3d38; }
+    p, h1, h2, h3 { margin:0; }
+    .mono { font-family:var(--mono); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:0 16px; border:1px solid transparent; border-radius:12px; font-family:inherit; font-size:14px; font-weight:600; letter-spacing:-.015em; cursor:pointer; transition:transform 110ms var(--ease-press), box-shadow 110ms ease; }
+    .btn-primary { background:#171717; color:#fff; border-color:#2e2e2e; box-shadow:inset 0 1px 0 rgb(255 255 255 / .2), inset 0 -1px 0 rgb(0 0 0 / .35), 0 2px 0 #0c0c0c, 0 5px 12px rgb(23 23 23 / .2); }
+    .btn-accent { background:#f4fcb8; color:#171717; border-color:#dae870; box-shadow:inset 0 1px 0 rgb(255 255 255 / .75), inset 0 -1px 0 rgb(23 23 23 / .05), 0 2px 0 #b9c264, 0 4px 10px rgb(23 23 23 / .08); }
+    .pill { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border:1px solid var(--border); border-radius:999px; background:var(--canvas); box-shadow:inset 0 1px 0 rgb(255 255 255 / .8); font-size:12px; font-weight:500; color:var(--ink-muted); line-height:1.4; }
+    .control { width:100%; border:1px solid var(--border); border-radius:12px; background:var(--canvas); box-shadow:inset 0 2px 4px rgb(23 23 23 / .07), 0 1px 0 rgb(255 255 255 / .85); padding:11px 13px; font-family:inherit; font-size:14px; line-height:1.45; color:var(--ink); }
+  </style>
+</helmet>
+
+<div style="width:390px; height:844px; overflow:hidden; display:flex; flex-direction:column; background:#f7f6f3;">
+
+  <!-- Real status bar renders here; nothing painted. -->
+  <div style="height:44px; flex:0 0 auto;"></div>
+
+  <header style="display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 16px; flex:0 0 auto; border-bottom:1px solid #dddcd7; background:#ffffff;">
+    <div style="display:flex; align-items:center; gap:9px; min-width:0;">
+      <span style="font-size:15px; font-weight:800; letter-spacing:-.075em;">Syncvas</span>
+      <span style="width:1px; height:16px; background:#dddcd7;"></span>
+      <span style="font-size:13px; font-weight:500; letter-spacing:-.02em;">Class 09</span>
+      <span style="width:7px; height:7px; border-radius:999px; background:#39a954; box-shadow:0 0 0 3px rgb(57 169 84 / .22);"></span>
+    </div>
+    <span style="display:grid; width:44px; height:44px; place-items:center; margin-right:-10px; color:#66645f;">
+      <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6h12M4 10h12M4 14h12"/></svg>
+    </span>
+  </header>
+
+  <!-- Follow state is text first, colour second -->
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; height:46px; padding:0 16px; flex:0 0 auto; border-bottom:1px solid #dddcd7; background:#ffffff;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span style="width:8px; height:8px; border:1px solid #c9c7c0; border-radius:999px; background:#ffffff;"></span>
+      <span style="font-size:13px; font-weight:600; letter-spacing:-.02em;">Exploring on your own</span>
+    </div>
+    <span class="mono" style="font-size:10px; letter-spacing:.06em; color:#6f6d66;">FOLLOW OFF</span>
+  </div>
+
+  <!-- Read-only board. No gradient, no decoration, full contrast. -->
+  <div style="position:relative; flex:1 1 auto; min-height:0; overflow:hidden; background-color:#fffefa; background-image:radial-gradient(#e3e2dd .8px, transparent .8px); background-size:15px 15px;">
+
+    <div style="position:absolute; top:26px; left:22px;">
+      <p class="mono" style="font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:#74716b;">Completing the square</p>
+      <div style="margin-top:22px; font-family:Georgia,'Times New Roman',serif; font-size:33px; letter-spacing:-.055em; color:#1c1c1a;">x<sup style="font-size:.48em;">2</sup> + 6x + 9 = 0</div>
+    </div>
+    <div style="position:absolute; top:100px; left:44px; width:118px; height:2px; background:#f47b68; transform:rotate(-2deg); transform-origin:left;"></div>
+
+    <div style="position:absolute; top:136px; left:56px; font-family:Georgia,'Times New Roman',serif; font-size:28px; letter-spacing:-.055em; color:#39a954; transform:rotate(-2deg);">(x + 3)<sup style="font-size:.48em;">2</sup> = 0</div>
+    <div style="position:absolute; top:184px; left:64px; width:152px; height:2px; background:#39a954; transform:rotate(4deg); transform-origin:left;"></div>
+
+    <div style="position:absolute; top:214px; left:90px; font-family:Georgia,'Times New Roman',serif; font-size:26px; letter-spacing:-.05em; color:#1c1c1a; transform:rotate(-1deg);">x = &minus;3</div>
+    <div style="position:absolute; top:262px; left:22px; width:300px; height:1px; background:#e6e5e0;"></div>
+    <div style="position:absolute; top:284px; left:22px; font-family:Georgia,'Times New Roman',serif; font-size:22px; letter-spacing:-.05em; color:#6f6d66;">now: x<sup style="font-size:.48em;">2</sup> + 10x + 21</div>
+
+    <!-- Why the student is behind, said plainly -->
+    <div style="position:absolute; top:12px; right:14px; display:inline-flex; align-items:center; gap:7px; padding:6px 11px; border:1px solid #e0d3ae; border-radius:999px; background:rgb(255 250 236 / .95); box-shadow:inset 0 1px 0 #fff, 0 4px 12px rgb(23 23 23 / .07);">
+      <span style="width:6px; height:6px; border-radius:999px; background:#f6c96d;"></span>
+      <span style="font-size:11.5px; font-weight:600; color:#6d5a1f;">Teacher is 1 step ahead</span>
+    </div>
+
+    <!-- One action, not two: jump back and resume following -->
+    <div style="position:absolute; left:16px; right:16px; bottom:16px; display:grid; justify-items:center; gap:7px;">
+      <span class="btn btn-accent" style="width:100%;">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16.4 10H3.6"/><path d="m7.8 5.8-4.2 4.2 4.2 4.2"/></svg>
+        Return to teacher
+      </span>
+      <span style="font-size:11.5px; color:#77756e;">You&#39;ll start following again</span>
+    </div>
+  </div>
+
+  <!-- Doubt composer: inset input, explicit anonymity -->
+  <div style="flex:0 0 auto; padding:14px 16px 0; border-top:1px solid #dddcd7; background:#ffffff;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:9px;">
+      <span style="font-size:13px; font-weight:600; letter-spacing:-.02em;">Ask anonymously</span>
+      <span style="font-size:11.5px; color:#6f6d66;">3 left this minute</span>
+    </div>
+    <div class="control" style="min-height:70px;">
+      <span style="color:#3a3934;">Where did the 9 come from? Is it always half of b, squared?</span>
+    </div>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:11px;">
+      <p style="font-size:11.5px; line-height:1.4; color:#66645f;">Your name is never sent.<br>The teacher sees the question only.</p>
+      <span class="btn btn-primary" style="min-height:44px; padding:0 18px;">Send doubt</span>
+    </div>
+    <p class="mono" style="margin-top:9px; text-align:right; font-size:10.5px; color:#6f6d66;">59 / 220</p>
+  </div>
+
+  <!-- Home indicator area left clear -->
+  <div style="height:22px; flex:0 0 auto; background:#ffffff;"></div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

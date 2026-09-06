@@ -1,0 +1,269 @@
+/**
+ * Syncvas design tokens — the single source of truth.
+ *
+ * Three layers, in order. Never skip a layer:
+ *   1. PRIMITIVES  (--sv-*)  raw scale values. Never referenced by a component.
+ *   2. SEMANTIC              role names components actually use (--surface, --radius-panel).
+ *   3. THEME                 dark overrides, which restate SEMANTIC names only.
+ *
+ * Rule: component CSS and JSX may only use SEMANTIC names. If you need a new
+ * literal value, add it to PRIMITIVES and point a SEMANTIC name at it, so one
+ * edit propagates everywhere.
+ */
+
+:root {
+  /* ---------------------------------------------------------------------
+   * 1. PRIMITIVES
+   * ------------------------------------------------------------------ */
+
+  /* Neutral ramp — warm, paper-like. */
+  --sv-neutral-0: #ffffff;
+  --sv-neutral-25: #fffefa;
+  --sv-neutral-50: #f7f6f3;
+  --sv-neutral-100: #eeede9;
+  --sv-neutral-200: #dddcd7;
+  --sv-neutral-300: #c9c7c0;
+  --sv-neutral-400: #a8a69e;
+  --sv-neutral-500: #6f6d66;
+  --sv-neutral-600: #66645f;
+  --sv-neutral-700: #45443f;
+  --sv-neutral-800: #2a2b27;
+  --sv-neutral-900: #171717;
+
+  /* Dark-mode neutrals. */
+  --sv-ink-950: #181917;
+  --sv-ink-900: #1d1e1b;
+  --sv-ink-850: #232421;
+  --sv-ink-800: #2c2d29;
+  --sv-ink-700: #41423d;
+  --sv-ink-600: #5b5c55;
+  --sv-ink-300: #b8b6ae;
+  --sv-ink-100: #f3f2eb;
+
+  /* Accent hues. */
+  --sv-lime-500: #d7f500;
+  --sv-lime-200: #f4fcb8;
+  --sv-lime-400: #dae870;
+  --sv-lime-700: #4c5a00;
+  --sv-coral-500: #f47b68;
+  --sv-apricot-500: #f6c96d;
+  --sv-apricot-100: #fff6e3;
+  --sv-apricot-800: #6d5a1f;
+  --sv-green-500: #39a954;
+  --sv-green-100: #e8f5e9;
+  --sv-green-800: #1d5a2c;
+  --sv-sky-500: #b9d9f5;
+  --sv-red-600: #b42318;
+  --sv-red-800: #631410;
+  --sv-red-50: #fdecea;
+  --sv-orange-50: #fff1ed;
+
+  /* Radius scale — the curved system. Every corner in the product comes from here. */
+  --sv-radius-xs: 0.375rem;   /*  6px  icons, tiny chips        */
+  --sv-radius-sm: 0.625rem;   /* 10px  buttons, inputs          */
+  --sv-radius-md: 0.875rem;   /* 14px  cards, list rows         */
+  --sv-radius-lg: 1.25rem;    /* 20px  panels, board frame      */
+  --sv-radius-xl: 1.75rem;    /* 28px  overlays, hero surfaces  */
+  --sv-radius-2xl: 2.25rem;   /* 36px  full-bleed feature cards */
+  --sv-radius-pill: 999px;
+
+  /* Spacing scale — 4px base. */
+  --sv-space-0: 0;
+  --sv-space-1: 0.25rem;
+  --sv-space-2: 0.5rem;
+  --sv-space-3: 0.75rem;
+  --sv-space-4: 1rem;
+  --sv-space-5: 1.25rem;
+  --sv-space-6: 1.5rem;
+  --sv-space-7: 2rem;
+  --sv-space-8: 2.5rem;
+  --sv-space-9: 3rem;
+  --sv-space-10: 4rem;
+  --sv-space-11: 5rem;
+  --sv-space-12: 6rem;
+
+  /* Type scale. */
+  --sv-text-2xs: 0.6875rem;   /* 11px */
+  --sv-text-xs: 0.75rem;      /* 12px */
+  --sv-text-sm: 0.8125rem;    /* 13px */
+  --sv-text-base: 0.875rem;   /* 14px */
+  --sv-text-md: 1rem;         /* 16px */
+  --sv-text-lg: 1.125rem;     /* 18px */
+  --sv-text-xl: 1.375rem;     /* 22px */
+  --sv-text-2xl: 1.75rem;     /* 28px */
+  --sv-text-3xl: 2.25rem;     /* 36px */
+
+  --sv-tracking-tight: -0.02em;
+  --sv-tracking-tighter: -0.045em;
+  --sv-tracking-wide: 0.08em;
+  --sv-tracking-widest: 0.12em;
+
+  --sv-weight-regular: 400;
+  --sv-weight-medium: 500;
+  --sv-weight-semibold: 600;
+  --sv-weight-bold: 700;
+
+  --sv-leading-tight: 1.15;
+  --sv-leading-snug: 1.35;
+  --sv-leading-normal: 1.5;
+
+  /* Control heights — three sizes only. */
+  --sv-control-sm: 2rem;      /* 32px  compact icon/ghost      */
+  --sv-control-md: 2.5rem;    /* 40px  default product control */
+  --sv-control-lg: 3rem;      /* 48px  touch / primary CTA     */
+
+  /* Elevation ramp. */
+  --sv-elev-1: 0 1px 2px rgb(23 23 23 / 0.05);
+  --sv-elev-2: 0 4px 10px rgb(23 23 23 / 0.08);
+  --sv-elev-3: 0 8px 24px rgb(23 23 23 / 0.08);
+  --sv-elev-4: 0 18px 44px rgb(23 23 23 / 0.14);
+  --sv-elev-overlay: 0 32px 80px rgb(23 23 23 / 0.28);
+
+  /* Motion. */
+  --sv-ease-press: cubic-bezier(0.2, 0, 0, 1);
+  --sv-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --sv-dur-press: 110ms;
+  --sv-dur-hover: 140ms;
+  --sv-dur-panel: 220ms;
+  --sv-dur-modal: 200ms;
+
+  /* ---------------------------------------------------------------------
+   * 2. SEMANTIC — the only names components may use
+   * ------------------------------------------------------------------ */
+
+  /* Surfaces */
+  --canvas: var(--sv-neutral-50);
+  --paper: var(--sv-neutral-25);
+  --surface: var(--sv-neutral-0);
+  --surface-muted: var(--sv-neutral-100);
+  --surface-sunken: var(--sv-neutral-50);
+
+  /* Text */
+  --ink: var(--sv-neutral-900);
+  --ink-muted: var(--sv-neutral-600);
+  --ink-subtle: var(--sv-neutral-500);
+
+  /* Lines */
+  --border: var(--sv-neutral-200);
+  --border-strong: var(--sv-neutral-300);
+
+  /* Accents (role names, not hues) */
+  --accent: var(--sv-lime-500);
+  --accent-soft: var(--sv-lime-200);
+  --accent-border: var(--sv-lime-400);
+  --accent-ink: var(--sv-lime-700);
+  --info: var(--sv-coral-500);
+  --warning: var(--sv-apricot-500);
+  --warning-soft: var(--sv-apricot-100);
+  --warning-ink: var(--sv-apricot-800);
+  --success: var(--sv-green-500);
+  --success-soft: var(--sv-green-100);
+  --cool: var(--sv-sky-500);
+  --danger: var(--sv-red-600);
+  --danger-soft: var(--sv-red-50);
+
+  /* Legacy aliases kept so existing markup keeps resolving. */
+  --lime: var(--accent);
+  --lime-soft: var(--accent-soft);
+  --lime-border: var(--accent-border);
+  --coral: var(--info);
+  --apricot: var(--warning);
+  --green: var(--success);
+  --sky: var(--cool);
+
+  /* Radii — semantic roles pointing at the scale. */
+  --radius-icon: var(--sv-radius-xs);
+  --radius-control: var(--sv-radius-sm);
+  --radius-card: var(--sv-radius-md);
+  --radius-panel: var(--sv-radius-lg);
+  --radius-surface: var(--sv-radius-xl);
+  --radius-feature: var(--sv-radius-2xl);
+  --radius-pill: var(--sv-radius-pill);
+
+  /* Elevation roles */
+  --shadow-soft: var(--sv-elev-3);
+  --shadow-panel: 0 10px 28px rgb(23 23 23 / 0.06);
+  --shadow-raised: var(--sv-elev-2);
+  --shadow-float: var(--sv-elev-4);
+  --shadow-overlay: var(--sv-elev-overlay);
+  --highlight-top: inset 0 1px 0 rgb(255 255 255 / 0.9);
+
+  /* Tactile control physics — one recipe, variants only swap the colour slots. */
+  --tactile-highlight: rgb(255 255 255 / 0.85);
+  --tactile-lowlight: rgb(23 23 23 / 0.06);
+  --tactile-edge: var(--border-strong);
+  --tactile-ambient: var(--sv-elev-2);
+  --tactile-raised: inset 0 1px 0 var(--tactile-highlight), inset 0 -1px 0 var(--tactile-lowlight),
+    0 2px 0 var(--tactile-edge), var(--tactile-ambient);
+  --tactile-pressed: inset 0 2px 4px rgb(23 23 23 / 0.16);
+  --press-travel: 2px;
+
+  /* Focus */
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+  --focus-outline: 3px solid color-mix(in srgb, var(--accent) 72%, transparent);
+  --focus-offset: 3px;
+
+  /* Typefaces — declared here so plain CSS can use them too, not only utilities. */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Motion roles */
+  --ease-press: var(--sv-ease-press);
+  --ease-out: var(--sv-ease-out);
+  --duration-press: var(--sv-dur-press);
+  --duration-hover: var(--sv-dur-hover);
+  --duration-panel: var(--sv-dur-panel);
+  --duration-modal: var(--sv-dur-modal);
+
+  /* Contained atmosphere field. Allowed on entry/marketing/summary surfaces only —
+     never behind handwriting. */
+  --field-gradient:
+    radial-gradient(circle at 18% 88%, rgb(57 169 84 / 42%), transparent 44%),
+    radial-gradient(circle at 78% 82%, rgb(244 123 104 / 38%), transparent 42%),
+    radial-gradient(circle at 58% 12%, rgb(215 245 0 / 48%), transparent 42%),
+    linear-gradient(140deg, rgb(246 201 109 / 46%), rgb(185 217 245 / 40%));
+
+  /* Board paper — the one surface that never takes an accent. */
+  --board-paper: var(--sv-neutral-25);
+  --board-grid: #e3e2dd;
+}
+
+/* -----------------------------------------------------------------------
+ * 3. THEME — dark restates SEMANTIC names only, never primitives.
+ * -------------------------------------------------------------------- */
+
+html[data-theme="dark"] {
+  --canvas: var(--sv-ink-950);
+  --paper: var(--sv-ink-850);
+  --surface: var(--sv-ink-850);
+  --surface-muted: var(--sv-ink-800);
+  --surface-sunken: var(--sv-ink-900);
+
+  --ink: var(--sv-ink-100);
+  --ink-muted: var(--sv-ink-300);
+  --ink-subtle: #94928b;
+
+  --border: var(--sv-ink-700);
+  --border-strong: var(--sv-ink-600);
+
+  --accent-ink: #cbe45f;
+  --danger-soft: #3a1a17;
+  --success-soft: #17301c;
+  --warning-soft: #33291a;
+  --warning-ink: #e6c98a;
+  --board-paper: var(--sv-ink-900);
+  --board-grid: var(--sv-ink-700);
+
+  --shadow-soft: 0 8px 24px rgb(0 0 0 / 0.28);
+  --shadow-panel: 0 10px 28px rgb(0 0 0 / 0.25);
+  --shadow-raised: 0 4px 10px rgb(0 0 0 / 0.3);
+  --shadow-float: 0 18px 44px rgb(0 0 0 / 0.42);
+  --shadow-overlay: 0 32px 80px rgb(0 0 0 / 0.6);
+  --highlight-top: inset 0 1px 0 rgb(255 255 255 / 0.08);
+
+  --tactile-highlight: rgb(255 255 255 / 0.1);
+  --tactile-lowlight: rgb(0 0 0 / 0.24);
+  --tactile-edge: #0b0c0a;
+  --tactile-ambient: 0 4px 10px rgb(0 0 0 / 0.35);
+
+}

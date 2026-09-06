@@ -1,13 +1,13 @@
 # Phase 1: Foundation Close-out - Context
 
 **Gathered:** 2026-09-04
-**Status:** Ready for planning
+**Status:** Plans verified; ready to execute. Milestone 0 health is already verified, but Phase 1 is not complete.
 **Source:** Roadmap + REQUIREMENTS (FOUND-*) + ingested docs (no discuss-phase; YOLO continue)
 
 <domain>
 ## Phase Boundary
 
-Brownfield scaffold becomes production-shaped for later phases: Convex schema skeleton with indexes for v1 entities, hardened shared Socket.IO protocol types/validators consumed by app + socket-server, and green verify/health smoke paths (Next.js, Convex, socket-server).
+Brownfield scaffold becomes production-shaped for later phases: Convex schema skeleton with indexes for v1 entities, hardened shared Socket.IO protocol types/validators consumed by app + socket-server, and a repeatable green verify/health smoke path (Next.js, Convex, socket-server). Milestone 0 has already demonstrated the health path; repeat it after the schema and protocol work.
 
 This phase does **not** ship Excalidraw UI, room auth UX, follow mode, doubts UI, moderation, or export flows.
 
@@ -47,6 +47,7 @@ This phase does **not** ship Excalidraw UI, room auth UX, follow mode, doubts UI
 - `.planning/REQUIREMENTS.md` — FOUND-01, FOUND-02, FOUND-03
 - `AGENTS.md` — non-negotiable MVP engineering rules
 - `docs/03_MVP_SCOPE.md` — P0/P1 gates (context only; no P1 work here)
+- `docs/05_UI_UX_SPEC.md` and `docs/06_DESIGN_SYSTEM.md` — canvas-first visual constraints for any foundation UI retained or touched
 
 ### Data / protocol
 - `docs/09_CONVEX_DATA_MODEL.md` — target tables + indexes
@@ -99,9 +100,10 @@ This phase does **not** ship Excalidraw UI, room auth UX, follow mode, doubts UI
 - Teacher auth, join codes, QR → Phase 3
 - Viewport follow behavior → Phase 4
 - Doubt mutations/UI → Phase 5+
-- AI adapter / moderation pipeline → Phase 6
-- Export jobs / history pages → Phase 7
-- Load test / production deploy → Phase 8
+- P0 final-board persistence → Phase 6
+- AI adapter / moderation pipeline → Phase 7
+- Export jobs / history pages / reconnect UX → Phase 8
+- Load test / production deploy → Phase 9
 - All v2 items in REQUIREMENTS.md
 
 </deferred>

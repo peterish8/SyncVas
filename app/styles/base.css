@@ -1,0 +1,51 @@
+/**
+ * Element defaults. Everything here resolves from tokens.css.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--canvas);
+}
+
+body {
+  min-height: 100svh;
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 78%, white);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: var(--focus-offset);
+}
+
+/* Motion is fast surface feedback only. Under reduced motion every transform
+   and transition collapses; state still changes, it just stops moving. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .syncvas-btn:active:not(:disabled),
+  .syncvas-icon-btn:active:not(:disabled),
+  .syncvas-theme-toggle:active,
+  .syncvas-dock-trigger:active {
+    transform: none;
+  }
+}
