@@ -1,22 +1,35 @@
 /** Anonymous doubt submission, queue, resolution, and one-vote semantics. */
 
 import { v } from "convex/values";
+import type { FunctionReference } from "convex/server";
+import type { Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { requireLocalDevSessionOwner, requireLocalDevSessionOwnerQuery, requireSessionOwner } from "./auth";
+import { deterministicScreen } from "./moderation";
 import { DOUBT_MAX_CHARS, DOUBT_RATE_LIMIT_MAX, DOUBT_RATE_LIMIT_WINDOW_MS } from "../shared/constants/limits";
 
-const NOISE_PATTERNS = [/^(.)\1{5,}$/u, /^(?:[\p{Extended_Pictographic}\s])+$/u, /https?:\/\//iu];
-const PROFANITY_PATTERNS = [/\b(?:fuck|shit|bitch)\b/iu];
+const triageDoubt = (internal as unknown as {
+  [key: string]: {
+    triageDoubt: FunctionReference<
+      "action",
+      "internal",
+      { doubtId: Id<"doubts">; text: string; sessionId: string },
+      unknown
+    >;
+  };
+})["internal/moderation"].triageDoubt;
 
 function normalize(text: string): string {
   return text.trim().replace(/\s+/gu, " ").toLowerCase();
 }
 
+/** One deterministic policy, shared with the moderation module so the two cannot drift. */
 function screening(text: string): { status: "rejected" | "accepted"; reasonCode?: string } {
-  if (!text.trim()) return { status: "rejected", reasonCode: "empty" };
-  if (NOISE_PATTERNS.some((pattern) => pattern.test(text))) return { status: "rejected", reasonCode: "noise" };
-  if (PROFANITY_PATTERNS.some((pattern) => pattern.test(text))) return { status: "rejected", reasonCode: "profanity" };
-  return { status: "accepted" };
+  const result = deterministicScreen(text);
+  return result.outcome === "reject"
+    ? { status: "rejected", reasonCode: result.reasonCode }
+    : { status: "accepted" };
 }
 
 export const submit = mutation({
@@ -49,6 +62,14 @@ export const submit = mutation({
       createdAt: now,
     });
     await ctx.db.patch(participant._id, { doubtCount: participant.doubtCount + 1, lastSeenAt: now });
+    // Cost protection (docs/14): deterministic rejects never reach a provider.
+    if (result.status === "accepted") {
+      await ctx.scheduler.runAfter(0, triageDoubt, {
+        doubtId,
+        text: args.text.trim(),
+        sessionId: session._id,
+      });
+    }
     return { doubtId, status: result.status, reasonCode: result.reasonCode, duplicateOf: duplicateOf?._id };
   },
 });

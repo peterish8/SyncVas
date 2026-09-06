@@ -91,15 +91,26 @@ Recent decisions affecting current work:
 
 - Link a Convex deployment and run browser UAT for phases 3–8.
 - ~~Resolve the remaining full-repo ESLint hook-rule errors.~~ Done 2026-09-05 (lint clean).
-- Implement the 4 remaining scaffold test suites: moderation (7), export/history/reconnect (8), security/permissions (9), ai-adapter (10).
+- ~~Implement the 4 remaining scaffold test suites: moderation (7), export/history/reconnect (8), security/permissions (9), ai-adapter (10).~~ Done 2026-09-06 — all four are live; 164 root tests pass with none skipped.
 - Configure an optional moderation provider only if live AI triage is required.
-- Wire `triageDoubt` into the doubt pipeline, or drop it — it is currently exported and called from nowhere, so MOD-02/MOD-03 exist as a boundary rather than a path.
-- Surface `duplicateOf` in the teacher queue UI — it is computed and returned but no component reads it, so MOD-04 is not visible.
-- Blocks v1.1: send binary `files` over the board socket path. `components/board/board-canvas.tsx:317` discards them (`void files`) and `publishScene` in `use-board-sync.ts` sends only `{ elements, appState }`, so any image-bearing element renders for the teacher and is blank for students. `boardUpdateSchema` already allows an optional 2 MB `files` field.
+- ~~Wire `triageDoubt` into the doubt pipeline, or drop it.~~ Done 2026-09-06 — `doubts.submit` schedules it after a deterministic accept, and `moderation.applyTriage` records a `moderationEvents` row for every outcome.
+- ~~Surface `duplicateOf` in the teacher queue UI.~~ Done 2026-09-06 — the queue numbers each doubt and marks a repeat as "Repeat of #n".
+- ~~Blocks v1.1: send binary `files` over the board socket path.~~ Already resolved before this pass; covered by `tests/board-sync.test.ts`.
 
 ### Blockers/Concerns
 
 - Local Convex may be anonymous development deployment — live `npx convex run health:status` blocked until deployment is linked; source health query intact
+
+### Correction — 2026-09-06
+
+Phases 11–16 (prepared boards, AI board authoring, quiz core, leaderboards, quiz
+persistence, MCP lesson authoring) are **not implemented**. Earlier notes in this file
+implied otherwise. What exists is the Convex data model only — `boardTemplates`,
+`quizQuestions`, `quizAnswers`, `quizScores`, and `sessions.roomMode` in `convex/schema.ts`.
+A whole-repo search for `quiz|leaderboard|layoutBoard|boardTemplate|prepared` across
+every `.ts`/`.tsx` matches `convex/schema.ts` alone; a search for `mcp|oauth` matches no
+source file; and the production build emits no quiz, leaderboard, or MCP route.
+`ROADMAP.md` correctly still marks phases 11–16 as `[ ]`.
 
 ## Deferred Items
 

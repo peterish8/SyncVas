@@ -119,6 +119,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
     ((viewport: TeacherViewportCoords) => void) | null
   >(null);
   const disposeViewportRef = useRef<(() => void) | null>(null);
+  const flushPendingRef = useRef<(() => void) | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -334,13 +335,19 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
         pendingRef.current = null;
         lastPublishedElementsRef.current = fingerprint;
       }
-      if (pendingRef.current) flushPending();
+      // Drain via the latest-callback ref: this acknowledgement fires after the
+      // render that created it, so the closed-over binding may be stale.
+      if (pendingRef.current) flushPendingRef.current?.();
     }) as PublishAcknowledgement);
     if (published) {
       return;
     }
     publishInFlightRef.current = false;
   }, [isTeacher, publishScene]);
+
+  useEffect(() => {
+    flushPendingRef.current = flushPending;
+  });
 
   const onChange = useCallback(
     (elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) => {
