@@ -7,7 +7,7 @@ export function TeacherSignInCard() {
     <div className="grid gap-5">
       <div className="syncvas-sunken grid gap-4 p-4 sm:p-5">
         <div className="flex items-start gap-3">
-          <span className="syncvas-auth-mark" aria-hidden="true">
+          <span className="syncvas-auth-mark syncvas-auth-mark-accent" aria-hidden="true">
             S
           </span>
           <div>

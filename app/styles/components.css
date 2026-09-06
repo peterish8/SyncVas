@@ -36,6 +36,64 @@
   background: var(--field-gradient);
 }
 
+/* Sign-in is an entry surface, so it can carry a quiet atmosphere. Keep the
+   field behind the card and away from the drawable classroom board. */
+.syncvas-sign-in-shell {
+  background: var(--canvas);
+}
+
+.syncvas-sign-in-content {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 6% 14%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 26%),
+    radial-gradient(circle at 94% 86%, color-mix(in srgb, var(--info) 12%, transparent), transparent 30%),
+    var(--paper);
+}
+
+.syncvas-sign-in-content::before {
+  position: absolute;
+  inset: 9% 7%;
+  z-index: -1;
+  border-radius: var(--radius-feature);
+  background: var(--field-gradient);
+  content: "";
+  opacity: 0.17;
+  filter: blur(22px);
+  pointer-events: none;
+}
+
+.syncvas-sign-in-stage {
+  position: relative;
+}
+
+.syncvas-sign-in-card {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--border-strong) 74%, var(--accent-border));
+  background: color-mix(in srgb, var(--surface) 94%, var(--accent-soft));
+  box-shadow: var(--highlight-top), var(--shadow-float);
+}
+
+.syncvas-sign-in-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.3rem;
+  background: linear-gradient(90deg, var(--accent), var(--warning), var(--info));
+  content: "";
+}
+
+.syncvas-sign-in-card .syncvas-sunken {
+  border-color: color-mix(in srgb, var(--border) 76%, var(--accent-border));
+  background: color-mix(in srgb, var(--surface-sunken) 92%, var(--accent-soft));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+.syncvas-sign-in-card .syncvas-btn:disabled {
+  opacity: 0.68;
+}
+
 .syncvas-divider {
   height: 1px;
   border: 0;
@@ -428,6 +486,13 @@ textarea.syncvas-control {
   width: 2.5rem;
   height: 2.5rem;
   font-size: 1rem;
+}
+
+.syncvas-auth-mark-accent {
+  border-color: var(--accent-border);
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: var(--highlight-top), 0 3px 0 color-mix(in srgb, var(--accent) 48%, var(--border-strong));
 }
 
 .syncvas-google-mark {

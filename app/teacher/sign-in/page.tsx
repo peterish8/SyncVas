@@ -11,8 +11,13 @@ export const metadata: Metadata = {
 
 export default function TeacherSignInPage() {
   return (
-    <AppShell title="Teacher sign in" trailing={null}>
-      <div className="grid flex-1 place-items-center px-5 py-10 sm:px-8">
+    <AppShell
+      title="Teacher sign in"
+      trailing={null}
+      className="syncvas-sign-in-shell"
+      contentClassName="syncvas-sign-in-content"
+    >
+      <div className="syncvas-sign-in-stage grid flex-1 place-items-center px-5 py-10 sm:px-8">
         <section className="w-full max-w-md" aria-labelledby="teacher-sign-in-title">
           <div className="mb-6 text-center">
             <p className="syncvas-eyebrow">Syncvas classroom</p>
@@ -23,7 +28,7 @@ export default function TeacherSignInPage() {
               Sign in once, then open a board, share the QR code, and keep the finished lesson.
             </p>
           </div>
-          <div className="syncvas-panel p-5 sm:p-6">
+          <div className="syncvas-sign-in-card syncvas-panel p-5 sm:p-6">
             <TeacherSignInCard />
           </div>
         </section>
