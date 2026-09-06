@@ -2,6 +2,7 @@
 
 import { v } from "convex/values";
 import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { FunctionReference } from "convex/server";
 import type { Id } from "./_generated/dataModel";
@@ -272,6 +273,69 @@ export const listMine = query({
       .withIndex("by_teacher_started", (q) => q.eq("teacherId", teacher._id))
       .order("desc")
       .take(100);
+  },
+});
+
+async function buildTeacherDashboard(ctx: QueryCtx, teacherId: Id<"users">) {
+  const sessions = await ctx.db
+    .query("sessions")
+    .withIndex("by_teacher_started", (q) => q.eq("teacherId", teacherId))
+    .order("desc")
+    .take(100);
+
+  const sessionStats = await Promise.all(
+    sessions.map(async (session) => {
+      const participants = await ctx.db
+        .query("participants")
+        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+        .collect();
+
+      return {
+        sessionId: session._id,
+        title: session.title,
+        subject: session.subject,
+        joinCode: session.joinCode,
+        status: session.status,
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        latestBoardVersion: session.latestBoardVersion,
+        hasSavedBoard: session.latestSnapshotId !== undefined,
+        studentCount: participants.length,
+      };
+    }),
+  );
+
+  return {
+    sessions: sessionStats,
+    totals: {
+      classCount: sessionStats.length,
+      liveCount: sessionStats.filter((session) => session.status === "live").length,
+      endedCount: sessionStats.filter((session) => session.status === "ended").length,
+      studentJoins: sessionStats.reduce((total, session) => total + session.studentCount, 0),
+      savedBoardCount: sessionStats.filter((session) => session.hasSavedBoard).length,
+    },
+  };
+}
+
+export const getTeacherDashboard = query({
+  args: {},
+  handler: async (ctx) => {
+    const teacher = await requireTeacher(ctx);
+    return await buildTeacherDashboard(ctx, teacher._id);
+  },
+});
+
+export const getLocalTeacherDashboard = query({
+  args: {},
+  handler: async (ctx) => {
+    const teacher = await getLocalDevTeacher(ctx);
+    if (!teacher) {
+      return {
+        sessions: [],
+        totals: { classCount: 0, liveCount: 0, endedCount: 0, studentJoins: 0, savedBoardCount: 0 },
+      };
+    }
+    return await buildTeacherDashboard(ctx, teacher._id);
   },
 });
 

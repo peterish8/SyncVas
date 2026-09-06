@@ -138,6 +138,11 @@
   --surface-muted: var(--sv-neutral-100);
   --surface-sunken: var(--sv-neutral-50);
 
+  /* Dashboard surfaces — intentionally flatter than classroom atmosphere. */
+  --dashboard-canvas: var(--sv-neutral-100);
+  --dashboard-surface: var(--sv-neutral-0);
+  --dashboard-surface-soft: var(--sv-neutral-50);
+
   /* Text */
   --ink: var(--sv-neutral-900);
   --ink-muted: var(--sv-neutral-600);
@@ -152,6 +157,7 @@
   --accent-soft: var(--sv-lime-200);
   --accent-border: var(--sv-lime-400);
   --accent-ink: var(--sv-lime-700);
+  --accent-button-ink: var(--sv-neutral-900);
   --info: var(--sv-coral-500);
   --warning: var(--sv-apricot-500);
   --warning-soft: var(--sv-apricot-100);
@@ -238,6 +244,9 @@ html[data-theme="dark"] {
   --surface: var(--sv-ink-850);
   --surface-muted: var(--sv-ink-800);
   --surface-sunken: var(--sv-ink-900);
+  --dashboard-canvas: var(--sv-ink-950);
+  --dashboard-surface: var(--sv-ink-950);
+  --dashboard-surface-soft: var(--sv-ink-900);
 
   --ink: var(--sv-ink-100);
   --ink-muted: var(--sv-ink-300);
@@ -247,6 +256,7 @@ html[data-theme="dark"] {
   --border-strong: var(--sv-ink-600);
 
   --accent-ink: #cbe45f;
+  --accent-button-ink: var(--sv-neutral-900);
   --danger-soft: #3a1a17;
   --success-soft: #17301c;
   --warning-soft: #33291a;

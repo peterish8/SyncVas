@@ -94,6 +94,360 @@
   opacity: 0.68;
 }
 
+/* ------------------------------------------------------------- dashboard */
+
+.syncvas-dashboard-shell {
+  min-height: 100svh;
+  padding: 0;
+  background: var(--canvas);
+}
+
+.syncvas-dashboard-shell > .syncvas-panel {
+  width: 100%;
+  max-width: none;
+  min-height: 100svh;
+  border-width: 0;
+  border-radius: 0;
+  background: var(--dashboard-canvas);
+}
+
+.syncvas-dashboard-page {
+  flex: 1;
+  min-height: 0;
+  padding: var(--sv-space-6);
+  background: var(--dashboard-canvas);
+}
+
+.syncvas-dashboard-layout {
+  display: grid;
+  gap: var(--sv-space-6);
+  min-height: 100%;
+}
+
+.syncvas-dashboard-nav,
+.syncvas-dashboard-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--dashboard-surface);
+  box-shadow: var(--highlight-top), var(--shadow-panel);
+}
+
+.syncvas-dashboard-nav {
+  display: flex;
+  flex-direction: column;
+  padding: var(--sv-space-5);
+}
+
+.syncvas-dashboard-nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sv-space-3);
+  min-height: var(--sv-control-md);
+  padding: 0 var(--sv-space-3);
+  border-radius: var(--radius-control);
+  color: var(--ink-muted);
+  font-size: var(--sv-text-sm);
+  font-weight: var(--sv-weight-semibold);
+  text-decoration: none;
+  transition: background-color var(--duration-hover) ease, color var(--duration-hover) ease;
+}
+
+.syncvas-dashboard-nav-link:hover {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.syncvas-dashboard-nav-link-active {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.syncvas-dashboard-nav-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sv-space-3);
+  margin-top: auto;
+  padding: var(--sv-space-3);
+  border: 1px solid color-mix(in srgb, var(--success) 24%, var(--border));
+  border-radius: var(--radius-card);
+  background: var(--success-soft);
+}
+
+.syncvas-dashboard-main {
+  display: grid;
+  align-content: start;
+  gap: var(--sv-space-6);
+  min-width: 0;
+}
+
+.syncvas-dashboard-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sv-space-4);
+}
+
+.syncvas-dashboard-date {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  padding: var(--sv-space-2) var(--sv-space-3);
+  color: var(--ink-muted);
+  font-size: var(--sv-text-xs);
+  font-weight: var(--sv-weight-semibold);
+}
+
+.syncvas-dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sv-space-3);
+}
+
+.syncvas-dashboard-metric {
+  display: grid;
+  gap: var(--sv-space-2);
+  min-height: 8.5rem;
+  padding: var(--sv-space-4);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--dashboard-surface);
+  box-shadow: var(--highlight-top), var(--sv-elev-1);
+}
+
+.syncvas-dashboard-metric strong {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: var(--sv-weight-semibold);
+  letter-spacing: -0.08em;
+  line-height: 1;
+}
+
+.syncvas-dashboard-metric::before {
+  width: 2.25rem;
+  height: 0.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  content: "";
+}
+
+.syncvas-dashboard-metric-lime::before { background: var(--accent); }
+.syncvas-dashboard-metric-coral::before { background: var(--info); }
+.syncvas-dashboard-metric-green::before { background: var(--success); }
+.syncvas-dashboard-metric-apricot::before { background: var(--warning); }
+
+.syncvas-dashboard-metric > span:last-child {
+  align-self: end;
+  color: var(--ink-muted);
+  font-size: var(--sv-text-xs);
+}
+
+.syncvas-dashboard-metric-label {
+  font-size: var(--sv-text-xs);
+  font-weight: var(--sv-weight-semibold);
+  color: var(--ink-muted);
+}
+
+.syncvas-dashboard-metric-lime { border-top-color: var(--accent-border); }
+.syncvas-dashboard-metric-coral { border-top-color: var(--info); }
+.syncvas-dashboard-metric-green { border-top-color: var(--success); }
+.syncvas-dashboard-metric-apricot { border-top-color: var(--warning); }
+
+.syncvas-dashboard-shell .syncvas-btn-accent {
+  --btn-bg: var(--accent);
+  --btn-fg: var(--accent-button-ink);
+  --btn-border: color-mix(in srgb, var(--accent) 72%, var(--border-strong));
+  --tactile-edge: color-mix(in srgb, var(--accent) 48%, var(--border-strong));
+}
+
+.syncvas-dashboard-shell .syncvas-btn-accent:hover:not(:disabled) {
+  --btn-bg: color-mix(in srgb, var(--accent) 82%, white);
+  --btn-fg: var(--accent-button-ink);
+}
+
+.syncvas-dashboard-feature {
+  position: relative;
+  display: grid;
+  align-items: end;
+  min-height: 13rem;
+  overflow: hidden;
+  padding: var(--sv-space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--dashboard-surface);
+  box-shadow: var(--highlight-top), var(--shadow-soft);
+}
+
+.syncvas-dashboard-feature > *:not(.syncvas-dashboard-feature-art) {
+  position: relative;
+  z-index: 1;
+}
+
+.syncvas-dashboard-feature .syncvas-eyebrow,
+.syncvas-dashboard-feature h3 {
+  color: var(--ink);
+}
+
+.syncvas-dashboard-feature-art {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.28;
+}
+
+.syncvas-dashboard-feature-orb {
+  position: absolute;
+  display: block;
+  border-radius: var(--radius-feature);
+  filter: blur(3px);
+  opacity: 0.72;
+  transform: rotate(-12deg);
+}
+
+.syncvas-dashboard-feature-orb-lime {
+  top: -28%;
+  right: 19%;
+  width: 13rem;
+  height: 8rem;
+  background: color-mix(in srgb, var(--accent) 72%, transparent);
+}
+
+.syncvas-dashboard-feature-orb-green {
+  right: -3%;
+  bottom: -32%;
+  width: 15rem;
+  height: 11rem;
+  background: color-mix(in srgb, var(--success) 72%, transparent);
+}
+
+.syncvas-dashboard-feature-orb-coral {
+  right: 30%;
+  bottom: -42%;
+  width: 13rem;
+  height: 9rem;
+  background: color-mix(in srgb, var(--info) 70%, transparent);
+}
+
+.syncvas-dashboard-feature-grid {
+  position: absolute;
+  right: 7%;
+  top: 17%;
+  width: 12rem;
+  height: 8rem;
+  border: 1px solid color-mix(in srgb, var(--surface) 68%, transparent);
+  border-radius: var(--radius-card);
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--surface) 54%, transparent) 0 1px, transparent 1px 1.2rem), repeating-linear-gradient(0deg, color-mix(in srgb, var(--surface) 54%, transparent) 0 1px, transparent 1px 1.2rem);
+  opacity: 0.65;
+  transform: rotate(7deg);
+}
+
+.syncvas-dashboard-card {
+  padding: var(--sv-space-5);
+}
+
+.syncvas-dashboard-session-list {
+  display: grid;
+  gap: var(--sv-space-2);
+  list-style: none;
+  padding: 0;
+}
+
+.syncvas-dashboard-session-row {
+  display: grid;
+  align-items: center;
+  gap: var(--sv-space-4);
+  padding: var(--sv-space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--dashboard-surface-soft);
+}
+
+.syncvas-dashboard-session-title { min-width: 0; }
+
+.syncvas-dashboard-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-pill);
+  padding: var(--sv-space-1) var(--sv-space-2);
+  font-size: var(--sv-text-2xs);
+  font-weight: var(--sv-weight-semibold);
+}
+
+.syncvas-dashboard-status-live { background: var(--success-soft); color: var(--green); }
+.syncvas-dashboard-status-ended { background: var(--surface-muted); color: var(--ink-muted); }
+.syncvas-dashboard-status-ending { background: var(--warning-soft); color: var(--warning-ink); }
+.syncvas-dashboard-status-draft { background: var(--accent-soft); color: var(--accent-ink); }
+
+.syncvas-dashboard-session-stat {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 5rem;
+}
+
+.syncvas-dashboard-session-stat strong {
+  font-size: var(--sv-text-md);
+  font-weight: var(--sv-weight-semibold);
+  letter-spacing: var(--sv-tracking-tight);
+}
+
+.syncvas-dashboard-session-stat span {
+  color: var(--ink-subtle);
+  font-size: var(--sv-text-2xs);
+}
+
+.syncvas-dashboard-session-arrow {
+  justify-self: end;
+  color: var(--ink-subtle);
+  font-size: var(--sv-text-lg);
+}
+
+.syncvas-dashboard-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sv-space-3);
+  padding: var(--sv-space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  background: var(--dashboard-surface-soft);
+}
+
+.syncvas-dashboard-loading {
+  display: grid;
+  gap: var(--sv-space-2);
+}
+
+.syncvas-dashboard-loading span {
+  display: block;
+  height: 3.5rem;
+  border-radius: var(--radius-card);
+  background: linear-gradient(90deg, var(--surface-muted), var(--surface), var(--surface-muted));
+  background-size: 200% 100%;
+  animation: syncvas-dashboard-shimmer 1.2s var(--ease-out) infinite;
+}
+
+@keyframes syncvas-dashboard-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (min-width: 640px) {
+  .syncvas-dashboard-page { padding: var(--sv-space-7); }
+  .syncvas-dashboard-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .syncvas-dashboard-feature { grid-template-columns: minmax(0, 1fr) auto; }
+}
+
+@media (min-width: 1024px) {
+  .syncvas-dashboard-layout { grid-template-columns: 15rem minmax(0, 1fr); }
+  .syncvas-dashboard-nav { min-height: 34rem; }
+  .syncvas-dashboard-session-row { grid-template-columns: minmax(14rem, 1fr) repeat(3, minmax(5rem, 0.5fr)) 1.5rem; }
+}
+
+@media (max-width: 639px) {
+  .syncvas-dashboard-heading { align-items: flex-start; flex-direction: column; }
+  .syncvas-dashboard-date { order: -1; }
+}
+
 .syncvas-divider {
   height: 1px;
   border: 0;
