@@ -508,7 +508,7 @@ function RoomDock({
               </div>
               <div className="flex items-center gap-2">
                 <ParticipantCount sessionId={session.sessionId} />
-                <button type="button" className="syncvas-icon-btn" onClick={collapse} aria-label="Collapse room controls" title="Collapse room controls">
+                <button type="button" className="syncvas-icon-btn" onClick={collapse} aria-label="Collapse room controls" data-tooltip="Collapse room controls" title="Collapse room controls">
                   <ChevronGlyph up />
                 </button>
               </div>
@@ -568,7 +568,7 @@ function RoomDock({
             aria-expanded={expanded}
             aria-controls={panelId}
             aria-label="Open room controls"
-            title="Open room controls"
+            data-tooltip="Open room controls"
             onClick={() => setExpanded((value) => !value)}
           >
             <span className="syncvas-live-dot" aria-hidden="true" />

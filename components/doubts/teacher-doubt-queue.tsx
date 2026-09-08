@@ -130,7 +130,7 @@ export function TeacherDoubtQueue({ sessionId }: { sessionId: string }) {
                   {doubt.duplicateOf ? (
                     <p
                       className="mt-1 text-xs text-ink-muted"
-                      title="An earlier doubt in this class used the same wording."
+                      data-tooltip="An earlier doubt in this class used the same wording."
                     >
                       {positionOf.has(doubt.duplicateOf)
                         ? `Repeat of #${positionOf.get(doubt.duplicateOf)}`

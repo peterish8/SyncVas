@@ -566,7 +566,6 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
             followEnabled={viewport.followEnabled}
             hasTeacherViewport={viewport.lastTeacherViewport !== null}
             onFollowTeacher={viewport.followTeacher}
-            onReturnToTeacher={viewport.followTeacher}
             onFreeRoam={() => viewport.setFollowEnabled(false)}
           />
         </div>
@@ -646,7 +645,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
               onClick={toggleFullscreen}
               aria-pressed={isFullscreen}
               aria-label={isFullscreen ? "Exit fullscreen board" : "Show board fullscreen"}
-              title={isFullscreen ? "Exit fullscreen" : "Fullscreen board"}
+              data-tooltip={isFullscreen ? "Exit fullscreen" : "Fullscreen board"}
             >
               {isFullscreen ? <ExitFullscreenGlyph /> : <FullscreenGlyph />}
             </button>
@@ -657,7 +656,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
                 className="syncvas-icon-btn"
                 onClick={revealNext}
                 aria-label="Reveal next block step"
-                title={`Reveal next step (${revealState.visible}/${revealState.all.length})`}
+                data-tooltip={`Reveal next step (${revealState.visible}/${revealState.all.length})`}
               >
                 <span aria-hidden="true">»</span>
               </button>
@@ -696,7 +695,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
           <div
             className="syncvas-board-alert absolute right-3 bottom-14 z-10 flex max-w-[min(23rem,calc(100%-1.5rem))] items-start gap-2 px-3 py-2 sm:right-4 sm:bottom-16"
             role="alert"
-            title={displayError}
+            data-tooltip={displayError}
           >
             <AlertGlyph />
             <span className="min-w-0 truncate">{displayError}</span>
