@@ -12,20 +12,30 @@
 
 "use client";
 
+import Link from "next/link";
+
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { JoinQrButton } from "@/components/room/join-qr";
 import { ParticipantCount } from "@/components/room/participant-count";
 import { ExportActions } from "@/components/export/export-actions";
 import { ExportStatus } from "@/components/export/export-status";
+import { TeacherNotesPanel } from "@/components/summary/teacher-notes-panel";
 import { useStoredValue } from "@/lib/client-store";
 import {
   LOCAL_TEACHER_STORAGE_KEY,
+  ACTIVE_TEACHER_SESSION_STORAGE_KEY,
+  clearActiveTeacherSession,
+  parseActiveTeacherSession,
   parseLocalTeacherBootstrap,
   roomTokenStorageKey,
+  writeActiveTeacherSession,
   writeLocalTeacherBootstrap,
   type LocalTeacherBootstrap,
 } from "@/lib/local-teacher";
+import { extractErrorCode, toUserFacingError } from "@/lib/user-facing-errors";
+import type { SessionStatus } from "@/shared/types/session";
+import { LOCAL_TEACHER_ENABLED, canRunTeacherQuery, useTeacherAccess } from "@/lib/teacher-access";
 import { useAction, useMutation, useQuery } from "convex/react";
 import {
   FormEvent,
@@ -40,7 +50,7 @@ import {
 export type TeacherSessionState = {
   sessionId: string;
   joinCode: string;
-  status: "draft" | "live" | "ending" | "ended";
+  status: SessionStatus;
 };
 
 export type TeacherSessionControlsProps = {
@@ -50,42 +60,40 @@ export type TeacherSessionControlsProps = {
     refreshRoomToken: () => Promise<string>,
   ) => void;
   onSessionEnded?: () => void;
-  onBeforeEnd?: (session: TeacherSessionState) => Promise<void>;
+  /**
+   * Saves the final board and begins ending in one transactional call. The old
+   * shape saved and ended separately, which could end a room with no board.
+   */
+  onEndSession?: (session: TeacherSessionState) => Promise<{ status: "ending" | "ended" }>;
 };
 
-const localTeacherEnabled =
-  process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_ENABLE_LOCAL_TEACHER === "1";
+const localTeacherEnabled = LOCAL_TEACHER_ENABLED;
 
 function readableError(error: unknown): string {
+  // Match the stable code, not the message text: a production Convex deployment
+  // delivers the code in ConvexError.data and strips prose from anything else.
+  const code = extractErrorCode(error);
   const message = error instanceof Error ? error.message : String(error ?? "");
-  if (message.includes("DEV_TEACHER_DISABLED")) {
+  if (code === "DEV_TEACHER_DISABLED") {
     return "Local teacher mode is off. Set ALLOW_DEV_TEACHER=1 on the Convex deployment.";
   }
-  if (message.includes("UNAUTHENTICATED") || message.includes("Sign in")) {
+  if (code === "UNAUTHENTICATED" || message.includes("Sign in")) {
     return "Sign in as a teacher to manage this classroom.";
   }
-  if (message.includes("SESSION_NOT_STARTABLE")) return "This room cannot be started.";
-  if (message.includes("SESSION_NOT_ENDABLE")) return "Only a live room can be ended.";
-  if (message.includes("SESSION_NOT_LIVE") || message.includes("SESSION_ENDED")) {
-    return "The room is not live. Start it before opening the board.";
-  }
-  if (message.includes("SCENE_TOO_LARGE")) return "The board is too large to save. Export it before ending the room.";
-  if (message.includes("FINAL_SNAPSHOT_MISSING")) return "We could not save the final board. Keep the room open and try again.";
-  return "We could not complete that room action. Try again.";
+  if (code === "SESSION_NOT_STARTABLE") return "This room cannot be started.";
+  if (code === "SESSION_NOT_ENDABLE") return "Only a live room can be ended.";
+  return toUserFacingError(error, "We could not complete that room action. Try again.").message;
 }
 
 export function TeacherSessionControls({
   onLiveSession,
   onSessionEnded,
-  onBeforeEnd,
+  onEndSession,
 }: TeacherSessionControlsProps) {
   const ensureLocalTeacher = useMutation(api.authBootstrap.ensureLocalTeacher);
   const createTeacher = useMutation(api.sessions.create);
   const startTeacher = useMutation(api.sessions.start);
   const endTeacher = useMutation(api.sessions.end);
-  const createLocal = useMutation(api.sessions.createAsLocalTeacher);
-  const startLocal = useMutation(api.sessions.startAsLocalTeacher);
-  const endLocal = useMutation(api.sessions.endAsLocalTeacher);
   const issueToken = useAction(api.sessions.issueSocketToken);
 
   // localStorage is an external system: subscribed, not copied into state.
@@ -96,18 +104,33 @@ export function TeacherSessionControls({
     serverValue: null,
   });
   const [title, setTitle] = useState("");
-  const [session, setSession] = useState<TeacherSessionState | null>(null);
+  const storedSession = useStoredValue<TeacherSessionState | null>({
+    storage: "local",
+    key: ACTIVE_TEACHER_SESSION_STORAGE_KEY,
+    parse: parseActiveTeacherSession,
+    serverValue: null,
+  });
+  const session = storedSession;
+  /** Kept after localStorage clear so End Class wrap-up CTAs remain visible. */
+  const [endedWrapUp, setEndedWrapUp] = useState<TeacherSessionState | null>(null);
+  const [endPhase, setEndPhase] = useState<"idle" | "saving" | "ending" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const restoredSessionRef = useRef<string | null>(null);
+  const access = useTeacherAccess();
+  const mayQuery = canRunTeacherQuery(access);
   const observedSession = useQuery(
-    localTeacherEnabled ? api.sessions.getLocalTeacherSession : api.sessions.getTeacherSession,
-    session ? { sessionId: session.sessionId as Id<"sessions"> } : "skip",
+    api.sessions.getTeacherSession,
+    // A stale room in localStorage must not run an ownership query the caller
+    // cannot pass; that error would rethrow out of render.
+    session && mayQuery ? { sessionId: session.sessionId as Id<"sessions"> } : "skip",
   );
   const effectiveSession = session && observedSession ? { ...session, status: observedSession.status } : session;
 
   const mintAndPublish = useCallback(
     async (next: TeacherSessionState) => {
       if (next.status !== "live") return;
+      restoredSessionRef.current = next.sessionId;
       const issueArgs = localTeacherEnabled
         ? { sessionId: next.sessionId as Id<"sessions">, asLocalTeacher: true as const }
         : { sessionId: next.sessionId as Id<"sessions"> };
@@ -118,6 +141,18 @@ export function TeacherSessionControls({
     },
     [issueToken, onLiveSession],
   );
+
+  // Browser storage is only a restore hint. Convex revalidates ownership and
+  // current status before a fresh token is issued.
+  useEffect(() => {
+    if (!session || session.status !== "live" || observedSession?.status !== "live") return;
+    if (restoredSessionRef.current === session.sessionId) return;
+    void mintAndPublish({ ...session, status: "live" }).catch((restoreError: unknown) => {
+      restoredSessionRef.current = null;
+      setError(readableError(restoreError));
+      clearActiveTeacherSession();
+    });
+  }, [mintAndPublish, observedSession?.status, session]);
 
   async function onContinueAsLocalTeacher() {
     setBusy(true);
@@ -141,10 +176,8 @@ export function TeacherSessionControls({
     setBusy(true);
     setError(null);
     try {
-      const result = localTeacherEnabled
-        ? await createLocal({ title: title.trim() || undefined })
-        : await createTeacher({ title: title.trim() || undefined });
-      setSession({
+      const result = await createTeacher({ title: title.trim() || undefined });
+      writeActiveTeacherSession({
         sessionId: result.sessionId,
         joinCode: result.joinCode,
         status: result.status,
@@ -162,33 +195,36 @@ export function TeacherSessionControls({
     setError(null);
     try {
       if (action === "start") {
-        const result = localTeacherEnabled
-          ? await startLocal({ sessionId: session.sessionId as Id<"sessions"> })
-          : await startTeacher({ sessionId: session.sessionId as Id<"sessions"> });
+        const result = await startTeacher({ sessionId: session.sessionId as Id<"sessions"> });
         const next: TeacherSessionState = {
           sessionId: result.sessionId,
           joinCode: result.joinCode,
           status: result.status,
         };
-        setSession(next);
+        writeActiveTeacherSession(next);
         await mintAndPublish(next);
       } else {
-        await onBeforeEnd?.(session);
-        const result = localTeacherEnabled
-          ? await endLocal({ sessionId: session.sessionId as Id<"sessions"> })
+        setEndPhase("saving");
+        // One call saves the board and starts finalization. Falling back to the
+        // plain end mutation only when no save handler is wired keeps the
+        // component usable on surfaces that have no canvas to capture.
+        const result = onEndSession
+          ? await onEndSession(session)
           : await endTeacher({ sessionId: session.sessionId as Id<"sessions"> });
-        setSession((current) =>
-          current
-            ? {
-                ...current,
-                status: result.status,
-              }
-            : current,
-        );
+        setEndPhase("ending");
+        if (result.status === "ended") {
+          setEndedWrapUp({ ...session, status: "ended" });
+          setEndPhase("done");
+          clearActiveTeacherSession();
+        } else {
+          writeActiveTeacherSession({ ...session, status: result.status });
+          setEndPhase("idle");
+        }
         window.sessionStorage.removeItem(roomTokenStorageKey(session.sessionId));
         onSessionEnded?.();
       }
     } catch (transitionError) {
+      setEndPhase("idle");
       setError(readableError(transitionError));
     } finally {
       setBusy(false);
@@ -220,11 +256,62 @@ export function TeacherSessionControls({
       <RoomDock
         session={session}
         status={status}
-        statusLabel={statusLabel}
+        statusLabel={endPhase === "saving" ? "Saving board…" : endPhase === "ending" ? "Ending…" : statusLabel}
         busy={busy}
         errorNode={errorNode}
         onEndRoom={() => void transition("end")}
       />
+    );
+  }
+
+  if (endedWrapUp) {
+    return (
+      <section
+        aria-labelledby="teacher-ended-title"
+        className="order-first shrink-0 px-4 py-5 sm:px-6 sm:py-6"
+      >
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="syncvas-panel overflow-hidden">
+            <header className="px-5 pt-5 pb-4 sm:px-6">
+              <p className="syncvas-eyebrow">Class ended</p>
+              <h2 id="teacher-ended-title" className="mt-2 text-2xl font-semibold tracking-[-0.045em]">
+                Board saved
+              </h2>
+              <p className="mt-2 max-w-md text-sm leading-6 text-ink-muted">
+                Room <span className="font-mono font-semibold text-ink">{endedWrapUp.joinCode}</span> is
+                closed. Export the board, check AI notes when ready, or open History anytime. AI notes
+                never undo End Class.
+              </p>
+            </header>
+            <div className="syncvas-color-field h-[3px] w-full" aria-hidden="true" />
+            <div className="grid gap-4 px-5 py-5 sm:px-6">
+              <div className="flex flex-wrap items-center gap-2">
+                <ExportActions sessionId={endedWrapUp.sessionId} />
+                <Link href="/teacher/history" className="syncvas-btn syncvas-btn-secondary">
+                  History
+                </Link>
+                <Link href="/teacher/dashboard" className="syncvas-btn syncvas-btn-ghost">
+                  Dashboard
+                </Link>
+                <button
+                  type="button"
+                  className="syncvas-btn syncvas-btn-primary ml-auto"
+                  onClick={() => {
+                    setEndedWrapUp(null);
+                    setEndPhase("idle");
+                    setTitle("");
+                  }}
+                >
+                  New class
+                </button>
+              </div>
+              <ExportStatus sessionId={endedWrapUp.sessionId} />
+              <TeacherNotesPanel sessionId={endedWrapUp.sessionId} />
+              {errorNode}
+            </div>
+          </div>
+        </div>
+      </section>
     );
   }
 
@@ -271,12 +358,19 @@ export function TeacherSessionControls({
                   Continue as local teacher
                 </button>
               </div>
-            ) : !localTeacherEnabled ? (
+            ) : access === "resolving" ? (
+              <div className="syncvas-sunken p-4" aria-busy="true">
+                <p className="text-sm leading-6 text-ink-muted">Checking your teacher account…</p>
+              </div>
+            ) : access === "signed-out" ? (
               <div className="syncvas-sunken p-4">
                 <p className="text-sm leading-6 text-ink-muted">
                   Sign in with your teacher account to create a classroom. Authentication is
                   provided by the deployment; this page never accepts a teacher ID from the browser.
                 </p>
+                <Link href="/teacher/sign-in" className="syncvas-btn syncvas-btn-primary mt-4 inline-flex">
+                  Teacher sign in
+                </Link>
               </div>
             ) : (
               <form className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end" onSubmit={onCreate}>
@@ -373,6 +467,7 @@ function RoomDock({
   onEndRoom: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirmingEnd, setConfirmingEnd] = useState(false);
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -394,8 +489,8 @@ function RoomDock({
   }
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-3 sm:px-4 sm:pb-4">
-      <div className="pointer-events-auto flex w-full max-w-xl flex-col items-center gap-2">
+    <div className="pointer-events-none absolute bottom-3 right-3 z-30 flex justify-end sm:bottom-4 sm:right-4">
+      <div className="pointer-events-auto flex w-full max-w-[min(34rem,calc(100vw-1.5rem))] flex-col items-end gap-2">
         {expanded ? (
           <div id={panelId} className="syncvas-panel syncvas-room-panel grid w-full gap-4 p-4 sm:p-5">
             <div className="flex items-start justify-between gap-3">
@@ -424,14 +519,43 @@ function RoomDock({
             <div className="flex flex-wrap items-center gap-2">
               <JoinQrButton joinCode={session.joinCode} />
               <ExportActions sessionId={session.sessionId} />
-              <button
-                type="button"
-                disabled={busy || status === "ending"}
-                onClick={onEndRoom}
-                className="syncvas-btn syncvas-btn-danger-quiet ml-auto"
-              >
-                {status === "ending" ? "Ending…" : "End room"}
-              </button>
+              {confirmingEnd ? (
+                <div className="ml-auto flex w-full flex-wrap items-center justify-between gap-3 rounded-control border border-[color-mix(in_srgb,var(--danger)_35%,var(--border))] bg-danger-soft px-3 py-2 sm:w-auto">
+                  <p className="text-xs leading-5 text-danger">
+                    End this room? The final board will be saved and new joins will stop.
+                  </p>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      className="syncvas-btn syncvas-btn-ghost syncvas-btn-sm"
+                      disabled={busy || status === "ending"}
+                      onClick={() => setConfirmingEnd(false)}
+                    >
+                      Keep teaching
+                    </button>
+                    <button
+                      type="button"
+                      className="syncvas-btn syncvas-btn-danger syncvas-btn-sm"
+                      disabled={busy || status === "ending"}
+                      onClick={() => {
+                        setConfirmingEnd(false);
+                        onEndRoom();
+                      }}
+                    >
+                      {status === "ending" ? "Ending…" : "End room"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy || status === "ending"}
+                  onClick={() => setConfirmingEnd(true)}
+                  className="syncvas-btn syncvas-btn-danger-quiet ml-auto"
+                >
+                  {status === "ending" ? "Ending…" : "End room"}
+                </button>
+              )}
             </div>
             <ExportStatus sessionId={session.sessionId} />
             {errorNode ? <div>{errorNode}</div> : null}

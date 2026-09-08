@@ -17,6 +17,7 @@ import { io as createClient, type Socket as ClientSocket } from "socket.io-clien
 import { afterEach, describe, expect, it } from "vitest";
 
 import { getLatestFinal, saveFinal } from "@/convex/boardSnapshots";
+import { isLocalDevTeacherAllowed } from "@/convex/authBootstrap";
 import { listTeacherQueue, resolve as resolveDoubtFn } from "@/convex/doubts";
 import { getForSession, request as requestExportFn } from "@/convex/exports";
 import { end, getTeacherSession } from "@/convex/sessions";
@@ -353,5 +354,67 @@ describe("SEC-04 no server secrets reach the browser bundle", () => {
     // The helper is imported by route handlers only; it must never announce itself as client code.
     expect(isClientModule(minting)).toBe(false);
     expect(minting).toContain("node:crypto");
+  });
+});
+
+describe("SEC-05 the local-teacher backdoor cannot reach production", () => {
+  /**
+   * The dev teacher is a fixed anonymous identity: fine on a laptop, a full
+   * account takeover in production, so the gate is asserted structurally rather
+   * than trusted to review.
+   *
+   * The `*AsLocalTeacher` family this originally policed is gone — the fallback
+   * now lives inside `permissions.requireTeacher`, and `teacher-access-gate`
+   * asserts no twin comes back. What is still reachable without Convex Auth is
+   * `authBootstrap.ensureLocalTeacher`, which this keeps gated, along with any
+   * twin that a future change reintroduces.
+   */
+  const GUARDS = [
+    "requireLocalDevTeacher",
+    "requireLocalDevSessionOwner",
+    "requireLocalDevSessionOwnerQuery",
+    "getLocalDevTeacher",
+    "isLocalDevTeacherAllowed",
+    "upsertLocalDevTeacher",
+    // Indirection through an internal query that itself holds a guard.
+    "assertLocalTeacher",
+  ];
+
+  function convexFiles(): string[] {
+    return readdirSync("convex")
+      .filter((entry) => entry.endsWith(".ts") && entry !== "schema.ts")
+      .map((entry) => join("convex", entry));
+  }
+
+  it("gates every local-teacher function behind a dev-only guard", () => {
+    const ungated: string[] = [];
+    for (const file of convexFiles()) {
+      const source = readFileSync(file, "utf8");
+      const segments = source.split(/\nexport const (\w+) = /u);
+      for (let i = 1; i < segments.length; i += 2) {
+        const name = segments[i];
+        const body = segments[i + 1];
+        if (!name.includes("AsLocalTeacher") && name !== "ensureLocalTeacher") continue;
+        if (!GUARDS.some((guard) => body.includes(guard))) {
+          ungated.push(`${file.split(sep).join("/")} → ${name}`);
+        }
+      }
+    }
+    expect(ungated).toEqual([]);
+  });
+
+  it("requires both development mode and the explicit flag", () => {
+    // A single copied env var must never be enough to unlock the identity.
+    expect(isLocalDevTeacherAllowed({ NODE_ENV: "production", ALLOW_DEV_TEACHER: "1" })).toBe(false);
+    expect(isLocalDevTeacherAllowed({ NODE_ENV: "development", ALLOW_DEV_TEACHER: "0" })).toBe(false);
+    expect(isLocalDevTeacherAllowed({ NODE_ENV: "development" })).toBe(false);
+    expect(isLocalDevTeacherAllowed({})).toBe(false);
+    expect(isLocalDevTeacherAllowed({ NODE_ENV: "development", ALLOW_DEV_TEACHER: "1" })).toBe(true);
+  });
+
+  it("keeps the proof-token route dev-only on the same two-key rule", () => {
+    const route = readFileSync(join("app", "api", "proof-socket-token", "route.ts"), "utf8");
+    expect(route).toContain('NODE_ENV === "development"');
+    expect(route).toContain('ALLOW_PROOF_SOCKET === "1"');
   });
 });

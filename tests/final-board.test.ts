@@ -11,7 +11,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getLatestFinal, saveFinal } from "@/convex/boardSnapshots";
-import { finalize } from "@/convex/sessions";
+import { finalize, saveFinalAndEnd } from "@/convex/sessions";
 import { createFakeConvex, handlerOf } from "./helpers/fake-convex";
 
 const TEACHER = "users:owner";
@@ -46,7 +46,10 @@ function world(sessionStatus: "live" | "ending" | "ended" = "live", extra?: Reco
 
 const save = handlerOf<{ sessionId: string; boardVersion: number; sceneJson: string }, { snapshotId: string; boardVersion: number }>(saveFinal);
 const latest = handlerOf<{ sessionId: string }, Record<string, unknown> | null>(getLatestFinal);
-const runFinalize = handlerOf<{ sessionId: string }, { ok: boolean; reason?: string; endedAt?: number } | null>(finalize);
+const runFinalize = handlerOf<
+  { sessionId: string; attempt?: number },
+  { ok: boolean; reason?: string; endedAt?: number } | null
+>(finalize);
 
 describe("EXPORT-01 durable final scene", () => {
   it("persists the final scene and points the session at it", async () => {
@@ -148,12 +151,41 @@ describe("EXPORT-01 finalization", () => {
     expect(typeof session.endedAt).toBe("number");
   });
 
-  it("does not end the room when the final snapshot is missing", async () => {
+  it("retries rather than ending while the final snapshot may still be in flight", async () => {
     const fake = world("ending");
     const result = await runFinalize(fake.ctx, { sessionId: SESSION });
 
-    expect(result).toMatchObject({ ok: false, reason: "FINAL_SNAPSHOT_MISSING" });
+    expect(result).toMatchObject({ ok: false, reason: "FINAL_SNAPSHOT_PENDING" });
     expect(fake.rows("sessions")[0].status).toBe("ending");
+  });
+
+  it("completes normally when a retry finds the snapshot has landed", async () => {
+    const fake = world("ending");
+    expect(await runFinalize(fake.ctx, { sessionId: SESSION })).toMatchObject({ reason: "FINAL_SNAPSHOT_PENDING" });
+
+    await save(fake.ctx, { sessionId: SESSION, boardVersion: 7, sceneJson: SCENE });
+    const result = await runFinalize(fake.ctx, { sessionId: SESSION, attempt: 1 });
+
+    expect(result?.ok).toBe(true);
+    expect(fake.rows("sessions")[0].status).toBe("ended");
+    expect(fake.rows("sessions")[0].finalizeWarning).toBeUndefined();
+  });
+
+  /**
+   * The room must always terminate. `end` has already revoked every socket and
+   * cleared relay hot state, so a session parked in `ending` can never be
+   * re-saved, re-ended or exported — the class is unrecoverable. Losing the
+   * board is bad; silently stranding the room is worse.
+   */
+  it("ends the room with a warning once the retries are spent", async () => {
+    const fake = world("ending");
+    const result = await runFinalize(fake.ctx, { sessionId: SESSION, attempt: 4 });
+
+    expect(result).toMatchObject({ ok: false, reason: "FINAL_SNAPSHOT_MISSING" });
+    const session = fake.rows("sessions")[0];
+    expect(session.status).toBe("ended");
+    expect(session.finalizeWarning).toBe("FINAL_SNAPSHOT_MISSING");
+    expect(typeof session.endedAt).toBe("number");
   });
 
   it("is a no-op when the room is not in the ending state", async () => {
@@ -172,5 +204,63 @@ describe("EXPORT-01 finalization", () => {
     expect(first?.ok).toBe(true);
     expect(second).toBeNull();
     expect(fake.rows("sessions")[0].endedAt).toBe(endedAt);
+  });
+});
+
+/**
+ * The save-then-end sequence left a window: if the tab closed, the network
+ * dropped, or the scene exceeded the persistence bound between the two calls,
+ * the room reached `ending` with no board — and finalization then had nothing to
+ * work with. Convex mutations are transactional, so both happen or neither does.
+ */
+describe("FIN-02 atomic save-and-end", () => {
+  const saveAndEnd = handlerOf<
+    { sessionId: string; boardVersion: number; sceneJson: string },
+    { status: string; snapshotId?: string }
+  >(saveFinalAndEnd);
+
+  it("persists the board and begins ending in one call", async () => {
+    const fake = world("live");
+    const result = await saveAndEnd(fake.ctx, { sessionId: SESSION, boardVersion: 12, sceneJson: SCENE });
+
+    expect(result.status).toBe("ending");
+    const session = fake.rows("sessions")[0];
+    expect(session.status).toBe("ending");
+    expect(session.latestSnapshotId).toBeDefined();
+    expect(fake.rows("boardSnapshots")[0].sceneJsonCompressed).toBe(SCENE);
+  });
+
+  it("leaves the room live when the scene cannot be persisted", async () => {
+    const fake = world("live");
+    const oversized = JSON.stringify({ elements: [{ id: "x", note: "z".repeat(1_000_000) }] });
+
+    await expect(
+      saveAndEnd(fake.ctx, { sessionId: SESSION, boardVersion: 1, sceneJson: oversized }),
+    ).rejects.toThrow("SCENE_TOO_LARGE");
+    // The whole point: a failed save must not have half-ended the room.
+    expect(fake.rows("sessions")[0].status).toBe("live");
+    expect(fake.rows("boardSnapshots")).toHaveLength(0);
+  });
+
+  it("refuses a teacher who does not own the room", async () => {
+    const intruder = createFakeConvex({
+      identity: { subject: "auth|intruder" },
+      seed: {
+        users: [{ _id: "users:intruder", authSubject: "auth|intruder", role: "teacher", createdAt: 1 }],
+        sessions: [{ _id: SESSION, teacherId: TEACHER, title: "Quadratics", joinCode: "QN47XB", status: "live", latestBoardVersion: 0 }],
+      },
+    });
+    await expect(
+      saveAndEnd(intruder.ctx, { sessionId: SESSION, boardVersion: 1, sceneJson: SCENE }),
+    ).rejects.toThrow("Classroom not found");
+  });
+
+  it("is idempotent against a double click", async () => {
+    const fake = world("live");
+    await saveAndEnd(fake.ctx, { sessionId: SESSION, boardVersion: 12, sceneJson: SCENE });
+    const second = await saveAndEnd(fake.ctx, { sessionId: SESSION, boardVersion: 12, sceneJson: SCENE });
+
+    expect(second.status).toBe("ending");
+    expect(fake.rows("boardSnapshots")).toHaveLength(1);
   });
 });

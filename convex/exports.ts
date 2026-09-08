@@ -5,7 +5,8 @@ import type { FunctionReference } from "convex/server";
 import type { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { mutation, query, internalMutation } from "./_generated/server";
-import { requireLocalDevSessionOwner, requireLocalDevSessionOwnerQuery, requireSessionOwner } from "./auth";
+import { requireSessionOwner } from "./permissions";
+import { fail } from "./errors";
 
 const processExport = (internal as unknown as {
   [key: string]: { processNext: FunctionReference<"action", "internal", { exportId: Id<"exports"> }, unknown> };
@@ -15,18 +16,7 @@ export const request = mutation({
   args: { sessionId: v.id("sessions"), type: v.union(v.literal("board-pdf"), v.literal("notes-pdf"), v.literal("png")) },
   handler: async (ctx, args) => {
     const { session } = await requireSessionOwner(ctx, args.sessionId);
-    if (session.status !== "ended" || !session.latestSnapshotId) throw new Error("FINAL_BOARD_REQUIRED: End the class before exporting.");
-    const exportId = await ctx.db.insert("exports", { sessionId: session._id, type: args.type, status: "queued", createdAt: Date.now() });
-    await ctx.scheduler.runAfter(0, processExport, { exportId });
-    return { exportId, status: "queued" as const };
-  },
-});
-
-export const requestAsLocalTeacher = mutation({
-  args: { sessionId: v.id("sessions"), type: v.union(v.literal("board-pdf"), v.literal("notes-pdf"), v.literal("png")) },
-  handler: async (ctx, args) => {
-    const { session } = await requireLocalDevSessionOwner(ctx, args.sessionId);
-    if (session.status !== "ended" || !session.latestSnapshotId) throw new Error("FINAL_BOARD_REQUIRED: End the class before exporting.");
+    if (session.status !== "ended" || !session.latestSnapshotId) fail("FINAL_BOARD_REQUIRED", "End the class before exporting.");
     const exportId = await ctx.db.insert("exports", { sessionId: session._id, type: args.type, status: "queued", createdAt: Date.now() });
     await ctx.scheduler.runAfter(0, processExport, { exportId });
     return { exportId, status: "queued" as const };
@@ -37,14 +27,6 @@ export const getForSession = query({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, args) => {
     await requireSessionOwner(ctx, args.sessionId);
-    return await ctx.db.query("exports").withIndex("by_session_created", (q) => q.eq("sessionId", args.sessionId)).order("desc").take(20);
-  },
-});
-
-export const getForSessionAsLocalTeacher = query({
-  args: { sessionId: v.id("sessions") },
-  handler: async (ctx, args) => {
-    await requireLocalDevSessionOwnerQuery(ctx, args.sessionId);
     return await ctx.db.query("exports").withIndex("by_session_created", (q) => q.eq("sessionId", args.sessionId)).order("desc").take(20);
   },
 });

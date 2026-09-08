@@ -11,7 +11,7 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { listTeacherQueue, resolve, submit, vote } from "@/convex/doubts";
+import { listOpen, listTeacherQueue, resolve, submit, vote } from "@/convex/doubts";
 import { DOUBT_MAX_CHARS, DOUBT_RATE_LIMIT_MAX } from "@/shared/constants/limits";
 import { createFakeConvex, handlerOf } from "./helpers/fake-convex";
 
@@ -221,5 +221,70 @@ describe("DOUBT-03 teacher-only resolution", () => {
       },
     });
     await expect(teacherQueue(intruder.ctx, { sessionId: SESSION })).rejects.toThrow("Classroom not found");
+  });
+});
+
+/**
+ * The student-facing list used to take only a sessionId, so anyone holding one
+ * could read every question in a live room. Doubt anonymity is the product's
+ * central privacy promise, so admission is now proven on the read too.
+ */
+describe("DOUBT-06 student list admission", () => {
+  const openList = handlerOf<
+    { sessionId: string; participantId: string },
+    Array<Record<string, unknown>>
+  >(listOpen);
+
+  it("returns the open queue to an admitted participant", async () => {
+    const fake = world();
+    await submitDoubt(fake.ctx, { sessionId: SESSION, participantId: PARTICIPANT, text: "Why is b halved?" });
+
+    const rows = await openList(fake.ctx, { sessionId: SESSION, participantId: PARTICIPANT });
+    expect(rows).toHaveLength(1);
+  });
+
+  it("refuses a participant admitted to a different room", async () => {
+    const fake = createFakeConvex({
+      identity: { subject: "auth|owner" },
+      seed: {
+        users: [{ _id: TEACHER, authSubject: "auth|owner", role: "teacher", createdAt: 1 }],
+        sessions: [
+          { _id: SESSION, teacherId: TEACHER, title: "Quadratics", joinCode: "QN47XB", status: "live", latestBoardVersion: 0 },
+          { _id: "sessions:other", teacherId: TEACHER, title: "Other", joinCode: "ZZ99YY", status: "live", latestBoardVersion: 0 },
+        ],
+        participants: [
+          { _id: "participants:outsider", sessionId: "sessions:other", anonymousIdHash: "hash-x", joinedAt: 1, lastSeenAt: 1, doubtCount: 0 },
+        ],
+      },
+    });
+
+    await expect(
+      openList(fake.ctx, { sessionId: SESSION, participantId: "participants:outsider" }),
+    ).rejects.toThrow("not admitted");
+  });
+
+  it("refuses a blocked participant", async () => {
+    const fake = createFakeConvex({
+      identity: { subject: "auth|owner" },
+      seed: {
+        users: [{ _id: TEACHER, authSubject: "auth|owner", role: "teacher", createdAt: 1 }],
+        sessions: [{ _id: SESSION, teacherId: TEACHER, title: "Quadratics", joinCode: "QN47XB", status: "live", latestBoardVersion: 0 }],
+        participants: [
+          {
+            _id: PARTICIPANT,
+            sessionId: SESSION,
+            anonymousIdHash: "hash-a",
+            joinedAt: 1,
+            lastSeenAt: 1,
+            doubtCount: 0,
+            blockedUntil: Date.now() + 60_000,
+          },
+        ],
+      },
+    });
+
+    await expect(
+      openList(fake.ctx, { sessionId: SESSION, participantId: PARTICIPANT }),
+    ).rejects.toThrow(/temporarily unavailable/i);
   });
 });

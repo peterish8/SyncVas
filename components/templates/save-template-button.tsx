@@ -21,7 +21,9 @@ export function SaveTemplateButton({
   subject?: string;
   defaultTitle?: string;
 }) {
-  const saveTemplate = useMutation(api.boardTemplates.saveAsLocalTeacher);
+  const saveTemplate = useMutation(
+    api.boardTemplates.save,
+  );
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(defaultTitle ?? "");
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");

@@ -15,6 +15,9 @@ export const processNext = internalAction({
     if (!job) return { ok: false, reason: "missing" };
     try {
       const snapshot = job.sessionId ? await ctx.runQuery(internal.boardSnapshots.getFinalForExport, { sessionId: job.sessionId }) : null;
+      // Deliberately a plain Error, not convex/errors.fail: this is caught by
+      // the handler below and recorded on the job row. It never crosses a
+      // client boundary, so it needs no ConvexError payload.
       if (!snapshot?.sceneJsonCompressed) throw new Error("FINAL_SCENE_MISSING");
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900"><rect width="1600" height="900" fill="white"/><text x="32" y="52" font-family="sans-serif" font-size="24">SyncVas final board</text><text x="32" y="88" font-family="monospace" font-size="11">${escapeXml(snapshot.sceneJsonCompressed.slice(0, 10000))}</text></svg>`;
       const storageId = await ctx.storage.store(new Blob([svg], { type: "image/svg+xml" }));

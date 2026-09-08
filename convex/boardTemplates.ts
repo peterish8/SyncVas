@@ -11,8 +11,9 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { getLocalDevTeacher, requireLocalDevTeacher, requireTeacher } from "./auth";
+import { requireTeacher } from "./permissions";
 import { normalizeTemplateTitle, validateSceneJson } from "../shared/board/scene";
+import { fail, rethrowCoded } from "./errors";
 
 const ORIGIN = v.union(v.literal("authored"), v.literal("ai-assisted"));
 
@@ -36,7 +37,7 @@ async function ownedTemplate(
   const template = await ctx.db.get(templateId);
   // A miss and a foreign template are indistinguishable to the caller.
   if (!template || template.teacherId !== teacherId) {
-    throw new Error("NOT_FOUND: Template not found.");
+    fail("NOT_FOUND", "Template not found.");
   }
   return template;
 }
@@ -46,8 +47,8 @@ async function insertTemplate(
   teacherId: Id<"users">,
   args: { title: string; subject?: string; sceneJson: string; blockSources?: string; origin: "authored" | "ai-assisted" },
 ) {
-  const title = normalizeTemplateTitle(args.title);
-  validateSceneJson(args.sceneJson);
+  const title = rethrowCoded(() => normalizeTemplateTitle(args.title));
+  rethrowCoded(() => validateSceneJson(args.sceneJson));
   const now = Date.now();
   const templateId = await ctx.db.insert("boardTemplates", {
     teacherId,
@@ -87,35 +88,12 @@ export const save = mutation({
   },
 });
 
-export const saveAsLocalTeacher = mutation({
-  args: {
-    title: v.string(),
-    subject: v.optional(v.string()),
-    sceneJson: v.string(),
-    blockSources: v.optional(v.string()),
-    origin: v.optional(ORIGIN),
-  },
-  handler: async (ctx, args) => {
-    const teacher = await requireLocalDevTeacher(ctx);
-    return await insertTemplate(ctx, teacher._id, { ...args, origin: args.origin ?? "authored" });
-  },
-});
-
 /* PREP-02 — list, open, rename and delete, scoped to the owning teacher. */
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
     const teacher = await requireTeacher(ctx);
-    return await listTemplates(ctx, teacher._id);
-  },
-});
-
-export const listAsLocalTeacher = query({
-  args: {},
-  handler: async (ctx) => {
-    const teacher = await getLocalDevTeacher(ctx);
-    if (!teacher) return [];
     return await listTemplates(ctx, teacher._id);
   },
 });
@@ -129,33 +107,12 @@ export const get = query({
   },
 });
 
-export const getAsLocalTeacher = query({
-  args: { templateId: v.id("boardTemplates") },
-  handler: async (ctx, args) => {
-    const teacher = await getLocalDevTeacher(ctx);
-    if (!teacher) throw new Error("NOT_FOUND: Template not found.");
-    const template = await ownedTemplate(ctx, teacher._id, args.templateId);
-    return { ...toSummary(template), sceneJson: template.sceneJson, blockSources: template.blockSources };
-  },
-});
-
 export const rename = mutation({
   args: { templateId: v.id("boardTemplates"), title: v.string() },
   handler: async (ctx, args) => {
     const teacher = await requireTeacher(ctx);
     const template = await ownedTemplate(ctx, teacher._id, args.templateId);
-    const title = normalizeTemplateTitle(args.title);
-    await ctx.db.patch(template._id, { title, updatedAt: Date.now() });
-    return { templateId: template._id, title };
-  },
-});
-
-export const renameAsLocalTeacher = mutation({
-  args: { templateId: v.id("boardTemplates"), title: v.string() },
-  handler: async (ctx, args) => {
-    const teacher = await requireLocalDevTeacher(ctx);
-    const template = await ownedTemplate(ctx, teacher._id, args.templateId);
-    const title = normalizeTemplateTitle(args.title);
+    const title = rethrowCoded(() => normalizeTemplateTitle(args.title));
     await ctx.db.patch(template._id, { title, updatedAt: Date.now() });
     return { templateId: template._id, title };
   },
@@ -165,16 +122,6 @@ export const remove = mutation({
   args: { templateId: v.id("boardTemplates") },
   handler: async (ctx, args) => {
     const teacher = await requireTeacher(ctx);
-    const template = await ownedTemplate(ctx, teacher._id, args.templateId);
-    await ctx.db.delete(template._id);
-    return { templateId: args.templateId };
-  },
-});
-
-export const removeAsLocalTeacher = mutation({
-  args: { templateId: v.id("boardTemplates") },
-  handler: async (ctx, args) => {
-    const teacher = await requireLocalDevTeacher(ctx);
     const template = await ownedTemplate(ctx, teacher._id, args.templateId);
     await ctx.db.delete(template._id);
     return { templateId: args.templateId };
@@ -198,12 +145,3 @@ export const getStartingScene = query({
   },
 });
 
-export const getStartingSceneAsLocalTeacher = query({
-  args: { templateId: v.id("boardTemplates") },
-  handler: async (ctx, args) => {
-    const teacher = await getLocalDevTeacher(ctx);
-    if (!teacher) throw new Error("NOT_FOUND: Template not found.");
-    const template = await ownedTemplate(ctx, teacher._id, args.templateId);
-    return { templateId: template._id, title: template.title, sceneJson: template.sceneJson };
-  },
-});

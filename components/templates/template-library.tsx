@@ -13,6 +13,7 @@ import { useConvex, useMutation, useQuery } from "convex/react";
 
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { canRunTeacherQuery, teacherQueryArgs, useTeacherAccess } from "@/lib/teacher-access";
 
 export type PreparedBoard = {
   templateId: Id<"boardTemplates">;
@@ -39,14 +40,24 @@ export function TemplateLibrary({
   onOpen: (board: PreparedBoard) => void;
   disabled?: boolean;
 }) {
-  const templates = useQuery(api.boardTemplates.listAsLocalTeacher, {}) as TemplateSummary[] | undefined;
-  const renameTemplate = useMutation(api.boardTemplates.renameAsLocalTeacher);
-  const removeTemplate = useMutation(api.boardTemplates.removeAsLocalTeacher);
+  const access = useTeacherAccess();
+  const templates = useQuery(
+    api.boardTemplates.list,
+    teacherQueryArgs(access, {}),
+  ) as TemplateSummary[] | undefined;
+  const renameTemplate = useMutation(
+    api.boardTemplates.rename,
+  );
+  const removeTemplate = useMutation(
+    api.boardTemplates.remove,
+  );
   // The scene is fetched on demand, so the library listing stays lightweight.
   const convex = useConvex();
 
   const [busyId, setBusyId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  /** Deleting a prepared board is a hard delete with no undo (PREP-02). */
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -54,9 +65,10 @@ export function TemplateLibrary({
     setBusyId(template.templateId);
     setError(null);
     try {
-      const opened = await convex.query(api.boardTemplates.getStartingSceneAsLocalTeacher, {
-        templateId: template.templateId,
-      });
+      const opened = await convex.query(
+        api.boardTemplates.getStartingScene,
+        { templateId: template.templateId },
+      );
       onOpen({ templateId: template.templateId, title: opened.title, scene: JSON.parse(opened.sceneJson) });
     } catch {
       setError("That prepared board could not be opened.");
@@ -85,12 +97,27 @@ export function TemplateLibrary({
     setError(null);
     try {
       await removeTemplate({ templateId });
+      setConfirmingId(null);
     } catch {
       setError("That prepared board could not be deleted.");
     } finally {
       setBusyId(null);
     }
   };
+
+  if (!canRunTeacherQuery(access)) {
+    // Never show "nothing saved yet" to someone whose library was not queried.
+    return (
+      <section aria-label="Prepared boards" className="text-sm text-ink-muted">
+        <h3 className="text-sm font-medium text-ink">Prepared boards</h3>
+        <p className="mt-2">
+          {access === "resolving"
+            ? "Checking your teacher account…"
+            : "Sign in to open the boards you have saved."}
+        </p>
+      </section>
+    );
+  }
 
   if (templates === undefined) {
     return (
@@ -173,14 +200,38 @@ export function TemplateLibrary({
                     >
                       Rename
                     </button>
-                    <button
-                      type="button"
-                      className="syncvas-btn syncvas-btn-ghost syncvas-btn-sm"
-                      disabled={busyId === template.templateId}
-                      onClick={() => void discard(template.templateId)}
-                    >
-                      Delete
-                    </button>
+                    {confirmingId === template.templateId ? (
+                      <>
+                        <span className="self-center text-xs text-ink-muted">
+                          Delete “{template.title}” for good?
+                        </span>
+                        <button
+                          type="button"
+                          className="syncvas-btn syncvas-btn-danger syncvas-btn-sm"
+                          disabled={busyId === template.templateId}
+                          onClick={() => void discard(template.templateId)}
+                        >
+                          {busyId === template.templateId ? "Deleting…" : "Delete"}
+                        </button>
+                        <button
+                          type="button"
+                          className="syncvas-btn syncvas-btn-ghost syncvas-btn-sm"
+                          disabled={busyId === template.templateId}
+                          onClick={() => setConfirmingId(null)}
+                        >
+                          Keep
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className="syncvas-btn syncvas-btn-ghost syncvas-btn-sm"
+                        disabled={busyId === template.templateId}
+                        onClick={() => setConfirmingId(template.templateId)}
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </>
               )}

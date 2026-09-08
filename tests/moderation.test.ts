@@ -208,3 +208,142 @@ describe("MOD-04 duplicates are advisory, never auto-merged", () => {
     expect(other.duplicateOf).toBeUndefined();
   });
 });
+
+describe("COST-03 a duplicate reuses the original's verdict", () => {
+  const QUESTION = "Why is b halved?";
+  const REPEAT = "  why is B HALVED?  ";
+
+  /** Seeds unrelated doubts between the original and the repeat. */
+  function worldWithFiller(count: number, original: Record<string, unknown>) {
+    const filler = Array.from({ length: count }, (_, index) => ({
+      _id: `doubts:filler-${index}`,
+      sessionId: SESSION,
+      participantId: "participants:filler",
+      text: `Unrelated question ${index}`,
+      normalizedText: `unrelated question ${index}`,
+      status: "accepted",
+      voteCount: 0,
+      createdAt: 100 + index,
+    }));
+    return createFakeConvex({
+      identity: { subject: "auth|owner" },
+      seed: {
+        users: [{ _id: TEACHER, authSubject: "auth|owner", role: "teacher", createdAt: 1 }],
+        sessions: [
+          { _id: SESSION, teacherId: TEACHER, title: "Quadratics", joinCode: "QN47XB", status: "live", latestBoardVersion: 0 },
+        ],
+        participants: [
+          { _id: PARTICIPANT, sessionId: SESSION, anonymousIdHash: "hash-a", joinedAt: 1, lastSeenAt: 1, doubtCount: 0 },
+        ],
+        doubts: [original, ...filler],
+      },
+    });
+  }
+
+  it("does not call the provider a second time for the same question", async () => {
+    const fake = world();
+    const first = await submitDoubt(fake.ctx, { sessionId: SESSION, participantId: PARTICIPANT, text: QUESTION });
+    await triage(fake.ctx, { doubtId: first.doubtId, outcome: "accept", reasonCode: "on_topic", relevanceScore: 0.9 });
+    expect(fake.scheduled).toHaveLength(1);
+
+    const second = await submitDoubt(fake.ctx, { sessionId: SESSION, participantId: PARTICIPANT, text: REPEAT });
+
+    // Still one scheduled call: the repeat inherited the verdict rather than paying for it.
+    expect(fake.scheduled).toHaveLength(1);
+    expect(second.duplicateOf).toBe(first.doubtId);
+    expect(second.status).toBe("accepted");
+    expect(fake.rows("doubts")[1].relevanceScore).toBe(0.9);
+    // No reasonCode assertion here on purpose: applyTriage only writes one when the
+    // verdict changes the status, so a confirming "accept" leaves the original without
+    // one. The uncertain case below is where an inherited reasonCode is observable.
+  });
+
+  it("inherits an uncertain verdict as uncertain, not as accepted", async () => {
+    const fake = world();
+    const first = await submitDoubt(fake.ctx, { sessionId: SESSION, participantId: PARTICIPANT, text: QUESTION });
+    await triage(fake.ctx, { doubtId: first.doubtId, outcome: "uncertain", reasonCode: "off_topic_maybe" });
+
+    const second = await submitDoubt(fake.ctx, { sessionId: SESSION, participantId: PARTICIPANT, text: REPEAT });
+    expect(second.status).toBe("uncertain");
+    expect(second.reasonCode).toBe("off_topic_maybe");
+    expect(fake.scheduled).toHaveLength(1);
+  });
+
+  it("re-enters the queue as accepted when the original was already answered", async () => {
+    const fake = worldWithFiller(0, {
+      _id: "doubts:answered",
+      sessionId: SESSION,
+      participantId: "participants:filler",
+      text: QUESTION,
+      normalizedText: "why is b halved?",
+      status: "answered",
+      reasonCode: "on_topic",
+      voteCount: 3,
+      createdAt: 50,
+    });
+
+    const repeat = await submitDoubt(fake.ctx, { sessionId: SESSION, participantId: PARTICIPANT, text: REPEAT });
+    // The verdict carries over; the lifecycle does not. A fresh asker is still waiting.
+    expect(repeat.status).toBe("accepted");
+    expect(repeat.duplicateOf).toBe("doubts:answered");
+    expect(fake.scheduled).toHaveLength(0);
+  });
+
+  it("finds a duplicate further back than the old 100-doubt window", async () => {
+    const fake = worldWithFiller(120, {
+      _id: "doubts:original",
+      sessionId: SESSION,
+      participantId: "participants:filler",
+      text: QUESTION,
+      normalizedText: "why is b halved?",
+      status: "accepted",
+      reasonCode: "on_topic",
+      voteCount: 0,
+      createdAt: 1,
+    });
+
+    const repeat = await submitDoubt(fake.ctx, { sessionId: SESSION, participantId: PARTICIPANT, text: REPEAT });
+    expect(repeat.duplicateOf).toBe("doubts:original");
+    expect(fake.scheduled).toHaveLength(0);
+  });
+
+  it("does not inherit from a rejected original", async () => {
+    const fake = worldWithFiller(0, {
+      _id: "doubts:rejected",
+      sessionId: SESSION,
+      participantId: "participants:filler",
+      text: QUESTION,
+      normalizedText: "why is b halved?",
+      status: "rejected",
+      reasonCode: "off_topic",
+      voteCount: 0,
+      createdAt: 1,
+    });
+
+    const repeat = await submitDoubt(fake.ctx, { sessionId: SESSION, participantId: PARTICIPANT, text: REPEAT });
+    expect(repeat.duplicateOf).toBeUndefined();
+    expect(repeat.status).toBe("accepted");
+    // A rejected original carries no reusable verdict, so this one is triaged normally.
+    expect(fake.scheduled).toHaveLength(1);
+  });
+
+  it("reads a bounded number of rows however busy the room is", async () => {
+    const fake = worldWithFiller(120, {
+      _id: "doubts:original",
+      sessionId: SESSION,
+      participantId: "participants:filler",
+      text: QUESTION,
+      normalizedText: "why is b halved?",
+      status: "accepted",
+      voteCount: 0,
+      createdAt: 1,
+    });
+
+    fake.resetReads();
+    await submitDoubt(fake.ctx, { sessionId: SESSION, participantId: PARTICIPANT, text: REPEAT });
+    // The take(100) scan this replaced read 100 rows on every single submission.
+    for (const read of fake.readsOf("doubts")) {
+      expect(read.rows).toBeLessThanOrEqual(10);
+    }
+  });
+});

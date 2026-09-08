@@ -1,20 +1,11 @@
 /**
- * @scaffold true
- * @phase 3
- * Room join + coarse presence
+ * Room naming for the relay.
  *
- * After token verify, socket.join(session:{id}); track coarse counts.
- * Publish room:presence; disconnect cleanup. Cross-room isolation tests in Phase 9.
+ * One definition, imported by both `server.ts` and `protocol.ts`. It was
+ * previously declared identically in both files, so the relay's room keys and
+ * its broadcast target agreed only by copy-paste.
  */
-
-import type { Server, Socket } from "socket.io";
 
 export function roomName(sessionId: string): string {
   return `session:${sessionId}`;
-}
-
-export function attachRoomHandlers(io: Server, socket: Socket): void {
-  // PHASE 3: room:join with token; presence; leave on disconnect
-  void io;
-  void socket;
 }

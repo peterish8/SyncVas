@@ -10,7 +10,9 @@ import {
   roomJoinSchema,
 } from "../../shared/protocol/socket.js";
 import { attachClassroomHandlers } from "./protocol.js";
-import { clearHotScene, isRoomRevoked, markRoomRevoked } from "./board-hot-state.js";
+import { clearHotScene, hotStateStats, isRoomRevoked, markRoomRevoked, sweepHotState } from "./board-hot-state.js";
+import { LIMITS } from "./config.js";
+import { roomName } from "./rooms.js";
 
 export type RoomClaims = {
   sessionId: string;
@@ -75,10 +77,6 @@ export function verifyRoomToken(token: string, secret = process.env.SOCKET_INTER
   return claims as RoomClaims;
 }
 
-export function roomName(sessionId: string): string {
-  return `session:${sessionId}`;
-}
-
 function emitPresence(io: Server, sessionId: string): void {
   const room = roomName(sessionId);
   const connectedCount = io.sockets.adapter.rooms.get(room)?.size ?? 0;
@@ -112,8 +110,18 @@ function constantTimeSignatureMatches(body: string, timestamp: string | null, su
 export function createSocketServer(httpServer: HttpServer, allowedOrigins: string[]) {
   const io = new Server(httpServer, {
     cors: { origin: allowedOrigins, methods: ["GET", "POST"] },
+    // Frames larger than this are dropped by the transport before Zod ever runs,
+    // and the connection is closed. Derived from the protocol ceiling so a board
+    // carrying the maximum allowed images still fails validation cleanly rather
+    // than killing the teacher's socket mid-lesson.
+    maxHttpBufferSize: LIMITS.maxHttpBufferSize,
   });
   const activeTeacherWriters = new Map<string, string>();
+
+  const sweepTimer = setInterval(() => sweepHotState(), LIMITS.sweepIntervalMs);
+  // Never hold the process open for a housekeeping timer.
+  sweepTimer.unref?.();
+  httpServer.on("close", () => clearInterval(sweepTimer));
 
   const revokeRoom = (sessionId: string) => {
     markRoomRevoked(sessionId);
@@ -129,10 +137,35 @@ export function createSocketServer(httpServer: HttpServer, allowedOrigins: strin
     clearHotScene(sessionId);
   };
 
-  // Private Convex callback. It is intentionally attached to the existing
-  // server and authenticated with the same secret used for room tokens.
+  // Plain-HTTP surface. Socket.IO handles its own `/socket.io/*` path and defers
+  // everything else to these listeners; without a terminal response here an
+  // unmatched request would hang until the client gave up, which is what a
+  // platform health check looks like when it fails.
   httpServer.on("request", (request, response) => {
-    if (request.method !== "POST" || request.url !== "/internal/revoke-room") return;
+    const path = (request.url ?? "/").split("?")[0];
+
+    if (request.method === "GET" && (path === "/healthz" || path === "/")) {
+      const stats = hotStateStats();
+      response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+      response.end(JSON.stringify({
+        ok: true,
+        service: "syncvas-socket",
+        protocolVersion: SOCKET_PROTOCOL_VERSION,
+        uptimeSeconds: Math.floor(process.uptime()),
+        connectedSockets: io.sockets.sockets.size,
+        ...stats,
+      }));
+      return;
+    }
+
+    if (request.method !== "POST" || path !== "/internal/revoke-room") {
+      // Socket.IO's own handler already answered its path; anything still
+      // unmatched here is genuinely not ours.
+      if (path.startsWith("/socket.io")) return;
+      response.writeHead(404, { "content-type": "application/json", "cache-control": "no-store" });
+      response.end(JSON.stringify({ error: "NOT_FOUND" }));
+      return;
+    }
     const secret = process.env.SOCKET_INTERNAL_SECRET?.trim();
     if (!secret || secret.length < 32) {
       response.writeHead(503, { "content-type": "application/json" });
@@ -192,6 +225,15 @@ export function createSocketServer(httpServer: HttpServer, allowedOrigins: strin
     if (claims && admittedRoom) {
       if (isRoomRevoked(claims.sessionId)) {
         emitProtocolError(socket, claims.sessionId, "ROOM_REVOKED", "This classroom has ended.");
+        socket.disconnect(true);
+        return;
+      }
+      // A room is one physical classroom; a count far above any real class size
+      // means abuse or a reconnect storm, and admitting it would let one room
+      // exhaust the process for every other class on the relay.
+      const occupancy = io.sockets.adapter.rooms.get(admittedRoom)?.size ?? 0;
+      if (claims.role === "student" && occupancy >= LIMITS.maxSocketsPerRoom) {
+        emitProtocolError(socket, claims.sessionId, "ROOM_FULL", "This classroom is at capacity.");
         socket.disconnect(true);
         return;
       }

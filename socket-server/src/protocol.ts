@@ -18,6 +18,25 @@ import {
 } from "../../shared/protocol/socket.js";
 import { getHotScene, isRoomRevoked, setHotScene, setHotViewport } from "./board-hot-state.js";
 import { roomName } from "./rooms.js";
+import { LIMITS, loadConfig } from "./config.js";
+import { allowAction, createRateLimitState, type RateLimitState } from "./rate-limit.js";
+
+/**
+ * `board:update` fires on every coalesced stroke batch and `teacher:viewport` at
+ * scroll frame rate, so logging them per event floods production logs and costs
+ * real money at any hosted log sink. Opt in with SOCKET_DEBUG_EVENTS=1.
+ */
+const debugEvents = (() => {
+  try {
+    return loadConfig().debugEvents;
+  } catch {
+    return false;
+  }
+})();
+
+function debugLog(event: string, detail: Record<string, unknown>): void {
+  if (debugEvents) console.info(event, detail);
+}
 
 type SocketClaims = {
   sessionId: string;
@@ -64,6 +83,7 @@ function requireLiveClaims(socket: Socket, sessionId: string): SocketClaims | un
 
 export function attachClassroomHandlers(io: Server, socket: Socket): void {
   void io;
+  const rateState: RateLimitState = createRateLimitState();
 
   socket.on(SOCKET_EVENTS.boardUpdate, (payload: unknown, acknowledge?: BoardUpdateAck) => {
     const parsed = boardUpdateSchema.safeParse(payload);
@@ -78,8 +98,7 @@ export function attachClassroomHandlers(io: Server, socket: Socket): void {
       acknowledge?.({ ok: false, code: "INVALID_PAYLOAD" });
       return;
     }
-    if (!requireLiveClaims(socket, parsed.data.sessionId)) return;
-    const liveClaims = getClaims(socket);
+    const liveClaims = requireLiveClaims(socket, parsed.data.sessionId);
     if (!liveClaims) return;
     if (parsed.data.sessionId !== liveClaims.sessionId) {
       emitProtocolError(socket, liveClaims.sessionId, "ROOM_MISMATCH", "This token is not valid for that room.");
@@ -94,6 +113,11 @@ export function attachClassroomHandlers(io: Server, socket: Socket): void {
         "Students cannot mutate the board.",
       );
       acknowledge?.({ ok: false, code: "STUDENT_BOARD_EDIT_FORBIDDEN" });
+      return;
+    }
+    if (!allowAction(rateState, "board:update", LIMITS.boardUpdatePerMinute)) {
+      emitProtocolError(socket, liveClaims.sessionId, "RATE_LIMITED", "Too many board updates.");
+      acknowledge?.({ ok: false, code: "RATE_LIMITED" });
       return;
     }
 
@@ -117,7 +141,7 @@ export function attachClassroomHandlers(io: Server, socket: Socket): void {
     });
 
     const room = roomName(liveClaims.sessionId);
-    console.info(SOCKET_EVENTS.boardUpdate, { sessionId: liveClaims.sessionId, room });
+    debugLog(SOCKET_EVENTS.boardUpdate, { sessionId: liveClaims.sessionId, room });
     socket.to(room).emit(SOCKET_EVENTS.boardUpdate, parsed.data);
     acknowledge?.({ ok: true, boardVersion: parsed.data.boardVersion });
   });
@@ -134,16 +158,22 @@ export function attachClassroomHandlers(io: Server, socket: Socket): void {
       );
       return;
     }
-    if (!requireLiveClaims(socket, parsed.data.sessionId)) return;
-    const liveClaims = getClaims(socket);
+    const liveClaims = requireLiveClaims(socket, parsed.data.sessionId);
     if (!liveClaims) return;
     if (parsed.data.sessionId !== liveClaims.sessionId) {
       emitProtocolError(socket, liveClaims.sessionId, "ROOM_MISMATCH", "This token is not valid for that room.");
       return;
     }
 
+    // One small request makes the server serialize and send the entire scene plus
+    // its binary files, so this is the cheapest amplification vector in the relay.
+    if (!allowAction(rateState, "board:request-current", LIMITS.requestCurrentPerMinute)) {
+      emitProtocolError(socket, liveClaims.sessionId, "RATE_LIMITED", "Too many board refresh requests.");
+      return;
+    }
+
     const hot = getHotScene(liveClaims.sessionId);
-    console.info(SOCKET_EVENTS.boardRequestCurrent, {
+    debugLog(SOCKET_EVENTS.boardRequestCurrent, {
       sessionId: liveClaims.sessionId,
       room: roomName(liveClaims.sessionId),
     });
@@ -182,8 +212,7 @@ export function attachClassroomHandlers(io: Server, socket: Socket): void {
       );
       return;
     }
-    if (!requireLiveClaims(socket, parsed.data.sessionId)) return;
-    const liveClaims = getClaims(socket);
+    const liveClaims = requireLiveClaims(socket, parsed.data.sessionId);
     if (!liveClaims) return;
     if (parsed.data.sessionId !== liveClaims.sessionId) {
       emitProtocolError(socket, liveClaims.sessionId, "ROOM_MISMATCH", "This token is not valid for that room.");
@@ -207,7 +236,7 @@ export function attachClassroomHandlers(io: Server, socket: Socket): void {
       pageId: parsed.data.pageId,
       ts: parsed.data.ts,
     });
-    console.info(SOCKET_EVENTS.teacherViewport, { sessionId: liveClaims.sessionId, room });
+    debugLog(SOCKET_EVENTS.teacherViewport, { sessionId: liveClaims.sessionId, room });
     socket.volatile.to(room).emit(SOCKET_EVENTS.teacherViewport, parsed.data);
   });
 
@@ -218,8 +247,7 @@ export function attachClassroomHandlers(io: Server, socket: Socket): void {
       emitProtocolError(socket, claims?.sessionId ?? "unknown", "INVALID_PAYLOAD", "Invalid block highlight payload.");
       return;
     }
-    if (!requireLiveClaims(socket, parsed.data.sessionId)) return;
-    const liveClaims = getClaims(socket);
+    const liveClaims = requireLiveClaims(socket, parsed.data.sessionId);
     if (!liveClaims || liveClaims.sessionId !== parsed.data.sessionId) return;
     if (liveClaims.role !== "teacher") {
       emitProtocolError(socket, liveClaims.sessionId, "FORBIDDEN", "Only the teacher may highlight a block.");

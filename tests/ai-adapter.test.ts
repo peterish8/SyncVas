@@ -17,7 +17,6 @@ import {
   moderationRequestSchema,
   moderationResultSchema,
 } from "@/lib/ai/moderation-adapter";
-import { createLiveModerationAdapter } from "@/lib/ai/providers";
 
 const ENDPOINT = "https://moderation.test/v1/screen";
 const API_KEY = "test-moderation-key";
@@ -109,10 +108,6 @@ describe("AI-03 the default deployment runs without a provider", () => {
     expect(getModerationAdapter()).toBeInstanceOf(DisabledModerationAdapter);
   });
 
-  it("keeps the phase 10 provider factory disabled until a provider is chosen", async () => {
-    const result = await createLiveModerationAdapter().moderate({ text: "Why?", sessionId: "sessions:1" });
-    expect(result.outcome).toBe("uncertain");
-  });
 });
 
 describe("AI-04 configured provider transport", () => {

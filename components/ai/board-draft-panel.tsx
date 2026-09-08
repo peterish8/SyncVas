@@ -15,6 +15,8 @@ import { api } from "@/convex/_generated/api";
 import { buildLessonDraft, type LessonDraft } from "@/lib/ai/lesson-authoring";
 import type { BoardDraftBlock } from "@/lib/ai/board-authoring-adapter";
 
+import { SyncvasSelect } from "@/components/ui/syncvas-select";
+
 type DraftState = {
   topic: string;
   draft: LessonDraft;
@@ -24,8 +26,12 @@ type DraftState = {
 const UNAVAILABLE_COPY = "AI drafting is not configured.";
 
 export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (scene: unknown, title: string) => void }) {
-  const requestDraft = useAction(api.boardAuthoring.draftAsLocalTeacher);
-  const saveTemplate = useMutation(api.boardTemplates.saveAsLocalTeacher);
+  const requestDraft = useAction(
+    api.boardAuthoring.draft,
+  );
+  const saveTemplate = useMutation(
+    api.boardTemplates.save,
+  );
 
   const [topic, setTopic] = useState("");
   const [detail, setDetail] = useState<"light" | "standard">("standard");
@@ -82,55 +88,62 @@ export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (scene: unknown, 
     }
   };
 
+  const busy = state !== "idle";
+
   return (
     <section aria-label="AI board draft" className="text-sm">
-      <h3 className="text-sm font-medium text-ink">Draft a board with AI</h3>
+      <h3 className="text-sm font-medium tracking-[-0.02em] text-ink">Draft a board with AI</h3>
+      <p className="mt-1 text-xs leading-5 text-ink-muted">
+        Describe the lesson, choose detail and writing space, then review before saving.
+      </p>
 
-      <div className="mt-2 space-y-2">
-        <label className="sr-only" htmlFor="draft-topic">
-          Lesson topic
-        </label>
-        <input
-          id="draft-topic"
-          className="syncvas-input min-h-9 w-full text-xs"
-          placeholder="completing the square, class 9"
-          value={topic}
-          onChange={(event) => setTopic(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") void generate();
-          }}
-        />
+      <div className="mt-3 grid gap-3 rounded-card border border-border bg-surface p-3 shadow-soft sm:p-4">
+        <div className="syncvas-field">
+          <label className="syncvas-label" htmlFor="draft-topic">
+            Lesson topic
+          </label>
+          <input
+            id="draft-topic"
+            className="syncvas-control"
+            placeholder="completing the square, class 9"
+            value={topic}
+            disabled={busy}
+            onChange={(event) => setTopic(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void generate();
+            }}
+          />
+        </div>
 
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <label className="flex items-center gap-1">
-            Detail
-            <select
-              className="syncvas-input min-h-8 text-xs"
-              value={detail}
-              onChange={(event) => setDetail(event.target.value === "light" ? "light" : "standard")}
-            >
-              <option value="light">Light</option>
-              <option value="standard">Standard</option>
-            </select>
-          </label>
-          <label className="flex items-center gap-1">
-            Writing space
-            <select
-              className="syncvas-input min-h-8 text-xs"
-              value={writingZones}
-              onChange={(event) => setWritingZones(Number(event.target.value))}
-            >
-              {[0, 1, 2, 3, 4].map((count) => (
-                <option key={count} value={count}>
-                  {count === 0 ? "None" : `${count} ${count === 1 ? "zone" : "zones"}`}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div className="syncvas-field-row">
+          <SyncvasSelect
+            id="draft-detail"
+            label="Detail"
+            value={detail}
+            disabled={busy}
+            options={[
+              { value: "light", label: "Light" },
+              { value: "standard", label: "Standard" },
+            ]}
+            onChange={(next) => setDetail(next === "light" ? "light" : "standard")}
+          />
+
+          <SyncvasSelect
+            id="draft-writing-space"
+            label="Writing space"
+            value={String(writingZones)}
+            disabled={busy}
+            options={[0, 1, 2, 3, 4].map((count) => ({
+              value: String(count),
+              label: count === 0 ? "None" : `${count} ${count === 1 ? "zone" : "zones"}`,
+            }))}
+            onChange={(next) => setWritingZones(Number(next))}
+          />
+
           <button
             type="button"
-            className="syncvas-btn syncvas-btn-sm"
-            disabled={state !== "idle"}
+            className="syncvas-btn syncvas-btn-primary w-full sm:w-auto sm:min-w-[8.5rem]"
+            disabled={busy}
             onClick={() => void generate()}
           >
             {state === "drafting" ? "Drafting…" : "Draft board"}
@@ -139,13 +152,13 @@ export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (scene: unknown, 
       </div>
 
       {unavailable ? (
-        <p className="mt-2 text-xs text-ink-muted">
+        <p className="mt-3 text-xs leading-5 text-ink-muted">
           {UNAVAILABLE_COPY} Draw the board yourself and save it as a prepared board instead.
         </p>
       ) : null}
 
       {error ? (
-        <p role="alert" className="mt-2 text-xs text-danger">
+        <p role="alert" className="mt-3 rounded-lg bg-danger-soft px-3 py-2 text-xs text-danger">
           {error}
         </p>
       ) : null}
@@ -178,7 +191,7 @@ export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (scene: unknown, 
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
-              className="syncvas-btn syncvas-btn-sm"
+              className="syncvas-btn syncvas-btn-primary syncvas-btn-sm"
               disabled={state === "saving" || pending.draft.elements.length === 0}
               onClick={() => void accept()}
             >
