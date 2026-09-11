@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "autoPort": false
+    },
+    {
+      "name": "dev-verify",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "dev", "-p", "3100"],
+      "port": 3100,
+      "autoPort": false
+    },
+    {
+      "name": "socket",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:socket"],
+      "port": 4001,
+      "autoPort": false
+    }
+  ]
+}

@@ -21,6 +21,7 @@ import { ParticipantCount } from "@/components/room/participant-count";
 import { ExportActions } from "@/components/export/export-actions";
 import { ExportStatus } from "@/components/export/export-status";
 import { TeacherNotesPanel } from "@/components/summary/teacher-notes-panel";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useStoredValue } from "@/lib/client-store";
 import {
   LOCAL_TEACHER_STORAGE_KEY,
@@ -333,12 +334,15 @@ export function TeacherSessionControls({
                 account.
               </p>
             </div>
-            {localTeacherEnabled && bootstrap ? (
-              <span className="syncvas-pill max-w-full" title={bootstrap.authSubject}>
-                <span className="syncvas-live-dot" aria-hidden="true" />
-                <span className="truncate">Local teacher</span>
-              </span>
-            ) : null}
+            <div className="flex shrink-0 items-center gap-2">
+              {localTeacherEnabled && bootstrap ? (
+                <span className="syncvas-pill max-w-full" title={bootstrap.authSubject}>
+                  <span className="syncvas-live-dot" aria-hidden="true" />
+                  <span className="truncate">Local teacher</span>
+                </span>
+              ) : null}
+              <ThemeToggle />
+            </div>
           </header>
 
           <div className="syncvas-color-field h-[3px] w-full" aria-hidden="true" />

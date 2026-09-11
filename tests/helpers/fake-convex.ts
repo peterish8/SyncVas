@@ -36,6 +36,7 @@ export function createFakeConvex(options?: {
   const tables = new Map<string, FakeRow[]>();
   const reads: FakeRead[] = [];
   const scheduled: ScheduledCall[] = [];
+  const mutations: Array<{ fn: unknown; args: unknown }> = [];
   const stored: Array<{ id: string; blob: unknown }> = [];
   let counter = 0;
   let clock = 1_000;
@@ -200,6 +201,11 @@ export function createFakeConvex(options?: {
           ? { ...options.identity, subject: authSubjectClaim(options.identity.subject) }
           : null,
     },
+    /** Actions reach mutations through this; record the call rather than running it. */
+    runMutation: async (fn: unknown, args: unknown) => {
+      mutations.push({ fn, args });
+      return null;
+    },
     scheduler: {
       runAfter: async (delayMs: number, fn: unknown, args: unknown) => {
         scheduled.push({ delayMs, fn, args });
@@ -222,6 +228,8 @@ export function createFakeConvex(options?: {
     ctx: ctx as never,
     rows: (table: string) => tableOf(table),
     scheduled,
+    /** Mutations an action asked to run, in order. */
+    mutations,
     stored,
     /** Every terminal read since the last `resetReads()`, in order. */
     reads,

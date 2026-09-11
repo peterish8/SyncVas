@@ -536,3 +536,28 @@ and on phase 10 for the moderation screen applied to student display names.
 | 21. AI/ML Grammars | 1/1 | Complete | 2026-09-05 |
 | 22. Course Grammars | 1/1 | Complete | 2026-09-05 |
 | 23. AI Lesson Studio & MCP Interoperability | 0/? | Planned | — |
+| 24. Backend Cost & Depth | 2/6 | In progress (v1.4) | — |
+
+### Phase 24 — Backend Cost & Depth (v1.4)
+
+From the backend architecture review of 2026-09-07. Measurements, assumptions, sequencing
+and spec alignment: `.planning/BACKEND-OPTIMIZATION-DECISIONS.md`.
+
+Five of the six plans implement specs the code does not yet follow (docs/21 "keep reactive
+queries narrow", docs/11 "incremental scene state"); none changes a non-negotiable rule in
+AGENTS.md. Phase 24 is independent of phases 11–16 and 23 and can run alongside them,
+except that 24-05 rewrites 29 Convex exports and wants a quiet tree.
+
+| Wave | Plan | Requirement | Scope |
+|---|---|---|---|
+| 1 | 24-01 | COST-02 | **Complete 2026-09-07** — counters on the parent doc; reactive N+1 collects removed |
+| 1 | 24-02 | COST-03 | **Complete 2026-09-07** — indexed duplicate detection; duplicates reuse the triage verdict |
+| 2 | 24-03 | DEPTH-01, COST-04 | One socket admission interface; fixes the two defects it caused |
+| 3 | 24-04 | COST-01 | Element patch stream replaces full-scene broadcast |
+| 4 | 24-05 | DEPTH-02 | One teacher-identity interface; delete 29 dev twins |
+| 5 | 24-06 | DEPTH-03 | **Blocked** — reverses a CLAUDE.md decision, needs a ruling |
+
+Start at 24-01: contained to Convex handlers, no protocol change, no deploy coordination,
+and it removes the O(students²) reads before the quiz UI lands and starts paying for them.
+24-04 is the larger cost line by an order of magnitude but changes the wire format, so it
+takes its own cycle.

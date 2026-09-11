@@ -25,6 +25,7 @@ import { TeacherDoubtQueue } from "@/components/doubts/teacher-doubt-queue";
 import { SaveTemplateButton } from "@/components/templates/save-template-button";
 import { TemplateLibrary, type PreparedBoard } from "@/components/templates/template-library";
 import { AppShell } from "@/components/ui/app-shell";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { serializeFinalBoardScene } from "@/lib/final-board-scene";
@@ -45,6 +46,12 @@ export default function TeacherPage() {
   // Phase 11: the prepared board this class opens on, chosen before it starts.
   const [preparedBoard, setPreparedBoard] = useState<PreparedBoard | null>(null);
   const latestSceneRef = useRef<LatestScene | null>(null);
+  // Reads the live canvas. A board restored from the relay after a reload never
+  // passes through onSceneChange, so End Class used to save it as a blank board.
+  const sceneReaderRef = useRef<(() => LatestScene | null) | null>(null);
+  const registerSceneReader = useCallback((reader: (() => LatestScene | null) | null) => {
+    sceneReaderRef.current = reader;
+  }, []);
   // One transactional call: the room can never reach "ending" without its board
   // already durable, which is what used to strand a session in "ending" forever.
   const saveFinalAndEnd = useMutation(api.sessions.saveFinalAndEnd);
@@ -60,7 +67,7 @@ export default function TeacherPage() {
 
   const onEndSession = useCallback(
     async (session: TeacherSessionState) => {
-      const latest = latestSceneRef.current;
+      const latest = sceneReaderRef.current?.() ?? latestSceneRef.current;
       const input = {
         sessionId: session.sessionId as Id<"sessions">,
         boardVersion: latest?.boardVersion ?? 0,
@@ -77,7 +84,10 @@ export default function TeacherPage() {
     setPreparedBoard(null);
   }, []);
 
-  const currentScene = useCallback(() => latestSceneRef.current?.scene ?? null, []);
+  const currentScene = useCallback(
+    () => sceneReaderRef.current?.()?.scene ?? latestSceneRef.current?.scene ?? null,
+    [],
+  );
 
   const isLive = liveBoard?.session.status === "live";
 
@@ -107,6 +117,7 @@ export default function TeacherPage() {
                 <div className="syncvas-teacher-live-actions">
                   <TeacherDoubtQueue sessionId={liveBoard.session.sessionId} />
                   <SaveTemplateButton getScene={currentScene} defaultTitle={preparedBoard?.title} />
+                  <ThemeToggle />
                 </div>
               </div>
               <div className="min-h-0 flex-1">
@@ -117,6 +128,7 @@ export default function TeacherPage() {
                   refreshRoomToken={liveBoard.refreshRoomToken}
                   onSceneChange={onSceneChange}
                   initialScene={preparedBoard?.scene}
+                  onSceneReader={registerSceneReader}
                 />
               </div>
             </div>

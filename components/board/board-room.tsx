@@ -13,7 +13,7 @@
 
 "use client";
 
-import { BoardCanvas } from "@/components/board/board-canvas";
+import { BoardCanvas, type BoardSceneReader } from "@/components/board/board-canvas";
 
 export type BoardRoomProps = {
   sessionId: string;
@@ -25,9 +25,11 @@ export type BoardRoomProps = {
   onSceneChange?: (scene: unknown, boardVersion: number) => void;
   /** Phase 11: prepared board this class opens on. */
   initialScene?: unknown;
+  /** Receives a reader for the live canvas scene (End Class, Save Template). */
+  onSceneReader?: (reader: BoardSceneReader | null) => void;
 };
 
-export function BoardRoom({ sessionId, role, roomToken, refreshRoomToken, onSceneChange, initialScene }: BoardRoomProps) {
+export function BoardRoom({ sessionId, role, roomToken, refreshRoomToken, onSceneChange, initialScene, onSceneReader }: BoardRoomProps) {
   return (
     <section className="flex h-full min-h-0 flex-col" aria-label="Classroom board">
       <BoardCanvas
@@ -37,6 +39,7 @@ export function BoardRoom({ sessionId, role, roomToken, refreshRoomToken, onScen
         refreshRoomToken={refreshRoomToken}
         onSceneChange={onSceneChange}
         initialScene={initialScene}
+        onSceneReader={onSceneReader}
       />
     </section>
   );

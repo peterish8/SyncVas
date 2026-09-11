@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
-import { AppShell } from "@/components/ui/app-shell";
+import { TeacherAuthVisual } from "@/components/teacher/teacher-auth-visual";
 import { TeacherSignInCard } from "@/components/teacher/teacher-sign-in-card";
 
 export const metadata: Metadata = {
@@ -11,28 +12,18 @@ export const metadata: Metadata = {
 
 export default function TeacherSignInPage() {
   return (
-    <AppShell
-      title="Teacher sign in"
-      trailing={null}
-      className="syncvas-sign-in-shell"
-      contentClassName="syncvas-sign-in-content"
-    >
-      <div className="syncvas-sign-in-stage grid flex-1 place-items-center px-5 py-10 sm:px-8">
-        <section className="w-full max-w-md" aria-labelledby="teacher-sign-in-title">
-          <div className="mb-6 text-center">
-            <p className="syncvas-eyebrow">Syncvas classroom</p>
-            <h1 id="teacher-sign-in-title" className="mt-3 text-3xl font-semibold tracking-[-0.055em]">
-              Start with a calm classroom.
-            </h1>
-            <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-ink-muted">
-              Sign in once, then open a board, share the QR code, and keep the finished lesson.
-            </p>
-          </div>
-          <div className="syncvas-sign-in-card syncvas-panel p-5 sm:p-6">
-            <TeacherSignInCard />
-          </div>
-        </section>
-      </div>
-    </AppShell>
+    <main className="syncvas-auth-page">
+      <TeacherAuthVisual />
+
+      <section className="syncvas-auth-panel" aria-labelledby="teacher-sign-in-title">
+        <div className="syncvas-auth-panel-inner">
+          <Link href="/" className="syncvas-btn syncvas-btn-ghost syncvas-btn-sm syncvas-auth-home">
+            <span aria-hidden="true">←</span>
+            Home
+          </Link>
+          <TeacherSignInCard />
+        </div>
+      </section>
+    </main>
   );
 }

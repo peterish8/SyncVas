@@ -10,11 +10,12 @@ import { isLocalDevTeacherAllowed, requireSessionOwner, requireTeacher } from ".
 import { LOCAL_DEV_TEACHER_SUBJECT } from "./authBootstrap";
 import { fail } from "./errors";
 import { saveFinalSnapshot } from "./boardSnapshots";
+import { ROOM_TOKEN_TTL_SECONDS } from "../shared/constants/limits";
 
 const JOIN_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const JOIN_CODE_PATTERN = /^[A-Z2-9]{6}$/;
 const JOIN_CODE_LENGTH = 6;
-const SOCKET_TOKEN_TTL_SECONDS = 5 * 60;
+const SOCKET_TOKEN_TTL_SECONDS = ROOM_TOKEN_TTL_SECONDS;
 const revokeRoom = (internal as unknown as {
   "internal/revokeRoom": { run: FunctionReference<"action", "internal", { sessionId: Id<"sessions"> }, unknown> };
 })["internal/revokeRoom"].run;
@@ -181,6 +182,28 @@ export const saveFinalAndEnd = mutation({
  */
 const FINALIZE_MAX_ATTEMPTS = 5;
 const FINALIZE_RETRY_MS = 6_000;
+
+/**
+ * Record whether the relay accepted this room's socket revocation.
+ *
+ * Written by `internal/revokeRoom` after its retries settle. Passing `null`
+ * clears a warning left by an earlier attempt, so a room that eventually
+ * revoked does not keep advertising a failure that has resolved.
+ */
+export const recordRevocationOutcome = internalMutation({
+  args: { sessionId: v.id("sessions"), warning: v.union(v.string(), v.null()) },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId);
+    if (!session) return null;
+    if (args.warning === null) {
+      if (session.revocationWarning === undefined) return null;
+      await ctx.db.patch(args.sessionId, { revocationWarning: undefined });
+      return { sessionId: args.sessionId, cleared: true as const };
+    }
+    await ctx.db.patch(args.sessionId, { revocationWarning: args.warning });
+    return { sessionId: args.sessionId, warning: args.warning };
+  },
+});
 
 export const finalize = internalMutation({
   args: { sessionId: v.id("sessions"), attempt: v.optional(v.number()) },

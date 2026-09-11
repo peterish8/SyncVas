@@ -54,6 +54,11 @@ export default defineSchema({
      * A room must always reach "ended" — leaving it in "ending" strands the
      * teacher with no way to export, restart, or recover. See sessions.finalize. */
     finalizeWarning: v.optional(v.string()),
+    /** Set when the relay could not be told to evict this room's live sockets.
+     * The room is closed in Convex regardless, but sockets admitted before the
+     * end may have kept relaying the board until their tokens expired, so the
+     * failure is recorded rather than dropped. See internal/revokeRoom. */
+    revocationWarning: v.optional(v.string()),
     currentTopicSummary: v.optional(v.string()),
     roomMode: v.optional(v.union(v.literal("board"), v.literal("quiz-locked"))),
     /** Denormalized participant count. Maintained by participants.joinByCode in the

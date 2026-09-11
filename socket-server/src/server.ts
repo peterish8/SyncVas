@@ -11,7 +11,8 @@ import {
 } from "../../shared/protocol/socket.js";
 import { attachClassroomHandlers } from "./protocol.js";
 import { clearHotScene, hotStateStats, isRoomRevoked, markRoomRevoked, sweepHotState } from "./board-hot-state.js";
-import { LIMITS } from "./config.js";
+import { LIMITS, type LimitOverrides } from "./config.js";
+import { allowAction, createRateLimitState } from "./rate-limit.js";
 import { roomName } from "./rooms.js";
 
 export type RoomClaims = {
@@ -77,7 +78,7 @@ export function verifyRoomToken(token: string, secret = process.env.SOCKET_INTER
   return claims as RoomClaims;
 }
 
-function emitPresence(io: Server, sessionId: string): void {
+function emitPresenceNow(io: Server, sessionId: string): void {
   const room = roomName(sessionId);
   const connectedCount = io.sockets.adapter.rooms.get(room)?.size ?? 0;
   io.to(room).emit(SOCKET_EVENTS.roomPresence, {
@@ -86,6 +87,43 @@ function emitPresence(io: Server, sessionId: string): void {
     ts: Date.now(),
     connectedCount,
   });
+}
+
+/**
+ * Resolve the peer address used for per-address connection accounting.
+ *
+ * `handshake.address` is the socket peer, which behind a load balancer is the
+ * balancer itself — every client would collapse onto one key and a per-address
+ * cap would throttle the whole service instead of one abuser. So a deployment
+ * behind a proxy must say so, and then the *rightmost* X-Forwarded-For entry is
+ * used: that hop is appended by our own trusted proxy, so a client that forges
+ * the header only pollutes entries to its left. Trusting the leftmost value —
+ * the common mistake — would make the cap trivially bypassable.
+ *
+ * The one-trusted-hop assumption is stated in docs/20_DEPLOYMENT_ENVIRONMENT.md.
+ */
+function resolveAddress(socket: Socket, trustProxy: boolean): string {
+  if (trustProxy) {
+    const header = socket.handshake.headers["x-forwarded-for"];
+    const raw = Array.isArray(header) ? header.join(",") : header;
+    const hops = (raw ?? "").split(",").map((hop) => hop.trim()).filter(Boolean);
+    if (hops.length > 0) return hops[hops.length - 1];
+  }
+  return socket.handshake.address || "unknown";
+}
+
+/** Increment a counter map, returning the new value. */
+function increment(counts: Map<string, number>, key: string): number {
+  const next = (counts.get(key) ?? 0) + 1;
+  counts.set(key, next);
+  return next;
+}
+
+/** Decrement a counter map, deleting the key at zero so the map cannot grow forever. */
+function decrement(counts: Map<string, number>, key: string): void {
+  const next = (counts.get(key) ?? 0) - 1;
+  if (next > 0) counts.set(key, next);
+  else counts.delete(key);
 }
 
 function emitProtocolError(socket: Socket, sessionId: string, code: string, message: string): void {
@@ -107,18 +145,82 @@ function constantTimeSignatureMatches(body: string, timestamp: string | null, su
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-export function createSocketServer(httpServer: HttpServer, allowedOrigins: string[]) {
+export function createSocketServer(
+  httpServer: HttpServer,
+  allowedOrigins: string[],
+  overrides: LimitOverrides = {},
+) {
+  // Overrides exist so a test can drive a cap with three sockets instead of 256.
+  // Production passes nothing and gets LIMITS verbatim.
+  const limits = { ...LIMITS, ...overrides };
+  const trustProxy = process.env.RELAY_TRUST_PROXY === "1";
+
   const io = new Server(httpServer, {
     cors: { origin: allowedOrigins, methods: ["GET", "POST"] },
     // Frames larger than this are dropped by the transport before Zod ever runs,
     // and the connection is closed. Derived from the protocol ceiling so a board
     // carrying the maximum allowed images still fails validation cleanly rather
     // than killing the teacher's socket mid-lesson.
-    maxHttpBufferSize: LIMITS.maxHttpBufferSize,
+    maxHttpBufferSize: limits.maxHttpBufferSize,
+    // Socket.IO's default, restated because board scenes are large JSON and
+    // enabling compression here looks like an obvious win. It is not: the
+    // upstream guidance is that permessage-deflate costs significant CPU and
+    // memory per connection, and this process holds hundreds of them while a
+    // class is running. Bandwidth is not the relay's constraint; head-of-line
+    // latency during a stroke burst is.
+    perMessageDeflate: false,
   });
-  const activeTeacherWriters = new Map<string, string>();
+  // One writer lease per room. The subject is kept alongside the socket so the
+  // same teacher reconnecting (tab reload, network flap) can take the lease over
+  // from their own stale socket instead of being locked out by it.
+  const activeTeacherWriters = new Map<string, { socketId: string; subjectId: string }>();
 
-  const sweepTimer = setInterval(() => sweepHotState(), LIMITS.sweepIntervalMs);
+  // Connection accounting. Tokenless sockets are tracked separately because they
+  // are the only path here that never presents a Convex-minted token.
+  const socketsPerAddress = new Map<string, number>();
+  const tokenlessPerAddress = new Map<string, number>();
+  let tokenlessTotal = 0;
+
+  // Presence debounce state, one entry per live room.
+  const lastPresenceAt = new Map<string, number>();
+  const pendingPresence = new Map<string, ReturnType<typeof setTimeout>>();
+
+  /**
+   * Emit presence at most once per `presenceMinIntervalMs` per room.
+   *
+   * Leading edge so the first join is instant, trailing edge so the final count
+   * is still correct after a burst. Without this, `room:join` is an amplifier:
+   * one admitted student can turn a small frame into a fan-out across every
+   * socket in the room, up to `maxSocketsPerRoom` times over.
+   */
+  const schedulePresence = (sessionId: string): void => {
+    const now = Date.now();
+    const elapsed = now - (lastPresenceAt.get(sessionId) ?? 0);
+    if (elapsed >= limits.presenceMinIntervalMs) {
+      lastPresenceAt.set(sessionId, now);
+      emitPresenceNow(io, sessionId);
+      return;
+    }
+    if (pendingPresence.has(sessionId)) return;
+    const timer = setTimeout(() => {
+      pendingPresence.delete(sessionId);
+      lastPresenceAt.set(sessionId, Date.now());
+      emitPresenceNow(io, sessionId);
+    }, limits.presenceMinIntervalMs - elapsed);
+    timer.unref?.();
+    pendingPresence.set(sessionId, timer);
+  };
+
+  const sweepTimer = setInterval(() => {
+    sweepHotState();
+    // Presence bookkeeping outlives the room it describes, so drop entries whose
+    // room no longer has sockets. Small per entry, unbounded over a long uptime.
+    for (const sessionId of [...lastPresenceAt.keys()]) {
+      if (!io.sockets.adapter.rooms.get(roomName(sessionId)) && !pendingPresence.has(sessionId)) {
+        lastPresenceAt.delete(sessionId);
+      }
+    }
+  }, LIMITS.sweepIntervalMs);
   // Never hold the process open for a housekeeping timer.
   sweepTimer.unref?.();
   httpServer.on("close", () => clearInterval(sweepTimer));
@@ -126,14 +228,21 @@ export function createSocketServer(httpServer: HttpServer, allowedOrigins: strin
   const revokeRoom = (sessionId: string) => {
     markRoomRevoked(sessionId);
     const room = roomName(sessionId);
-    for (const socket of io.sockets.adapter.rooms.get(room) ? io.sockets.sockets.values() : []) {
-      const claims = socket.data.roomClaims as RoomClaims | undefined;
-      if (claims?.sessionId === sessionId) {
-        emitProtocolError(socket, sessionId, "ROOM_REVOKED", "This classroom has ended.");
-        socket.disconnect(true);
-      }
+    // Walk the room's own membership rather than every socket on the process.
+    // The previous form iterated all sockets server-wide on each revocation and
+    // still missed nothing, but End Class on a busy relay is exactly when the
+    // process is least able to afford an O(all sockets) scan per room.
+    for (const socketId of [...(io.sockets.adapter.rooms.get(room) ?? [])]) {
+      const socket = io.sockets.sockets.get(socketId);
+      if (!socket) continue;
+      emitProtocolError(socket, sessionId, "ROOM_REVOKED", "This classroom has ended.");
+      socket.disconnect(true);
     }
     activeTeacherWriters.delete(sessionId);
+    const pending = pendingPresence.get(sessionId);
+    if (pending) clearTimeout(pending);
+    pendingPresence.delete(sessionId);
+    lastPresenceAt.delete(sessionId);
     clearHotScene(sessionId);
   };
 
@@ -211,10 +320,61 @@ export function createSocketServer(httpServer: HttpServer, allowedOrigins: strin
   io.on("connection", (socket) => {
     const claims = socket.data.roomClaims as RoomClaims | undefined;
     const admittedRoom = claims ? roomName(claims.sessionId) : null;
+    const address = resolveAddress(socket, trustProxy);
+
+    // One rate budget per socket, shared with the classroom handlers, so a client
+    // cannot get a fresh allowance simply by switching which event it floods.
+    const rateState = createRateLimitState();
+    socket.data.rateState = rateState;
+
+    // Account before any rejection path, and release on disconnect. Registering
+    // the decrement first means every early return below still balances.
+    const addressCount = increment(socketsPerAddress, address);
+    let tokenlessAddressCount = 0;
+    if (!claims) {
+      tokenlessTotal += 1;
+      tokenlessAddressCount = increment(tokenlessPerAddress, address);
+    }
+    socket.on("disconnect", () => {
+      decrement(socketsPerAddress, address);
+      if (!claims) {
+        tokenlessTotal -= 1;
+        decrement(tokenlessPerAddress, address);
+      }
+    });
+
+    // A socket that never joins a room still costs a file descriptor, an
+    // Engine.IO session, and heartbeat traffic. Admitted sockets join inside
+    // this handler, so anything still roomless when this fires is a probe that
+    // outstayed its purpose or a client holding the connection open for nothing.
+    const idleTimer = setTimeout(() => {
+      if (socket.data.admittedRoom) return;
+      emitProtocolError(socket, claims?.sessionId ?? "unknown", "IDLE_NO_ROOM", "Connection closed: no room was joined.");
+      socket.disconnect(true);
+    }, limits.unjoinedSocketGraceMs);
+    idleTimer.unref?.();
+    socket.on("disconnect", () => clearTimeout(idleTimer));
+
+    if (addressCount > limits.maxSocketsPerIp) {
+      emitProtocolError(socket, claims?.sessionId ?? "unknown", "TOO_MANY_CONNECTIONS", "Too many connections from this address.");
+      socket.disconnect(true);
+      return;
+    }
+
+    if (!claims && (tokenlessTotal > limits.maxTokenlessSockets || tokenlessAddressCount > limits.maxTokenlessSocketsPerIp)) {
+      // Tokenless sockets exist so a platform health probe can reach the relay
+      // without minting a room token. That is a narrow purpose and it gets a
+      // narrow budget; without one, anyone can hold open as many sockets as the
+      // process has descriptors.
+      emitProtocolError(socket, "unknown", "TOO_MANY_CONNECTIONS", "Too many unauthenticated connections.");
+      socket.disconnect(true);
+      return;
+    }
 
     socket.on(SOCKET_EVENTS.foundationPing, (payload: unknown) => {
       const parsed = foundationPingSchema.safeParse(payload);
       if (!parsed.success) return;
+      if (!allowAction(rateState, SOCKET_EVENTS.foundationPing, limits.foundationPingPerMinute)) return;
       socket.emit(SOCKET_EVENTS.foundationPong, {
         v: SOCKET_PROTOCOL_VERSION,
         sentAt: parsed.data.sentAt,
@@ -232,23 +392,38 @@ export function createSocketServer(httpServer: HttpServer, allowedOrigins: strin
       // means abuse or a reconnect storm, and admitting it would let one room
       // exhaust the process for every other class on the relay.
       const occupancy = io.sockets.adapter.rooms.get(admittedRoom)?.size ?? 0;
-      if (claims.role === "student" && occupancy >= LIMITS.maxSocketsPerRoom) {
+      if (claims.role === "student" && occupancy >= limits.maxSocketsPerRoom) {
         emitProtocolError(socket, claims.sessionId, "ROOM_FULL", "This classroom is at capacity.");
         socket.disconnect(true);
         return;
       }
       if (claims.role === "teacher") {
         const existingWriter = activeTeacherWriters.get(claims.sessionId);
-        if (existingWriter && existingWriter !== socket.id) {
+        if (existingWriter && existingWriter.socketId !== socket.id && existingWriter.subjectId !== claims.subjectId) {
           emitProtocolError(socket, claims.sessionId, "WRITER_ALREADY_ACTIVE", "Another teacher is already editing this room.");
           socket.disconnect(true);
           return;
         }
-        activeTeacherWriters.set(claims.sessionId, socket.id);
+        // Record the new lease before evicting the old socket, so the old
+        // socket's disconnect handler sees it no longer owns the lease.
+        activeTeacherWriters.set(claims.sessionId, { socketId: socket.id, subjectId: claims.subjectId });
+        if (existingWriter && existingWriter.socketId !== socket.id) {
+          // Same teacher, newer socket: the reconnect usually lands before the
+          // relay has noticed the old socket is gone. Rejecting it here left the
+          // teacher offline for good, because Socket.IO never auto-reconnects
+          // after a server-side disconnect. The stale socket is told why it is
+          // being closed so that tab can say so instead of offering a Reconnect
+          // that would take the board back.
+          const staleWriter = io.sockets.sockets.get(existingWriter.socketId);
+          if (staleWriter) {
+            emitProtocolError(staleWriter, claims.sessionId, "WRITER_REPLACED", "This board was opened in another tab.");
+            staleWriter.disconnect(true);
+          }
+        }
       }
       // Admission is implicit after the verified handshake. The client event below is
       // retained for protocol observability, but never controls the room identity.
-      void Promise.resolve(socket.join(admittedRoom)).then(() => emitPresence(io, claims.sessionId));
+      void Promise.resolve(socket.join(admittedRoom)).then(() => schedulePresence(claims.sessionId));
       socket.data.admittedRoom = admittedRoom;
       socket.data.sessionId = claims.sessionId;
       socket.data.role = claims.role;
@@ -269,17 +444,24 @@ export function createSocketServer(httpServer: HttpServer, allowedOrigins: strin
         emitProtocolError(socket, currentClaims.sessionId, "ROOM_MISMATCH", "This token is not valid for that room.");
         return;
       }
+      // Rejoining is legitimate after a reconnect and pathological in a loop.
+      if (!allowAction(rateState, SOCKET_EVENTS.roomJoin, limits.roomJoinPerMinute)) {
+        emitProtocolError(socket, currentClaims.sessionId, "RATE_LIMITED", "Too many room join attempts.");
+        return;
+      }
       const room = roomName(currentClaims.sessionId);
-      void Promise.resolve(socket.join(room)).then(() => emitPresence(io, currentClaims.sessionId));
+      void Promise.resolve(socket.join(room)).then(() => schedulePresence(currentClaims.sessionId));
     });
 
-    attachClassroomHandlers(io, socket);
+    attachClassroomHandlers(io, socket, { verifyToken: (token) => verifyRoomToken(token) });
 
     socket.on("disconnect", () => {
-      if (claims?.role === "teacher" && activeTeacherWriters.get(claims.sessionId) === socket.id) {
+      // Only release a lease this socket still holds; a same-teacher takeover
+      // has already moved it to the newer socket.
+      if (claims?.role === "teacher" && activeTeacherWriters.get(claims.sessionId)?.socketId === socket.id) {
         activeTeacherWriters.delete(claims.sessionId);
       }
-      if (claims) emitPresence(io, claims.sessionId);
+      if (claims) schedulePresence(claims.sessionId);
     });
   });
 

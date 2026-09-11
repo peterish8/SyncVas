@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { SeoPageStructuredData } from "@/components/seo/seo-page-structured-data";
+import { SiteFooter } from "@/components/ui/site-footer";
+import { SyncvasLogo } from "@/components/ui/syncvas-logo";
 
 type SeoPageProps = {
   path: string;
@@ -16,13 +18,13 @@ export function SeoPage({ path, eyebrow, title, intro, children }: SeoPageProps)
     <main className="origin-landing origin-seo-page">
       <SeoPageStructuredData title={title} description={intro} path={path} />
       <nav className="origin-nav" aria-label="Primary navigation">
-        <Link className="origin-mark" href="/" aria-label="Syncvas home">syncvas<span>.</span></Link>
+        <Link className="origin-mark" href="/" aria-label="Syncvas home"><SyncvasLogo /></Link>
         <div className="origin-links">
           <Link href="/for-teachers">For teachers</Link>
           <Link href="/for-students">For students</Link>
           <Link href="/guides/live-classroom-whiteboard">Guide</Link>
         </div>
-        <div className="origin-nav-controls"><Link className="origin-nav-action" href="/join">Join a class <span aria-hidden="true">↗</span></Link></div>
+        <div className="origin-nav-controls"><Link className="origin-nav-action origin-button-join" href="/join">Join a class <span aria-hidden="true">↗</span></Link></div>
       </nav>
 
       <article className="origin-seo-article">
@@ -43,11 +45,7 @@ export function SeoPage({ path, eyebrow, title, intro, children }: SeoPageProps)
         </nav>
       </article>
 
-      <footer className="origin-footer">
-        <div><Link className="origin-mark" href="/">syncvas<span>.</span></Link><p>Live whiteboards for<br />the thinking classroom.</p></div>
-        <div className="origin-footer-nav"><Link href="/for-teachers">Teachers</Link><Link href="/for-students">Students</Link><Link href="/join">Join a class</Link></div>
-        <Link className="origin-button origin-button-dark" href="/teacher">Open a teacher room <span aria-hidden="true">↗</span></Link>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

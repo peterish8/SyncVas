@@ -1,88 +1,67 @@
 /**
- * Auth helpers (Convex Auth abstraction)
- *
- * Resolve identity from ctx.auth — NEVER trust client-provided teacherId/role.
- * Local/dev anonymous Convex uses authBootstrap + *AsLocalTeacher mutations
- * gated by ALLOW_DEV_TEACHER; production still uses requireTeacher.
+ * Convex Auth — Google OAuth for teachers.
+ * Permission helpers live in ./permissions.ts (do not scatter provider checks).
  */
 
-import { ConvexError } from "convex/values";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
-import type { Doc, Id } from "./_generated/dataModel";
-import {
-  getLocalDevTeacher,
-  isLocalDevTeacherAllowed,
-  upsertLocalDevTeacher,
-} from "./authBootstrap";
+import Google from "@auth/core/providers/google";
+import { convexAuth } from "@convex-dev/auth/server";
 
-type AuthCtx = QueryCtx | MutationCtx;
+import type { Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 
-export async function requireAuthSubject(ctx: AuthCtx): Promise<string> {
-  const identity = await ctx.auth.getUserIdentity();
-  const subject = identity?.subject;
-  if (!subject) {
-    throw new ConvexError({
-      code: "UNAUTHENTICATED",
-      message: "Sign in to manage a classroom.",
-    });
-  }
-  return subject;
-}
-
-export async function requireTeacher(ctx: AuthCtx): Promise<Doc<"users">> {
-  const subject = await requireAuthSubject(ctx);
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_auth_subject", (q) => q.eq("authSubject", subject))
-    .unique();
-  if (!user || (user.role !== "teacher" && user.role !== "admin")) {
-    throw new ConvexError({
-      code: "FORBIDDEN",
-      message: "A teacher account is required.",
-    });
-  }
-  return user;
-}
-
-export async function requireSessionOwner(ctx: AuthCtx, sessionId: Id<"sessions">) {
-  const teacher = await requireTeacher(ctx);
-  const session = await ctx.db.get(sessionId);
-  if (!session || session.teacherId !== teacher._id) {
-    throw new ConvexError({ code: "NOT_FOUND", message: "Classroom not found." });
-  }
-  return { teacher, session };
-}
-
-/** Local/dev only: teacher row for subject local-dev-teacher when ALLOW_DEV_TEACHER=1. */
-export async function requireLocalDevTeacher(ctx: MutationCtx): Promise<Doc<"users">> {
-  if (!isLocalDevTeacherAllowed()) {
-    throw new ConvexError({
-      code: "DEV_TEACHER_DISABLED",
-      message: "Local teacher mode is disabled.",
-    });
-  }
-  return await upsertLocalDevTeacher(ctx);
-}
-
-export async function requireLocalDevSessionOwner(
+async function ensureTeacherProfile(
   ctx: MutationCtx,
-  sessionId: Id<"sessions">,
+  userId: Id<"users">,
+  profile: { name?: string | null; email?: string | null; image?: string | null },
 ) {
-  const teacher = await requireLocalDevTeacher(ctx);
-  const session = await ctx.db.get(sessionId);
-  if (!session || session.teacherId !== teacher._id) {
-    throw new ConvexError({ code: "NOT_FOUND", message: "Classroom not found." });
+  const existing = await ctx.db.get(userId);
+  if (!existing) return;
+
+  const patch: {
+    name?: string;
+    email?: string;
+    image?: string;
+    role?: "teacher";
+    createdAt?: number;
+    authSubject?: string;
+  } = {};
+
+  if (!existing.role) patch.role = "teacher";
+  if (existing.createdAt === undefined) patch.createdAt = Date.now();
+  if (!existing.authSubject) patch.authSubject = userId;
+  if (profile.name && !existing.name) patch.name = profile.name;
+  if (profile.email && !existing.email) patch.email = profile.email;
+  if (profile.image && !existing.image) patch.image = profile.image;
+
+  if (Object.keys(patch).length > 0) {
+    await ctx.db.patch(userId, patch);
   }
-  return { teacher, session };
 }
 
-export async function requireLocalDevSessionOwnerQuery(ctx: QueryCtx, sessionId: Id<"sessions">) {
-  const teacher = await getLocalDevTeacher(ctx);
-  const session = await ctx.db.get(sessionId);
-  if (!teacher || !session || session.teacherId !== teacher._id) {
-    throw new ConvexError({ code: "NOT_FOUND", message: "Classroom not found." });
-  }
-  return { teacher, session };
-}
+export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+  providers: [Google],
+  callbacks: {
+    async createOrUpdateUser(ctx, args) {
+      if (args.existingUserId) {
+        await ensureTeacherProfile(ctx, args.existingUserId, args.profile);
+        return args.existingUserId;
+      }
 
-export { getLocalDevTeacher, isLocalDevTeacherAllowed };
+      // Google-only MVP: Convex Auth links via authAccounts; skip email scans.
+      const email = typeof args.profile.email === "string" ? args.profile.email : undefined;
+      const now = Date.now();
+      const userId = await ctx.db.insert("users", {
+        name: typeof args.profile.name === "string" ? args.profile.name : undefined,
+        email,
+        image: typeof args.profile.image === "string" ? args.profile.image : undefined,
+        emailVerificationTime: email ? now : undefined,
+        role: "teacher",
+        createdAt: now,
+        // Placeholder; patched to document id immediately below for stable lookups.
+        authSubject: "pending",
+      });
+      await ctx.db.patch(userId, { authSubject: userId });
+      return userId;
+    },
+  },
+});

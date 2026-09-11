@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
+
 import { api } from "@/convex/_generated/api";
 import { participantStorageKey, roomTokenStorageKey } from "@/lib/local-teacher";
+import { toUserFacingError } from "@/lib/user-facing-errors";
 import { useAction, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -18,30 +21,38 @@ function getAnonymousProof(): string {
   return proof;
 }
 
-function readableError(error: unknown): string {
-  const message = error instanceof Error ? error.message : "";
-  if (message.includes("SESSION_ENDED")) return "That class has ended. Ask the teacher for a new code.";
-  if (message.includes("SESSION_NOT_LIVE")) return "That class is not open yet.";
-  if (message.includes("SESSION_NOT_FOUND") || message.includes("INVALID_JOIN_CODE")) {
-    return "Check the six-character code and try again.";
-  }
-  return "We could not join that class. Check the code and try again.";
-}
+type JoinIssue = {
+  code: string | null;
+  message: string;
+  recovery?: string;
+};
 
 export function JoinCodeForm({ initialCode = "" }: { initialCode?: string }) {
   const router = useRouter();
   const join = useMutation(api.participants.joinByCode);
   const issueToken = useAction(api.sessions.issueSocketToken);
   const [code, setCode] = useState(initialCode.toUpperCase());
-  const [error, setError] = useState<string | null>(null);
+  const [issue, setIssue] = useState<JoinIssue | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalized = code.trim().toUpperCase();
-    setError(null);
+    setIssue(null);
+    if (!normalized) {
+      setIssue({
+        code: "EMPTY_CODE",
+        message: "Enter the six-character room code.",
+        recovery: "It is on the teacher screen or in the QR link.",
+      });
+      return;
+    }
     if (!/^[A-Z2-9]{6}$/.test(normalized)) {
-      setError("Enter the six-character room code.");
+      setIssue({
+        code: "INVALID_JOIN_CODE",
+        message: "Room codes are six characters (letters and numbers).",
+        recovery: "Check for typos — codes are not case-sensitive.",
+      });
       return;
     }
     setBusy(true);
@@ -55,11 +66,14 @@ export function JoinCodeForm({ initialCode = "" }: { initialCode?: string }) {
       window.sessionStorage.setItem(roomTokenStorageKey(admission.sessionId), token);
       router.push(`/student/${admission.sessionId}`);
     } catch (joinError) {
-      setError(readableError(joinError));
+      setIssue(toUserFacingError(joinError, "We could not join that class. Check the code and try again."));
     } finally {
       setBusy(false);
     }
   }
+
+  const ended = issue?.code === "SESSION_ENDED";
+  const notLive = issue?.code === "SESSION_NOT_LIVE";
 
   return (
     <form className="flex flex-col gap-4" onSubmit={(event) => void onSubmit(event)}>
@@ -78,17 +92,44 @@ export function JoinCodeForm({ initialCode = "" }: { initialCode?: string }) {
           spellCheck={false}
           inputMode="text"
           placeholder="ABC234"
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? "join-code-error" : "join-code-hint"}
+          disabled={busy}
+          aria-invalid={Boolean(issue)}
+          aria-describedby={issue ? "join-code-error" : "join-code-hint"}
         />
       </label>
       <button type="submit" disabled={busy} className="syncvas-btn syncvas-btn-primary w-full">
         {busy ? "Joining…" : "Join class"}
       </button>
-      {error ? (
-        <p id="join-code-error" role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-sm text-danger">
-          {error}
-        </p>
+      {issue ? (
+        <div
+          id="join-code-error"
+          role="alert"
+          className="rounded-xl bg-danger-soft px-3 py-3 text-sm text-danger"
+        >
+          <p className="font-medium">{issue.message}</p>
+          {issue.recovery ? <p className="mt-1 text-xs leading-5 opacity-90">{issue.recovery}</p> : null}
+          {ended || notLive ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link href="/" className="syncvas-btn syncvas-btn-ghost syncvas-btn-sm">
+                Back home
+              </Link>
+              {!ended ? (
+                <button
+                  type="button"
+                  className="syncvas-btn syncvas-btn-secondary syncvas-btn-sm"
+                  disabled={busy}
+                  onClick={() => {
+                    setIssue(null);
+                    const form = document.getElementById("join-code")?.closest("form");
+                    form?.requestSubmit();
+                  }}
+                >
+                  Try again
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       ) : null}
       <p id="join-code-hint" className="text-xs leading-5 text-ink-muted">
         Your name is not shown to the teacher. A temporary anonymous ID helps prevent spam.

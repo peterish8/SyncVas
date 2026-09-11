@@ -1,18 +1,13 @@
 /**
- * @scaffold true
- * @phase 10
- * Optional HTTP actions for provider webhooks (if needed)
- *
- * Prefer adapter invoked from internal actions over public HTTP.
- * If HTTP is required: auth webhooks, never expose secrets, never echo doubt text.
- *
- * Non-negotiables: validate public args; ownership checks; indexed queries;
- * internal work via internal functions; never log raw doubt text/secrets.
+ * HTTP routes for Convex Auth OAuth callbacks.
+ * Never log raw doubt text or secrets.
  */
 
 import { httpRouter } from "convex/server";
 
+import { auth } from "./auth";
+
 const http = httpRouter();
-// PHASE 10: register routes only if provider requires them.
+auth.addHttpRoutes(http);
 
 export default http;

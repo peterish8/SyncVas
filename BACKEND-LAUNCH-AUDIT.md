@@ -33,7 +33,9 @@ The remaining gap is not foundations. It is a small number of paths that behave 
 
 `npm run verify` is green: 0 lint errors (2 pre-existing warnings), typecheck clean, **321 root tests + 17 socket tests**, production build succeeds.
 
-Still open: **P0 4** (the export stub) and everything in P1/P2. Two architecture candidates were deliberately left: restructuring the 751-line board canvas (the live-classroom hot path, no test coverage — needs its own session), and the export seam (blocked on the same product decision as P0 4).
+**Wave 3 (relay hardening) is complete** — P1 5, 6, 7, 10, 11 closed, plus a browser-only token-refresh defect found during live verification. See "Wave 3 — relay hardening" below.
+
+Still open: **P0 4** (the export stub), P1 8, 9, 12 (observability, Wave 4), and P2. Two architecture candidates were deliberately left: restructuring the 751-line board canvas (the live-classroom hot path, no test coverage — needs its own session), and the export seam (blocked on the same product decision as P0 4).
 
 ---
 
@@ -87,7 +89,7 @@ No participant check, no ownership check. Any caller holding a session ID reads 
 
 ## P1 — fix before a real pilot
 
-### 5. The relay is hard single-instance and nothing enforces it
+### 5. The relay is hard single-instance and nothing enforces it — **FIXED (enforced)**
 
 `activeTeacherWriters` (`server.ts`), the hot scene and revoked-room maps (`board-hot-state.ts`), and per-socket rate state (`rate-limit.ts`) are all process memory. There is no Socket.IO Redis adapter.
 
@@ -95,7 +97,7 @@ At two replicas: the teacher writer lease stops working (two teacher sockets, on
 
 Nothing in `Dockerfile`, `config.ts`, or `docs/20_DEPLOYMENT_ENVIRONMENT.md` states this constraint. It is one autoscale setting away from silent, hard-to-diagnose classroom corruption.
 
-### 6. Tokenless sockets are admitted without limit
+### 6. Tokenless sockets are admitted without limit — **FIXED**
 
 ```ts
 io.use((socket, next) => {
@@ -105,7 +107,7 @@ io.use((socket, next) => {
 
 Deliberate, for health probing — but there is no per-IP connection cap, no global socket cap, and no idle disconnect for a socket that never joins a room. `LIMITS.maxSocketsPerRoom` guards admitted students only. Anyone can hold open as many tokenless sockets as the process has file descriptors.
 
-### 7. `room:join` and `foundation:ping` are unrated, and `room:join` amplifies
+### 7. `room:join` and `foundation:ping` are unrated, and `room:join` amplifies — **FIXED**
 
 `board:update` and `board:request-current` go through `allowAction`. `room:join` does not — and each accepted call runs `emitPresence`, a broadcast to every socket in the room. One admitted student issuing `room:join` in a loop turns a small frame into an N-socket fan-out, up to 400x. `foundation:ping` is likewise unrated (1:1, so lower impact).
 
@@ -119,11 +121,11 @@ On launch day, the first signal that anything is wrong is a teacher telling you.
 
 `next.config.ts` ships `Content-Security-Policy-Report-Only` with an explicit plan: watch for violations on a full classroom run, then set `CSP_ENFORCE=1`. But the policy carries no `report-uri` and no `report-to` directive, so violations are written to each individual visitor's browser console and reach no one. There is no way to complete the plan as written.
 
-### 10. Socket revocation failures are dropped silently
+### 10. Socket revocation failures are dropped silently — **FIXED**
 
 `internal/revokeRoom.run` returns `SOCKET_REVOCATION_UNAVAILABLE` on a fetch failure and `SOCKET_REVOCATION_REJECTED` on a non-2xx. The comment says "a later retry can safely call the idempotent endpoint" — there is no later retry. If the relay is restarting or briefly unreachable during End Class, the room is never evicted and live sockets keep broadcasting the board for up to the remaining token TTL (5 minutes) after the class ended.
 
-### 11. Hot state holds abandoned rooms for six hours with no room cap
+### 11. Hot state holds abandoned rooms for six hours with no room cap — **FIXED**
 
 `LIMITS.hotRoomIdleMs` is 6 hours and there is no ceiling on the number of rooms in the map. A room reaches `clearHotScene` only through explicit revocation; a teacher who closes the tab never triggers it. Worst case per room is roughly 2.9 MB (900 KB scene + 2 MB files). Five hundred abandoned rooms is about 1.4 GB held on a single-instance process for a period far longer than any class.
 
@@ -193,7 +195,30 @@ Pick one and do it properly; do not ship the current stub.
 
 Whichever you pick, `docs/16_PDF_EXPORT_AND_ARCHIVE.md` and the acceptance tests need to match the outcome.
 
-### Wave 3 — relay hardening (P1 5, 6, 7, 10, 11)
+### Wave 3 — relay hardening (P1 5, 6, 7, 10, 11) — DONE
+
+**What shipped**
+
+- **Single instance, enforced (P1 5).** `loadConfig` refuses to boot in production unless `RELAY_SINGLE_INSTANCE=1`. Documented in `docs/20_DEPLOYMENT_ENVIRONMENT.md` (failure table for two replicas), `socket-server/Dockerfile`, and `.env.example`. A Socket.IO adapter plus sticky sessions remains the prerequisite for scaling out ([using multiple nodes](https://socket.io/docs/v4/using-multiple-nodes/)).
+- **Connection budgets (P1 6).** `LIMITS.maxTokenlessSockets` (64) and `maxTokenlessSocketsPerIp` (8) bound the only token-free path onto the process; `maxSocketsPerIp` (256) is deliberately generous because schools NAT whole sites behind one IP. Refusals emit `TOO_MANY_CONNECTIONS`. A socket still roomless after `unjoinedSocketGraceMs` (30 s) is closed with `IDLE_NO_ROOM`. Both codes are in `docs/28_ERROR_CODES.md`.
+- **Proxy posture, declared (new).** A per-address cap behind a load balancer would count every client as the balancer and throttle the whole service — one full room already exceeds the per-IP budget. Production now requires `RELAY_TRUST_PROXY` to be `1` (read the *last* `X-Forwarded-For` hop, which a client cannot forge) or `0` (direct).
+- **Rated join/ping, debounced presence (P1 7).** `room:join` (30/min) and `foundation:ping` (120/min) go through `allowAction`, sharing one budget per socket with the classroom handlers so a client cannot reset its allowance by switching events. Presence broadcasts are leading+trailing debounced to one per second per room.
+- **Revocation retry (P1 10).** `internal/revokeRoom` retries transient failures (network error or non-2xx) up to 6 times at 10 s — roughly the token TTL — and records the outcome on the new optional `sessions.revocationWarning` via `sessions.recordRevocationOutcome`; success clears it. Misconfiguration is recorded once and not retried.
+- **Bounded hot state (P1 11).** `hotRoomIdleMs` cut from 6 h to 90 min; `LIMITS.maxHotRooms` (200) with oldest-first eviction. Eviction is survivable by construction: the next `board:update` repopulates the room.
+- **Revocation scoped to the room.** `revokeRoom` in the relay now walks the room's own membership instead of scanning every socket on the process.
+- **`perMessageDeflate: false` stated explicitly**, with the upstream rationale, so nobody "optimises" large scene frames into per-connection CPU and memory cost.
+
+**Found during live verification — browser token refresh never armed.** `components/board/use-board-sync.ts` imported `parseRoomTokenExpiry` from `lib/socket-token.ts`, which decoded with `Buffer`. Browsers have no `Buffer`, so the decode threw inside its own try/catch and returned `null` in every real client: the proactive refresh timer never started. Active classes survived only because the relay's `TOKEN_EXPIRED` frame triggers a reactive refresh. A tab that dropped its socket after the TTL reconnected with the dead token, was refused at the handshake with `UNAUTHORIZED` (a `connect_error`, which never refreshed), and the Reconnect button retried the same token forever. Reproduced live on a teacher tab. Fixed with a browser-safe `lib/room-token-expiry.ts` (`atob` + `TextDecoder`), which `lib/socket-token.ts` now re-exports; `connect_error` and Reconnect mint a fresh token when — and only when — the current one has actually expired, so a rejected-but-valid token cannot drive a mint loop. Verified live: the stuck tab recovered to Live without a reload.
+
+**Tests added:** `socket-server/test/connection-limits.test.ts` (6, real Socket.IO over TCP: tokenless per-address cap and release, idle eviction, admitted sockets untouched, `room:join` rate limit, presence coalescing), 5 more in `hardening.test.ts` (both production assertions, dev exemption, room ceiling eviction and recovery), `tests/revoke-room.test.ts` (7: retry on outage and on 503, warning after exhaustion, clear on success, no retry on misconfiguration, outcome mutation), `tests/room-token-expiry.test.ts` (6, including one with `Buffer` removed). `tests/helpers/fake-convex.ts` gained `runMutation` so actions are testable in house style.
+
+**Verification:** root **334** tests / 25 files, socket **28** / 4 files, typecheck clean, lint 0 errors (2 pre-existing warnings), production build succeeds. Live probe against the running relay: probe student admitted and served `board:current`; `room:join` flood → `RATE_LIMITED`; second teacher → `WRITER_ALREADY_ACTIVE`; 8 tokenless sockets admitted, 9th → `TOO_MANY_CONNECTIONS`; socket count returned to baseline after disconnect.
+
+**Not yet verified live:** End Class against the relay (revocation retry is unit-tested only), and the production-mode boot with both new variables on a real host.
+
+**Deploy action required:** set `RELAY_SINGLE_INSTANCE=1` and `RELAY_TRUST_PROXY` on the relay host before the next production deploy — the relay will not start without them. Run `npx convex deploy` for the new `sessions.revocationWarning` field and `recordRevocationOutcome` mutation.
+
+#### Original plan
 
 - Pin the relay to one instance: assert it in `loadConfig` via an explicit `RELAY_SINGLE_INSTANCE=1` acknowledgement, document it in `docs/20_DEPLOYMENT_ENVIRONMENT.md`, and set replicas to 1 in whatever hosts it. Note the Redis-adapter work as the prerequisite for ever scaling out.
 - Add `LIMITS.maxTokenlessSockets`, a per-IP connection cap, and a 30-second timer that disconnects any socket which never joined a room.

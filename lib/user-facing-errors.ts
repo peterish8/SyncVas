@@ -36,6 +36,30 @@ const KNOWN: Array<{ match: RegExp; result: UserFacingError }> = [
     },
   },
   {
+    match: /ROOM_REVOKED/i,
+    result: {
+      code: "ROOM_REVOKED",
+      message: "This class has ended.",
+      recovery: "Open the class notes, or join another class.",
+    },
+  },
+  {
+    match: /WRITER_REPLACED/i,
+    result: {
+      code: "WRITER_REPLACED",
+      message: "This board was opened in another tab.",
+      recovery: "Keep teaching in the other tab, or reload this one to move the board back here.",
+    },
+  },
+  {
+    match: /WRITER_ALREADY_ACTIVE/i,
+    result: {
+      code: "WRITER_ALREADY_ACTIVE",
+      message: "Another teacher is already editing this room.",
+      recovery: "Close the duplicate teacher tab.",
+    },
+  },
+  {
     match: /DOUBT_RATE_LIMITED|RATE_LIMITED/i,
     result: {
       code: "DOUBT_RATE_LIMITED",
@@ -142,8 +166,15 @@ export function toUserFacingError(error: unknown, fallback = "Something went wro
   return { code: extractErrorCode(error), message: fallback };
 }
 
-export function boardSyncStatusLabel(status: "idle" | "connecting" | "connected" | "offline"): string {
+/**
+ * Accepts `BoardSyncStatus` from components/board/use-board-sync.ts. Spelled out
+ * rather than imported so lib/ does not depend on components/; `"ended"` is the
+ * terminal state after the room is revoked or the session has ended.
+ */
+export function boardSyncStatusLabel(status: "idle" | "connecting" | "connected" | "offline" | "ended"): string {
   switch (status) {
+    case "ended":
+      return "Class ended";
     case "connected":
       return "Live";
     case "connecting":

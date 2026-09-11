@@ -8,12 +8,14 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   SOCKET_EVENTS,
   SOCKET_PROTOCOL_VERSION,
+  authRefreshAckSchema,
   boardCurrentSchema,
+  boardUpdateAckSchema,
   boardUpdateSchema,
   protocolErrorSchema,
   teacherViewportSchema,
 } from "@/shared/protocol/socket";
-import { clearHotScene } from "@/socket-server/src/board-hot-state";
+import { clearHotScene, markRoomRevoked } from "@/socket-server/src/board-hot-state";
 import { createSocketServer } from "@/socket-server/src/server";
 
 const SECRET = "phase-2-test-secret-that-is-at-least-32-bytes";
@@ -27,14 +29,14 @@ function encode(value: unknown): string {
   return Buffer.from(JSON.stringify(value)).toString("base64url");
 }
 
-function signedToken(sessionId: string, role: "teacher" | "student", subjectId = `${role}-1`): string {
+function signedToken(sessionId: string, role: "teacher" | "student", subjectId = `${role}-1`, ttlSeconds = 300): string {
   const header = encode({ alg: "HS256", typ: "SVRT1" });
   const payload = encode({
     v: 1,
     sessionId,
     role,
     subjectId,
-    exp: Math.floor(Date.now() / 1000) + 300,
+    exp: Math.floor(Date.now() / 1000) + ttlSeconds,
   });
   const signature = createHmac("sha256", SECRET).update(`${header}.${payload}`).digest("base64url");
   return `${header}.${payload}.${signature}`;
@@ -181,13 +183,13 @@ describe("board sync", () => {
     });
     await accepted;
 
-    const rejected = waitForEvent<unknown>(teacher, SOCKET_EVENTS.protocolError);
-    teacher.emit(SOCKET_EVENTS.boardUpdate, {
+    const stale = await teacher.timeout(2_000).emitWithAck(SOCKET_EVENTS.boardUpdate, {
       ...envelope(sessionId),
       boardVersion: 2,
       scene: { elements: [{ id: "stale" }] },
     });
-    expect(protocolErrorSchema.parse(await rejected).code).toBe("STALE_BOARD_VERSION");
+    // The ack carries the relay's version, so the writer can move past it.
+    expect(boardUpdateAckSchema.parse(stale)).toEqual({ ok: false, code: "STALE_BOARD_VERSION", boardVersion: 3 });
 
     const current = waitForEvent<unknown>(teacher, SOCKET_EVENTS.boardCurrent);
     teacher.emit(SOCKET_EVENTS.boardRequestCurrent, envelope(sessionId));
@@ -247,5 +249,74 @@ describe("board sync", () => {
 
     expect(boardUpdateSchema.parse(await receivedInA).sessionId).toBe(sessionA);
     expect(await leak).toBe("ok");
+  });
+});
+
+describe("board sync reliability", () => {
+  const emptyUpdate = (sessionId: string, boardVersion: number) => ({
+    ...envelope(sessionId),
+    boardVersion,
+    scene: { elements: [] },
+  });
+
+  it("acknowledges every rejected board:update so a writer never waits forever", async () => {
+    const sessionId = "board-sync-ack-reject";
+    const { url } = await runningSocketServer();
+    const teacher = await connectReady(url, sessionId, "teacher");
+    const student = await connectReady(url, sessionId, "student");
+
+    const forbidden = await student.timeout(2_000).emitWithAck(SOCKET_EVENTS.boardUpdate, emptyUpdate(sessionId, 1));
+    expect(boardUpdateAckSchema.parse(forbidden)).toEqual({ ok: false, code: "STUDENT_BOARD_EDIT_FORBIDDEN" });
+
+    // Rejections from the live-claims gate used to return without any reply.
+    markRoomRevoked(sessionId);
+    const revoked = await teacher.timeout(2_000).emitWithAck(SOCKET_EVENTS.boardUpdate, emptyUpdate(sessionId, 1));
+    expect(boardUpdateAckSchema.parse(revoked)).toEqual({ ok: false, code: "ROOM_REVOKED" });
+  });
+
+  it("renews a live socket's claims in band once its token lapses", async () => {
+    const sessionId = "board-sync-auth-refresh";
+    const subjectId = "teacher-refresh";
+    const { url } = await runningSocketServer();
+    sessionIds.push(sessionId);
+    const teacher = connect(url, signedToken(sessionId, "teacher", subjectId, 2));
+    await new Promise<void>((resolve, reject) => {
+      teacher.once("connect", () => resolve());
+      teacher.once("connect_error", reject);
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 2_100));
+    const expired = await teacher.timeout(2_000).emitWithAck(SOCKET_EVENTS.boardUpdate, emptyUpdate(sessionId, 1));
+    expect(boardUpdateAckSchema.parse(expired)).toEqual({ ok: false, code: "TOKEN_EXPIRED" });
+
+    const renewed = await teacher.timeout(2_000).emitWithAck(SOCKET_EVENTS.authRefresh, {
+      ...envelope(sessionId),
+      token: signedToken(sessionId, "teacher", subjectId),
+    });
+    expect(authRefreshAckSchema.parse(renewed).ok).toBe(true);
+
+    const accepted = await teacher.timeout(2_000).emitWithAck(SOCKET_EVENTS.boardUpdate, emptyUpdate(sessionId, 1));
+    expect(boardUpdateAckSchema.parse(accepted)).toEqual({ ok: true, boardVersion: 1 });
+    expect(teacher.connected).toBe(true);
+  }, 10_000);
+
+  it("refuses an auth:refresh that would change room, role or subject", async () => {
+    const sessionId = "board-sync-auth-identity";
+    const { url } = await runningSocketServer();
+    const student = await connectReady(url, sessionId, "student");
+    const subjectId = `student-${sessionId}`;
+    const attempt = async (token: string) =>
+      authRefreshAckSchema.parse(
+        await student.timeout(2_000).emitWithAck(SOCKET_EVENTS.authRefresh, { ...envelope(sessionId), token }),
+      );
+
+    expect(await attempt(signedToken(sessionId, "teacher", subjectId))).toEqual({ ok: false, code: "FORBIDDEN" });
+    expect(await attempt(signedToken(sessionId, "student", "someone-else"))).toEqual({ ok: false, code: "FORBIDDEN" });
+    expect(await attempt(signedToken("another-room", "student", subjectId))).toEqual({ ok: false, code: "FORBIDDEN" });
+    expect(await attempt("not-a-token")).toEqual({ ok: false, code: "UNAUTHORIZED" });
+
+    // A refused promotion changes nothing: the socket is still a student.
+    const edit = await student.timeout(2_000).emitWithAck(SOCKET_EVENTS.boardUpdate, emptyUpdate(sessionId, 1));
+    expect(boardUpdateAckSchema.parse(edit)).toEqual({ ok: false, code: "STUDENT_BOARD_EDIT_FORBIDDEN" });
   });
 });
