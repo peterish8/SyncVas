@@ -26,6 +26,7 @@ export type TeacherViewportCoords = {
 };
 
 const VIEWPORT_MIN_INTERVAL_MS = Math.ceil(1000 / TEACHER_VIEWPORT_MAX_HZ);
+const APPLYING_VIEWPORT_SETTLE_MS = 120;
 
 /** Prefer newer teacher viewport frames; equal ts is treated as apply-once latest. */
 export function shouldApplyTeacherViewport(
@@ -37,17 +38,13 @@ export function shouldApplyTeacherViewport(
 }
 
 export function useTeacherViewport(args: {
-  sessionId: string;
   role: "teacher" | "student";
-  roomToken?: string;
   /** Teacher: coalesced viewport ready to emit on the shared board socket. */
   onEmitViewport?: (viewport: TeacherViewportCoords) => void;
   /** Student: apply camera to Excalidraw without mutating scene elements. */
-  applyViewport?: (viewport: TeacherViewportCoords) => void;
+  applyViewport?: (viewport: TeacherViewportCoords) => void | Promise<void>;
 }) {
   const { role, onEmitViewport, applyViewport } = args;
-  void args.sessionId;
-  void args.roomToken;
 
   const [followEnabled, setFollowEnabledState] = useState(false);
   const [lastTeacherViewport, setLastTeacherViewport] = useState<TeacherViewportCoords | null>(
@@ -58,6 +55,7 @@ export function useTeacherViewport(args: {
   const lastAppliedTsRef = useRef<number | null>(null);
   const lastTeacherViewportRef = useRef<TeacherViewportCoords | null>(null);
   const applyingViewportRef = useRef(false);
+  const applyGenerationRef = useRef(0);
 
   const pendingTeacherRef = useRef<TeacherViewportCoords | null>(null);
   const throttleTimerRef = useRef<number | null>(null);
@@ -109,10 +107,27 @@ export function useTeacherViewport(args: {
   );
 
   const applyIfFollowing = useCallback((viewport: TeacherViewportCoords) => {
+    const generation = ++applyGenerationRef.current;
     applyingViewportRef.current = true;
-    applyViewportRef.current?.(viewport);
+    const result = applyViewportRef.current?.(viewport);
+    if (result && typeof (result as PromiseLike<void>).then === "function") {
+      void Promise.resolve(result).finally(() => {
+        // Excalidraw may deliver the final onScrollChange on the next task
+        // after updateScene resolves. Keep the guard alive through that
+        // trailing event so a remote camera frame never looks like a local
+        // student pan and accidentally exits follow mode.
+        window.setTimeout(() => {
+          if (applyGenerationRef.current === generation) {
+            applyingViewportRef.current = false;
+          }
+        }, APPLYING_VIEWPORT_SETTLE_MS);
+      });
+      return;
+    }
     window.setTimeout(() => {
-      applyingViewportRef.current = false;
+      if (applyGenerationRef.current === generation) {
+        applyingViewportRef.current = false;
+      }
     }, 0);
   }, []);
 
@@ -149,15 +164,13 @@ export function useTeacherViewport(args: {
     if (latest) applyIfFollowing(latest);
   }, [applyIfFollowing, role, setFollowEnabled]);
 
-  const returnToTeacher = useCallback(() => {
-    followTeacher();
-  }, [followTeacher]);
-
   const dispose = useCallback(() => {
     if (throttleTimerRef.current !== null) {
       window.clearTimeout(throttleTimerRef.current);
       throttleTimerRef.current = null;
     }
+    applyGenerationRef.current += 1;
+    applyingViewportRef.current = false;
   }, []);
 
   return {
@@ -168,7 +181,6 @@ export function useTeacherViewport(args: {
     onTeacherCameraChange,
     handleRemoteViewport,
     followTeacher,
-    returnToTeacher,
     isApplyingViewport: () => applyingViewportRef.current,
     dispose,
     viewportMinIntervalMs: VIEWPORT_MIN_INTERVAL_MS,

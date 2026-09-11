@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { useQuery } from "convex/react";
 
-import { AppShell } from "@/components/ui/app-shell";
+import { TeacherWorkspaceShell } from "@/components/teacher/teacher-workspace-shell";
+import { SyncvasMark } from "@/components/ui/syncvas-logo";
+import { TeacherSignedOut } from "@/components/teacher/teacher-signed-out";
 import { api } from "@/convex/_generated/api";
+import { canRunTeacherQuery, teacherQueryArgs, useTeacherAccess } from "@/lib/teacher-access";
 
 function formatDate(timestamp: number | undefined): string {
   if (!timestamp) return "Not started";
@@ -29,11 +32,10 @@ function statusLabel(status: string): string {
 }
 
 export default function TeacherDashboardPage() {
-  const localTeacherEnabled =
-    process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_ENABLE_LOCAL_TEACHER === "1";
+  const access = useTeacherAccess();
   const dashboard = useQuery(
-    localTeacherEnabled ? api.sessions.getLocalTeacherDashboard : api.sessions.getTeacherDashboard,
-    {},
+    api.sessions.getTeacherDashboard,
+    teacherQueryArgs(access, {}),
   );
   const sessions = dashboard?.sessions ?? [];
   const totals = dashboard?.totals ?? {
@@ -47,7 +49,7 @@ export default function TeacherDashboardPage() {
   const activeSession = sessions.find((session) => session.status === "live") ?? latestSession;
 
   return (
-    <AppShell
+    <TeacherWorkspaceShell
       trailing={
         <div className="flex items-center gap-2">
           <Link href="/teacher" className="syncvas-btn syncvas-btn-accent syncvas-btn-sm">
@@ -58,42 +60,13 @@ export default function TeacherDashboardPage() {
           </Link>
         </div>
       }
-      className="syncvas-dashboard-shell"
     >
-      <div className="syncvas-dashboard-page">
-        <div className="syncvas-dashboard-layout">
-          <aside className="syncvas-dashboard-nav" aria-label="Teacher workspace">
-            <div>
-              <p className="syncvas-eyebrow">Workspace</p>
-              <h1 className="mt-2 text-xl font-semibold tracking-[-0.04em]">Your classroom studio</h1>
-              <p className="mt-2 text-sm leading-6 text-ink-muted">
-                Keep every live room, finished canvas, and student signal in one calm place.
-              </p>
-            </div>
-            <nav className="mt-8 grid gap-1" aria-label="Dashboard sections">
-              <Link href="/teacher/dashboard" className="syncvas-dashboard-nav-link syncvas-dashboard-nav-link-active">
-                <span className="syncvas-dashboard-nav-icon" aria-hidden="true">01</span>
-                Overview
-              </Link>
-              <Link href="/teacher" className="syncvas-dashboard-nav-link">
-                <span className="syncvas-dashboard-nav-icon" aria-hidden="true">＋</span>
-                Live classroom
-              </Link>
-              <Link href="/teacher/history" className="syncvas-dashboard-nav-link">
-                <span className="syncvas-dashboard-nav-icon" aria-hidden="true">02</span>
-                Canvas history
-              </Link>
-            </nav>
-            <div className="syncvas-dashboard-nav-note mt-8">
-              <span className="syncvas-live-dot" aria-hidden="true" />
-              <div>
-                <p className="text-xs font-semibold text-ink">Private by design</p>
-                <p className="mt-1 text-xs leading-5 text-ink-muted">Student counts are anonymous room totals.</p>
-              </div>
-            </div>
-          </aside>
-
-          <main className="syncvas-dashboard-main">
+      {!canRunTeacherQuery(access) ? (
+              // Metric tiles would otherwise read a hard zero as "you have no
+              // classes" to someone who simply is not signed in.
+              <TeacherSignedOut surface="your dashboard" resolving={access === "resolving"} />
+            ) : (
+              <>
             <header className="syncvas-dashboard-heading">
               <div>
                 <p className="syncvas-eyebrow">Teacher overview</p>
@@ -171,7 +144,7 @@ export default function TeacherDashboardPage() {
                 </div>
               ) : sessions.length === 0 ? (
                 <div className="syncvas-dashboard-empty mt-5">
-                  <span className="syncvas-auth-mark syncvas-auth-mark-accent" aria-hidden="true">S</span>
+                  <span className="syncvas-auth-mark syncvas-auth-mark-accent" aria-hidden="true"><SyncvasMark /></span>
                   <div>
                     <p className="font-semibold">No canvases yet</p>
                     <p className="mt-1 text-sm leading-6 text-ink-muted">Create your first room and your canvas stats will appear here.</p>
@@ -198,9 +171,8 @@ export default function TeacherDashboardPage() {
                 </ul>
               )}
             </section>
-          </main>
-        </div>
-      </div>
-    </AppShell>
+              </>
+            )}
+    </TeacherWorkspaceShell>
   );
 }

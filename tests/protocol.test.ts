@@ -66,7 +66,7 @@ describe("classroom socket protocol events", () => {
         ts: 100,
         boardVersion: 3,
         scene: { elements: [], appState: {} },
-        files: { fileA: { mimeType: "image/png" } },
+        files: { fileA: { id: "fileA", mimeType: "image/png", dataURL: "data:image/png;base64,AA==", created: 1 } },
       }).success,
     ).toBe(true);
 

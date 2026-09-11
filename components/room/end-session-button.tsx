@@ -17,7 +17,7 @@ export function EndSessionButton({
   sessionId: string;
   onEnded?: () => void;
 }) {
-  const endLocal = useMutation(api.sessions.endAsLocalTeacher);
+  const endRoom = useMutation(api.sessions.end);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +25,7 @@ export function EndSessionButton({
     setBusy(true);
     setError(null);
     try {
-      await endLocal({ sessionId: sessionId as Id<"sessions"> });
+      await endRoom({ sessionId: sessionId as Id<"sessions"> });
       window.sessionStorage.removeItem(roomTokenStorageKey(sessionId));
       onEnded?.();
     } catch {

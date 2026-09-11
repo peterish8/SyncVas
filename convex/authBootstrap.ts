@@ -7,6 +7,7 @@
 import { mutation } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
+import { fail } from "./errors";
 
 export const LOCAL_DEV_TEACHER_SUBJECT = "local-dev-teacher";
 
@@ -25,8 +26,9 @@ export async function upsertLocalDevTeacher(
   ctx: MutationCtx,
 ): Promise<Doc<"users">> {
   if (!isLocalDevTeacherAllowed()) {
-    throw new Error(
-      "DEV_TEACHER_DISABLED: Local teacher bootstrap is disabled. Set ALLOW_DEV_TEACHER=1 on the Convex deployment.",
+    fail(
+      "DEV_TEACHER_DISABLED",
+      "Local teacher bootstrap is disabled. Set ALLOW_DEV_TEACHER=1 on the Convex deployment.",
     );
   }
 
@@ -36,7 +38,7 @@ export async function upsertLocalDevTeacher(
     .unique();
   if (existing) {
     if (existing.role !== "teacher" && existing.role !== "admin") {
-      throw new Error("FORBIDDEN: Local bootstrap subject is not a teacher.");
+      fail("FORBIDDEN", "Local bootstrap subject is not a teacher.");
     }
     return existing;
   }
@@ -50,7 +52,7 @@ export async function upsertLocalDevTeacher(
   });
   const teacher = await ctx.db.get(teacherId);
   if (!teacher) {
-    throw new Error("INTERNAL: Failed to create local teacher.");
+    fail("INTERNAL", "Failed to create local teacher.");
   }
   return teacher;
 }

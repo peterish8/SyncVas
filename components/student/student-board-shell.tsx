@@ -3,17 +3,39 @@
 import Link from "next/link";
 
 import { BoardRoom } from "@/components/board/board-room";
+import { ClassEndedPanel } from "@/components/connection/class-ended-panel";
 import { StudentDoubtComposer } from "@/components/doubts/student-doubt-composer";
+import { isClassEndedError } from "@/lib/board-sync-errors";
 import { useStoredValue } from "@/lib/client-store";
 import { participantStorageKey, roomTokenStorageKey } from "@/lib/local-teacher";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useAction } from "convex/react";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 
 /** Module scope: `useStoredValue` needs a stable snapshot parser. */
 function parseRoomToken(raw: string | null): string | null {
   return raw;
+}
+
+const LOADING_TIMEOUT_MS = 12_000;
+
+/** Remounts cleanly whenever the parent leaves/re-enters the loading branch. */
+function LoadingWithTimeout({
+  ms,
+  fallback,
+  children,
+}: {
+  ms: number;
+  fallback: ReactNode;
+  children: ReactNode;
+}) {
+  const [timedOut, setTimedOut] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setTimedOut(true), ms);
+    return () => window.clearTimeout(timer);
+  }, [ms]);
+  return timedOut ? fallback : children;
 }
 
 export function StudentBoardShell({ sessionId }: { sessionId: string }) {
@@ -35,19 +57,66 @@ export function StudentBoardShell({ sessionId }: { sessionId: string }) {
     serverValue: undefined,
   });
   const issueToken = useAction(api.sessions.issueSocketToken);
+  // Set when Convex refuses a fresh token because the class is over. A student
+  // who reloads after class still holds the old token, so the board tries to
+  // refresh it; without this they would sit on "Connection lost" forever.
+  const [classEnded, setClassEnded] = useState(false);
   const refreshRoomToken = useCallback(async () => {
     if (!participantId) throw new Error("Participant admission is unavailable.");
-    const next = await issueToken({
-      sessionId: sessionId as Id<"sessions">,
-      participantId: participantId as Id<"participants">,
-    });
-    window.sessionStorage.setItem(roomTokenStorageKey(sessionId), next.token);
-    return next.token;
+    try {
+      const next = await issueToken({
+        sessionId: sessionId as Id<"sessions">,
+        participantId: participantId as Id<"participants">,
+      });
+      window.sessionStorage.setItem(roomTokenStorageKey(sessionId), next.token);
+      return next.token;
+    } catch (error) {
+      // The stored token is deliberately kept: on the next reload it leads
+      // straight back here instead of to a misleading "Join required".
+      if (isClassEndedError(error)) setClassEnded(true);
+      throw error;
+    }
   }, [issueToken, participantId, sessionId]);
+
+  if (classEnded) {
+    return (
+      <div className="relative min-h-[24rem] flex-1">
+        <ClassEndedPanel role="student" sessionId={sessionId} />
+      </div>
+    );
+  }
 
   if (roomToken === undefined) {
     return (
-      <div className="grid flex-1 place-items-center text-sm text-ink-muted">Loading room…</div>
+      <LoadingWithTimeout
+        ms={LOADING_TIMEOUT_MS}
+        fallback={
+          <div className="grid flex-1 place-items-center gap-4 px-6 text-center">
+            <div className="max-w-sm rounded-panel border border-border bg-surface p-6 shadow-soft">
+              <p className="text-base font-medium">Taking too long to open this room</p>
+              <p className="mt-2 text-sm leading-6 text-ink-muted">
+                Refresh, or join again with the room code. Direct links need a fresh join.
+              </p>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  className="syncvas-btn syncvas-btn-secondary"
+                  onClick={() => window.location.reload()}
+                >
+                  Refresh
+                </button>
+                <Link href="/join" className="syncvas-btn syncvas-btn-primary">
+                  Enter join code
+                </Link>
+              </div>
+            </div>
+          </div>
+        }
+      >
+        <div className="grid flex-1 place-items-center text-sm text-ink-muted" role="status">
+          Loading room…
+        </div>
+      </LoadingWithTimeout>
     );
   }
 
@@ -68,20 +137,18 @@ export function StudentBoardShell({ sessionId }: { sessionId: string }) {
   }
 
   return (
-    <>
-      <div className="min-h-0 flex-1 p-3 sm:p-4">
-        <div className="h-full min-h-0">
-          <BoardRoom
-            sessionId={sessionId}
-            role="student"
-            roomToken={roomToken ?? undefined}
-            refreshRoomToken={isProofSession ? undefined : refreshRoomToken}
-          />
-        </div>
+    <div className="syncvas-student-workspace">
+      <div className="syncvas-student-board-area">
+        <BoardRoom
+          sessionId={sessionId}
+          role="student"
+          roomToken={roomToken ?? undefined}
+          refreshRoomToken={isProofSession ? undefined : refreshRoomToken}
+        />
       </div>
-      <div className="shrink-0">
+      <aside className="syncvas-student-doubt-rail" aria-label="Anonymous doubts">
         <StudentDoubtComposer sessionId={sessionId} />
-      </div>
-    </>
+      </aside>
+    </div>
   );
 }

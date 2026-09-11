@@ -2,32 +2,30 @@
 
 import { v } from "convex/values";
 import { action, internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import type { QueryCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { FunctionReference } from "convex/server";
-import type { Id } from "./_generated/dataModel";
-import {
-  isLocalDevTeacherAllowed,
-  requireLocalDevSessionOwner,
-  requireLocalDevSessionOwnerQuery,
-  requireLocalDevTeacher,
-  requireSessionOwner,
-  requireTeacher,
-  getLocalDevTeacher,
-} from "./auth";
+import type { Doc, Id } from "./_generated/dataModel";
+import { isLocalDevTeacherAllowed, requireSessionOwner, requireTeacher } from "./permissions";
 import { LOCAL_DEV_TEACHER_SUBJECT } from "./authBootstrap";
+import { fail } from "./errors";
+import { saveFinalSnapshot } from "./boardSnapshots";
+import { ROOM_TOKEN_TTL_SECONDS } from "../shared/constants/limits";
 
 const JOIN_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const JOIN_CODE_PATTERN = /^[A-Z2-9]{6}$/;
 const JOIN_CODE_LENGTH = 6;
-const SOCKET_TOKEN_TTL_SECONDS = 5 * 60;
+const SOCKET_TOKEN_TTL_SECONDS = ROOM_TOKEN_TTL_SECONDS;
 const revokeRoom = (internal as unknown as {
   "internal/revokeRoom": { run: FunctionReference<"action", "internal", { sessionId: Id<"sessions"> }, unknown> };
 })["internal/revokeRoom"].run;
+const summarizeSession = (internal as unknown as {
+  "internal/summarize": { run: FunctionReference<"action", "internal", { sessionId: Id<"sessions"> }, unknown> };
+})["internal/summarize"].run;
 
-function fail(code: string, message: string): never {
-  throw new Error(`${code}: ${message}`);
-}
+// `fail` now lives in ./errors and throws a ConvexError. A plain Error here
+// meant every code below arrived at the browser as "Server Error" on a
+// production deployment while looking correct in dev.
 
 function normalizeTitle(title: string | undefined): string {
   const normalized = title?.trim() ?? "";
@@ -138,78 +136,108 @@ export const end = mutation({
   },
 });
 
-/** Local/dev: create draft session as local-dev-teacher without Convex Auth identity. */
-export const createAsLocalTeacher = mutation({
-  args: { title: v.optional(v.string()), subject: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    const teacher = await requireLocalDevTeacher(ctx);
-    let joinCode = randomJoinCode();
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      const existing = await ctx.db
-        .query("sessions")
-        .withIndex("by_join_code", (q) => q.eq("joinCode", joinCode))
-        .unique();
-      if (!existing) break;
-      if (attempt === 7) fail("JOIN_CODE_EXHAUSTED", "Could not allocate a room code.");
-      joinCode = randomJoinCode();
-    }
+/**
+ * Persist the final board and begin ending, in one transaction.
+ *
+ * The two-call sequence (`boardSnapshots.saveFinal` then `sessions.end`) leaves
+ * a window in which the save succeeds, the tab closes or the network drops, and
+ * the room is ended with no board — or the save fails and the teacher retries
+ * into a half-ended room. Convex mutations are transactional, so doing both here
+ * means the room never reaches `ending` without its snapshot already durable.
+ */
+async function beginEndWithSnapshot(
+  ctx: MutationCtx,
+  session: Doc<"sessions">,
+  boardVersion: number,
+  sceneJson: string,
+) {
+  if (session.status === "ended") return { sessionId: session._id, status: "ended" as const };
+  if (session.status === "ending") return { sessionId: session._id, status: "ending" as const };
+  if (session.status !== "live") fail("SESSION_NOT_ENDABLE", "Only a live room can be ended.");
 
-    const sessionId = await ctx.db.insert("sessions", {
-      teacherId: teacher._id,
-      title: normalizeTitle(args.title),
-      subject: normalizeSubject(args.subject),
-      joinCode,
-      status: "draft",
-      latestBoardVersion: 0,
-    });
-    return {
-      sessionId,
-      joinCode,
-      status: "draft" as const,
-      teacherId: teacher._id,
-      authSubject: LOCAL_DEV_TEACHER_SUBJECT,
-    };
+  const { snapshotId } = await saveFinalSnapshot(ctx, session._id, boardVersion, sceneJson);
+  await ctx.db.patch(session._id, { status: "ending" });
+  await ctx.scheduler.runAfter(0, revokeRoom, { sessionId: session._id });
+  await ctx.scheduler.runAfter(0, internal.sessions.finalize, { sessionId: session._id });
+  return { sessionId: session._id, status: "ending" as const, snapshotId };
+}
+
+export const saveFinalAndEnd = mutation({
+  args: { sessionId: v.id("sessions"), boardVersion: v.number(), sceneJson: v.string() },
+  handler: async (ctx, args) => {
+    const { session } = await requireSessionOwner(ctx, args.sessionId);
+    return await beginEndWithSnapshot(ctx, session, args.boardVersion, args.sceneJson);
   },
 });
 
-export const startAsLocalTeacher = mutation({
-  args: { sessionId: v.id("sessions") },
-  handler: async (ctx, args) => {
-    const { session } = await requireLocalDevSessionOwner(ctx, args.sessionId);
-    if (session.status === "live") {
-      return { sessionId: session._id, joinCode: session.joinCode, status: "live" as const };
-    }
-    if (session.status !== "draft") fail("SESSION_NOT_STARTABLE", "This room cannot be started.");
-    const startedAt = Date.now();
-    await ctx.db.patch(session._id, { status: "live", startedAt });
-    return { sessionId: session._id, joinCode: session.joinCode, status: "live" as const, startedAt };
-  },
-});
+/**
+ * Finalization must always terminate.
+ *
+ * `end` has already revoked every live socket and cleared relay hot state, so a
+ * session left in `ending` can never be re-saved, re-ended, or exported — the
+ * class is simply gone. Earlier this returned `FINAL_SNAPSHOT_MISSING` once and
+ * stopped, which stranded the room permanently whenever the snapshot had not
+ * landed. Now a bounded retry gives an in-flight save time to arrive, and the
+ * room closes regardless once the attempts are spent.
+ */
+const FINALIZE_MAX_ATTEMPTS = 5;
+const FINALIZE_RETRY_MS = 6_000;
 
-export const endAsLocalTeacher = mutation({
-  args: { sessionId: v.id("sessions") },
+/**
+ * Record whether the relay accepted this room's socket revocation.
+ *
+ * Written by `internal/revokeRoom` after its retries settle. Passing `null`
+ * clears a warning left by an earlier attempt, so a room that eventually
+ * revoked does not keep advertising a failure that has resolved.
+ */
+export const recordRevocationOutcome = internalMutation({
+  args: { sessionId: v.id("sessions"), warning: v.union(v.string(), v.null()) },
   handler: async (ctx, args) => {
-    const { session } = await requireLocalDevSessionOwner(ctx, args.sessionId);
-    if (session.status === "ended") return { sessionId: session._id, status: "ended" as const };
-    if (session.status === "ending") return { sessionId: session._id, status: "ending" as const };
-    if (session.status !== "live") fail("SESSION_NOT_ENDABLE", "Only a live room can be ended.");
-    await ctx.db.patch(session._id, { status: "ending" });
-    await ctx.scheduler.runAfter(0, revokeRoom, { sessionId: session._id });
-    await ctx.scheduler.runAfter(0, internal.sessions.finalize, { sessionId: session._id });
-    return { sessionId: session._id, status: "ending" as const };
+    const session = await ctx.db.get(args.sessionId);
+    if (!session) return null;
+    if (args.warning === null) {
+      if (session.revocationWarning === undefined) return null;
+      await ctx.db.patch(args.sessionId, { revocationWarning: undefined });
+      return { sessionId: args.sessionId, cleared: true as const };
+    }
+    await ctx.db.patch(args.sessionId, { revocationWarning: args.warning });
+    return { sessionId: args.sessionId, warning: args.warning };
   },
 });
 
 export const finalize = internalMutation({
-  args: { sessionId: v.id("sessions") },
+  args: { sessionId: v.id("sessions"), attempt: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.status !== "ending") return null;
+    const attempt = args.attempt ?? 0;
+
     if (!session.latestSnapshotId) {
-      return { sessionId: session._id, ok: false as const, reason: "FINAL_SNAPSHOT_MISSING" as const };
+      if (attempt + 1 < FINALIZE_MAX_ATTEMPTS) {
+        await ctx.scheduler.runAfter(FINALIZE_RETRY_MS, internal.sessions.finalize, {
+          sessionId: session._id,
+          attempt: attempt + 1,
+        });
+        return { sessionId: session._id, ok: false as const, reason: "FINAL_SNAPSHOT_PENDING" as const, attempt };
+      }
+      // Close the room with an explicit warning rather than stranding it. The
+      // teacher loses the board, which is bad; leaving the room unusable and
+      // un-exportable forever is worse, and hides the failure entirely.
+      const endedAt = Date.now();
+      await ctx.db.patch(session._id, {
+        status: "ended",
+        endedAt,
+        finalizeWarning: "FINAL_SNAPSHOT_MISSING",
+      });
+      return { sessionId: session._id, ok: false as const, reason: "FINAL_SNAPSHOT_MISSING" as const, endedAt };
     }
+
     const endedAt = Date.now();
     await ctx.db.patch(session._id, { status: "ended", endedAt });
+    // Notes are best-effort and strictly downstream: the board is already
+    // durable at this point, so a missing key or a provider outage costs the
+    // class nothing but the summary.
+    await ctx.scheduler.runAfter(0, summarizeSession, { sessionId: session._id });
     return { sessionId: session._id, ok: true as const, endedAt };
   },
 });
@@ -238,10 +266,6 @@ export const getTeacherSession = query({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, args) => {
     const { session } = await requireSessionOwner(ctx, args.sessionId);
-    const participants = await ctx.db
-      .query("participants")
-      .withIndex("by_session", (q) => q.eq("sessionId", session._id))
-      .collect();
     return {
       sessionId: session._id,
       title: session.title,
@@ -251,16 +275,8 @@ export const getTeacherSession = query({
       startedAt: session.startedAt,
       endedAt: session.endedAt,
       latestBoardVersion: session.latestBoardVersion,
-      participantCount: participants.length,
+      participantCount: session.studentCount ?? 0,
     };
-  },
-});
-
-export const getLocalTeacherSession = query({
-  args: { sessionId: v.id("sessions") },
-  handler: async (ctx, args) => {
-    const { session } = await requireLocalDevSessionOwnerQuery(ctx, args.sessionId);
-    return { sessionId: session._id, title: session.title, subject: session.subject, joinCode: session.joinCode, status: session.status, startedAt: session.startedAt, endedAt: session.endedAt, latestBoardVersion: session.latestBoardVersion };
   },
 });
 
@@ -283,27 +299,21 @@ async function buildTeacherDashboard(ctx: QueryCtx, teacherId: Id<"users">) {
     .order("desc")
     .take(100);
 
-  const sessionStats = await Promise.all(
-    sessions.map(async (session) => {
-      const participants = await ctx.db
-        .query("participants")
-        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
-        .collect();
-
-      return {
-        sessionId: session._id,
-        title: session.title,
-        subject: session.subject,
-        joinCode: session.joinCode,
-        status: session.status,
-        startedAt: session.startedAt,
-        endedAt: session.endedAt,
-        latestBoardVersion: session.latestBoardVersion,
-        hasSavedBoard: session.latestSnapshotId !== undefined,
-        studentCount: participants.length,
-      };
-    }),
-  );
+  // One indexed take, no per-session fan-out. The participant collect that used to
+  // live here made this reactive query re-read every participant of every class the
+  // teacher owns whenever any doubt submission patched a lastSeenAt.
+  const sessionStats = sessions.map((session) => ({
+    sessionId: session._id,
+    title: session.title,
+    subject: session.subject,
+    joinCode: session.joinCode,
+    status: session.status,
+    startedAt: session.startedAt,
+    endedAt: session.endedAt,
+    latestBoardVersion: session.latestBoardVersion,
+    hasSavedBoard: session.latestSnapshotId !== undefined,
+    studentCount: session.studentCount ?? 0,
+  }));
 
   return {
     sessions: sessionStats,
@@ -325,20 +335,6 @@ export const getTeacherDashboard = query({
   },
 });
 
-export const getLocalTeacherDashboard = query({
-  args: {},
-  handler: async (ctx) => {
-    const teacher = await getLocalDevTeacher(ctx);
-    if (!teacher) {
-      return {
-        sessions: [],
-        totals: { classCount: 0, liveCount: 0, endedCount: 0, studentJoins: 0, savedBoardCount: 0 },
-      };
-    }
-    return await buildTeacherDashboard(ctx, teacher._id);
-  },
-});
-
 export const listTeacherHistory = query({
   args: {},
   handler: async (ctx) => {
@@ -348,15 +344,6 @@ export const listTeacherHistory = query({
       .withIndex("by_teacher_status", (q) => q.eq("teacherId", teacher._id).eq("status", "ended"))
       .order("desc")
       .take(100);
-  },
-});
-
-export const listTeacherHistoryAsLocalTeacher = query({
-  args: {},
-  handler: async (ctx) => {
-    const teacher = await getLocalDevTeacher(ctx);
-    if (!teacher) return [];
-    return await ctx.db.query("sessions").withIndex("by_teacher_status", (q) => q.eq("teacherId", teacher._id).eq("status", "ended")).order("desc").take(100);
   },
 });
 
@@ -429,10 +416,22 @@ export const getForToken = internalQuery({
 export const getTeacherForToken = internalQuery({
   args: { subject: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    // Local/dev identities and external issuers may use arbitrary subject
+    // strings, so resolve the indexed auth subject before attempting a
+    // Convex document lookup. `db.get` throws for malformed IDs.
+    const byAuthSubject = await ctx.db
       .query("users")
       .withIndex("by_auth_subject", (q) => q.eq("authSubject", args.subject))
       .unique();
+    if (byAuthSubject) return byAuthSubject;
+
+    // Convex Auth normally puts the user document id in the JWT subject. Keep
+    // that compatibility path, but contain malformed/foreign subjects.
+    try {
+      return await ctx.db.get(args.subject as Id<"users">);
+    } catch {
+      return null;
+    }
   },
 });
 

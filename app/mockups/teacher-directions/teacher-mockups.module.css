@@ -1,0 +1,231 @@
+.page {
+  --ink: #f5f4ec;
+  --muted: rgb(245 244 236 / 0.62);
+  --lime: #d8f700;
+  --coral: #fa796c;
+  --sky: #a8d7f5;
+  min-height: 100vh;
+  padding: 42px clamp(20px, 5vw, 76px) 88px;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 14% 0%, rgb(216 247 0 / 0.12), transparent 26rem),
+    radial-gradient(circle at 88% 42%, rgb(250 121 108 / 0.08), transparent 30rem),
+    #0d0f0d;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+}
+
+.header,
+.grid,
+.footerNote {
+  width: min(100%, 1280px);
+  margin-inline: auto;
+}
+
+.header { margin-bottom: 36px; }
+
+.backLink {
+  display: inline-flex;
+  margin-bottom: 64px;
+  color: rgb(245 244 236 / 0.62);
+  font-size: 12px;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.backLink:hover { color: var(--lime); }
+
+.kicker,
+.recommendation,
+.directionNumber,
+.copyEyebrow,
+.signalTopline,
+.filmTopBar,
+.editorialRail,
+.signalToolbar,
+.footerNote > span {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.kicker { margin: 0 0 18px; color: var(--lime); }
+
+.header h1 {
+  max-width: 850px;
+  margin: 0;
+  font-size: clamp(48px, 7vw, 98px);
+  line-height: 0.88;
+  letter-spacing: -0.085em;
+  text-wrap: balance;
+}
+
+.intro {
+  max-width: 680px;
+  margin: 28px 0 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.recommendation {
+  display: inline-flex;
+  gap: 12px;
+  margin: 22px 0 0;
+  color: rgb(245 244 236 / 0.58);
+}
+
+.recommendation span { color: var(--lime); }
+
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+
+.option {
+  position: relative;
+  min-height: 600px;
+  overflow: hidden;
+  border: 1px solid rgb(245 244 236 / 0.14);
+  border-radius: 28px;
+  background: #171a17;
+  box-shadow: 0 26px 70px rgb(0 0 0 / 0.24);
+  isolation: isolate;
+}
+
+.option::after {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  border: 1px solid rgb(255 255 255 / 0.04);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+
+.directionLabel {
+  position: absolute;
+  z-index: 12;
+  top: 24px;
+  right: 24px;
+  left: 24px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.directionNumber { color: var(--lime); font-variant-numeric: tabular-nums; }
+
+.directionLabel h2 { margin: -3px 0 4px; font-size: 15px; font-weight: 500; letter-spacing: -0.02em; }
+.directionLabel p { max-width: 240px; margin: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+
+.copy { position: absolute; z-index: 7; max-width: 290px; }
+.copyEyebrow { color: rgb(245 244 236 / 0.58); }
+.copy h3 { margin: 14px 0 14px; font-size: clamp(35px, 4vw, 57px); line-height: 0.91; letter-spacing: -0.075em; }
+.copy h3 em { color: var(--lime); font-style: normal; }
+.copy p { margin: 0; color: rgb(245 244 236 / 0.66); font-size: 12px; line-height: 1.52; }
+.copyCta { display: inline-flex; gap: 12px; align-items: center; margin-top: 22px; padding: 10px 14px; border: 1px solid rgb(245 244 236 / 0.18); border-radius: 999px; color: var(--ink); font-size: 11px; }
+.copyCta b { color: var(--lime); font-size: 15px; font-weight: 400; }
+
+/* 01 — a teacher's desk with orbiting student perspective. */
+.orbit { background: radial-gradient(circle at 26% 58%, rgb(168 215 245 / 0.11), transparent 23rem), #151a19; }
+.orbitScene { position: absolute; inset: 0; overflow: hidden; background-image: linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px); background-position: center; background-size: 42px 42px; }
+.orbitScene::before { position: absolute; inset: 0; background: radial-gradient(circle at 36% 51%, transparent 0 8rem, rgb(216 247 0 / 0.09) 8.1rem, transparent 8.25rem), linear-gradient(120deg, transparent 38%, rgb(216 247 0 / 0.1) 38.1%, transparent 38.4%); content: ""; }
+.orbitHalo { position: absolute; top: 38%; left: 23%; width: 260px; height: 260px; border: 1px solid rgb(216 247 0 / 0.25); border-radius: 50%; transform: rotate(-18deg) scaleX(1.5); }
+.orbitRing { position: absolute; top: 42%; left: 6%; width: 470px; height: 120px; border: 1px solid rgb(245 244 236 / 0.12); border-radius: 50%; transform: rotate(-20deg); }
+.orbitBoard { position: absolute; top: 29%; left: 8%; display: grid; width: 232px; min-height: 195px; padding: 20px 22px; transform: rotate(-7deg); background: #f4f1e8; color: #1a201d; box-shadow: 14px 18px 0 var(--lime), 0 30px 55px rgb(0 0 0 / 0.35); }
+.orbitBoard span { color: #6b746d; font-size: 10px; }
+.orbitBoard strong { align-self: center; font-family: Georgia, serif; font-size: 34px; font-weight: 400; letter-spacing: -0.06em; }
+.orbitBoard i { width: 88%; height: 2px; background: var(--coral); transform: rotate(-4deg); }
+.orbitBoard small { align-self: end; font-size: 10px; }
+.orbitSatellite { position: absolute; right: 18%; bottom: 13%; display: grid; gap: 7px; width: 148px; padding: 15px; border: 1px solid rgb(245 244 236 / 0.18); border-radius: 14px; background: rgb(18 22 19 / 0.82); box-shadow: 0 18px 36px rgb(0 0 0 / 0.27); transform: rotate(5deg); }
+.orbitSatellite span { color: var(--lime); font-size: 8px; letter-spacing: 0.16em; }
+.orbitSatellite b { font-family: Georgia, serif; font-size: 20px; font-weight: 400; }
+.orbitSatellite small { color: rgb(216 247 0 / 0.72); font-size: 9px; }
+.orbitSignal { position: absolute; top: 34%; right: 8%; padding: 8px 10px; border: 1px solid rgb(216 247 0 / 0.38); border-radius: 999px; color: var(--lime); font-size: 9px; }
+.orbitSignal b { margin-left: 8px; font-size: 12px; }
+.orbit .copy { right: 6%; bottom: 9%; max-width: 175px; }
+.orbit .copy h3 { font-size: 42px; }
+
+/* 02 — a letterboxed film still, with the board as the hero prop. */
+.film { background: #111313; }
+.filmScene { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(0 0 0 / 0.55), transparent 30%, transparent 74%, rgb(0 0 0 / 0.72)), radial-gradient(circle at 42% 42%, rgb(250 121 108 / 0.18), transparent 22rem); }
+.filmTopBar, .filmBottomBar { position: absolute; right: 0; left: 0; height: 36px; background: #060706; }
+.filmTopBar { top: 0; display: flex; justify-content: space-between; padding: 13px 22px; color: rgb(245 244 236 / 0.54); }
+.filmBottomBar { bottom: 0; }
+.filmLight { position: absolute; top: 19%; left: 18%; width: 260px; height: 250px; border-radius: 50%; background: rgb(250 121 108 / 0.16); filter: blur(45px); }
+.filmBoard { position: absolute; top: 30%; left: 12%; width: 56%; min-height: 220px; padding: 28px; border: 1px solid rgb(245 244 236 / 0.18); border-radius: 12px; background: linear-gradient(135deg, #252a27, #121614); box-shadow: 0 25px 65px rgb(0 0 0 / 0.55); }
+.filmBoard span { color: rgb(245 244 236 / 0.52); font-size: 10px; }
+.filmBoard strong { display: block; margin-top: 28px; color: #f5f4ec; font-family: var(--font-geist-mono), monospace; font-size: clamp(18px, 2.2vw, 28px); font-weight: 400; }
+.filmBoard b { display: block; margin-top: 14px; color: #65db82; font-family: var(--font-geist-mono), monospace; font-size: clamp(16px, 2vw, 25px); font-weight: 400; }
+.filmBoard small { position: absolute; right: 28px; bottom: 20px; color: rgb(216 247 0 / 0.68); font-family: var(--font-geist-mono), monospace; font-size: 8px; }
+.filmCopy { right: 9%; bottom: 12%; max-width: 190px; }
+.filmCopy h3 { font-size: 37px; }
+.filmCopy h3 em { color: var(--coral); }
+
+/* 03 — a paper/editorial treatment that makes teaching feel authored. */
+.editorial { background: #e9e5da; color: #18201b; }
+.editorial .directionLabel p { color: rgb(24 32 27 / 0.58); }
+.editorial .directionNumber { color: #657a28; }
+.editorialScene { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(100deg, #eee9de 0 49%, #17201c 49%); }
+.editorialIndex { position: absolute; top: 17%; left: 7%; color: rgb(24 32 27 / 0.1); font-size: 170px; font-weight: 700; line-height: 0.7; letter-spacing: -0.12em; }
+.editorialRail { position: absolute; top: 22%; left: 51%; display: grid; gap: 14px; color: rgb(245 244 236 / 0.52); writing-mode: vertical-rl; }
+.editorialRail i { width: 1px; height: 130px; background: var(--lime); }
+.editorialPaper { position: absolute; top: 25%; left: 14%; display: grid; width: 54%; min-height: 240px; padding: 22px; background: #f8f5ec; box-shadow: 18px 18px 0 #b9cd28; transform: rotate(-4deg); }
+.editorialPaper span { color: #758079; font-size: 9px; letter-spacing: 0.14em; }
+.editorialPaper strong { align-self: center; font-family: Georgia, serif; font-size: clamp(34px, 4.5vw, 54px); font-weight: 400; letter-spacing: -0.08em; }
+.editorialPaper i { width: 72%; height: 2px; background: var(--coral); }
+.editorialPaper small { align-self: end; color: #2b352c; font-size: 10px; }
+.editorialPaper b { position: absolute; right: 18px; bottom: 16px; color: #2b352c; font-size: 20px; font-weight: 400; }
+.editorialCopy { right: 8%; bottom: 12%; max-width: 205px; color: #f5f4ec; }
+.editorialCopy .copyEyebrow { color: rgb(245 244 236 / 0.54); }
+.editorialCopy h3 { font-size: 36px; }
+.editorialCopy h3 em { color: var(--lime); }
+.editorialCopy p { color: rgb(245 244 236 / 0.62); }
+
+/* 04 — an interface-like mission-control frame, still warm and human. */
+.signal { background: radial-gradient(circle at 12% 88%, rgb(168 215 245 / 0.12), transparent 20rem), #121717; }
+.signalScene { position: absolute; inset: 0; padding: 18% 7% 8%; }
+.signalTopline { display: flex; gap: 8px; align-items: center; color: rgb(245 244 236 / 0.62); }
+.signalTopline > span:last-child { margin-left: auto; color: rgb(245 244 236 / 0.4); }
+.signalDot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 16px var(--lime); }
+.signalWindow { position: relative; display: grid; grid-template-columns: 1fr 76px; min-height: 220px; margin-top: 20px; overflow: hidden; border: 1px solid rgb(245 244 236 / 0.2); border-radius: 12px; background: #202522; box-shadow: 0 28px 55px rgb(0 0 0 / 0.38); }
+.signalToolbar { position: absolute; z-index: 2; top: 0; right: 0; left: 0; display: flex; gap: 12px; align-items: center; height: 34px; padding: 0 14px; border-bottom: 1px solid rgb(245 244 236 / 0.1); color: rgb(245 244 236 / 0.62); }
+.signalToolbar b { padding: 3px 7px; border-radius: 999px; color: #13170f; background: var(--lime); font-size: 8px; }
+.signalToolbar small { margin-left: auto; color: rgb(245 244 236 / 0.4); font-size: 8px; }
+.signalCanvas { position: relative; display: grid; align-content: center; gap: 16px; padding: 45px 22px 20px; background-image: radial-gradient(rgb(245 244 236 / 0.16) 1px, transparent 1px); background-size: 16px 16px; }
+.signalCanvas span { color: #f5f4ec; font-family: var(--font-geist-mono), monospace; font-size: clamp(16px, 2vw, 27px); }
+.signalCanvas b { color: #65db82; font-family: var(--font-geist-mono), monospace; font-size: clamp(15px, 1.8vw, 22px); font-weight: 400; }
+.signalCursor { position: absolute; top: 47%; left: 53%; width: 13px; height: 17px; border-right: 2px solid var(--lime); border-bottom: 2px solid var(--lime); transform: skew(-28deg) rotate(42deg); }
+.signalSide { display: grid; align-content: center; gap: 7px; padding: 12px; border-left: 1px solid rgb(245 244 236 / 0.1); background: rgb(0 0 0 / 0.18); }
+.signalSide small { color: rgb(245 244 236 / 0.4); font-size: 8px; letter-spacing: 0.1em; }
+.signalSide b { color: var(--lime); font-size: 10px; }
+.signalSide span { margin-top: 16px; color: rgb(245 244 236 / 0.4); font-size: 8px; }
+.signalSide strong { font-family: var(--font-geist-mono), monospace; font-size: 13px; font-weight: 400; }
+.signalTrace { position: absolute; top: 55%; left: 2%; width: 94%; height: 1px; background: linear-gradient(90deg, transparent, var(--lime), transparent); opacity: 0.48; transform: rotate(-12deg); }
+.signalCopy { right: 7%; bottom: 8%; max-width: 210px; }
+.signalCopy h3 { font-size: 38px; }
+
+.footerNote { display: flex; gap: 32px; justify-content: space-between; margin-top: 34px; padding-top: 22px; border-top: 1px solid rgb(245 244 236 / 0.14); color: var(--muted); }
+.footerNote > span { color: var(--lime); }
+.footerNote p { max-width: 490px; margin: 0; font-size: 12px; line-height: 1.5; text-align: right; }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+  .option { min-height: 560px; }
+}
+
+@media (max-width: 560px) {
+  .page { padding: 28px 14px 56px; }
+  .backLink { margin-bottom: 40px; }
+  .header h1 { font-size: 52px; }
+  .recommendation { display: block; line-height: 1.5; }
+  .option { min-height: 570px; border-radius: 22px; }
+  .orbitBoard { left: 8%; width: 220px; }
+  .orbitSatellite { right: 8%; }
+  .orbit .copy { right: 7%; bottom: 7%; max-width: 180px; }
+  .filmBoard { width: 64%; left: 7%; }
+  .filmCopy { right: 7%; max-width: 170px; }
+  .editorialPaper { left: 8%; width: 62%; }
+  .editorialCopy { right: 6%; max-width: 170px; }
+  .signalScene { padding-inline: 5%; }
+  .signalCopy { right: 5%; max-width: 175px; }
+  .footerNote { display: block; }
+  .footerNote p { margin-top: 12px; text-align: left; }
+}

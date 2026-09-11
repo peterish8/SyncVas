@@ -6,8 +6,15 @@ import { io as createClient, type Socket as ClientSocket } from "socket.io-clien
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ensureLocalTeacher, isLocalDevTeacherAllowed } from "@/convex/authBootstrap";
-import { end, endAsLocalTeacher, issueSocketToken, JOIN_CODE_PATTERN } from "@/convex/sessions";
-import { joinByCode } from "@/convex/participants";
+import {
+  end,
+  getTeacherDashboard,
+  getTeacherForToken,
+  issueSocketToken,
+  JOIN_CODE_PATTERN,
+} from "@/convex/sessions";
+import { countForSession, joinByCode } from "@/convex/participants";
+import { createFakeConvex, handlerOf } from "./helpers/fake-convex";
 import {
   SOCKET_EVENTS,
   SOCKET_PROTOCOL_VERSION,
@@ -68,7 +75,13 @@ describe("room lifecycle and anonymous admission", () => {
         query: () => ({
           withIndex: () => ({ unique: async () => ({ _id: "teacher-b", role: "teacher" }) }),
         }),
-        get: async () => ({ _id: "session-a", teacherId: "teacher-a", status: "live" }),
+        // requireTeacher resolves the caller through ctx.db.get(userId) before
+        // comparing owners, so the stub must answer for the user id too — not
+        // hand back the session for every lookup.
+        get: async (id: string) =>
+          id === "teacher-b"
+            ? { _id: "teacher-b", role: "teacher" }
+            : { _id: "session-a", teacherId: "teacher-a", status: "live" },
       },
     } as never;
 
@@ -117,13 +130,17 @@ describe("room lifecycle and anonymous admission", () => {
     else env.NODE_ENV = previousNodeEnv;
   });
 
-  it("enforces ownership for local-teacher end path", async () => {
+  // The dev identity is resolved inside permissions.requireTeacher now, so this
+  // exercises the same ownership rule through the single `end` mutation rather
+  // than through a dev-only twin.
+  it("enforces ownership when the dev teacher is the resolved identity", async () => {
     const env = process.env as Record<string, string | undefined>;
     const previous = env.ALLOW_DEV_TEACHER;
     const previousNodeEnv = env.NODE_ENV;
     env.NODE_ENV = "development";
     env.ALLOW_DEV_TEACHER = "1";
     const ctx = {
+      auth: { getUserIdentity: async () => null },
       db: {
         query: () => ({
           withIndex: () => ({
@@ -138,7 +155,7 @@ describe("room lifecycle and anonymous admission", () => {
       },
     } as never;
     const endHandler = (
-      endAsLocalTeacher as unknown as { _handler: (ctx: unknown, args: unknown) => Promise<unknown> }
+      end as unknown as { _handler: (ctx: unknown, args: unknown) => Promise<unknown> }
     )._handler;
     await expect(endHandler(ctx, { sessionId: "session-a" })).rejects.toThrow("Classroom not found");
     if (previous === undefined) delete env.ALLOW_DEV_TEACHER;
@@ -184,6 +201,26 @@ describe("room lifecycle and anonymous admission", () => {
       issueHandler(ctx, { sessionId: "session-a", participantId: "participant-a" }),
     ).rejects.toThrow("PARTICIPANT_BLOCKED");
   });
+
+  it("resolves non-id auth subjects without passing them to db.get", async () => {
+    const teacher = { _id: "teacher-local", authSubject: "local-dev-teacher", role: "teacher" };
+    const ctx = {
+      db: {
+        query: () => ({
+          withIndex: () => ({ unique: async () => teacher }),
+        }),
+        get: async () => {
+          throw new Error("invalid Convex id should not be decoded");
+        },
+      },
+    } as never;
+    const getTeacherHandler = (
+      getTeacherForToken as unknown as { _handler: (ctx: unknown, args: unknown) => Promise<unknown> }
+    )._handler;
+
+    await expect(getTeacherHandler(ctx, { subject: "local-dev-teacher" })).resolves.toEqual(teacher);
+  });
+
   it("rejects a forged or expired room token before room admission", () => {
     const token = signedToken("session-a", "student");
     expect(verifyRoomToken(token, SECRET)).toMatchObject({ sessionId: "session-a", role: "student" });
@@ -221,5 +258,76 @@ describe("room lifecycle and anonymous admission", () => {
       ts: Date.now(),
     });
     expect(protocolErrorSchema.parse(await mismatch)).toMatchObject({ code: "ROOM_MISMATCH" });
+  });
+});
+
+describe("COST-02 the participant count is a counter, not a collect", () => {
+  const TEACHER = "users:owner";
+  const SESSION = "sessions:live";
+
+  const join = handlerOf<
+    { code: string; anonymousProof: string; displayName?: string },
+    { participantId: string }
+  >(joinByCode);
+  const count = handlerOf<{ sessionId: string }, { connectedCount: number }>(countForSession);
+  const dashboard = handlerOf<Record<string, never>, { totals: { studentJoins: number } }>(getTeacherDashboard);
+
+  function room() {
+    return createFakeConvex({
+      identity: { subject: "auth|owner" },
+      seed: {
+        users: [{ _id: TEACHER, authSubject: "auth|owner", role: "teacher", createdAt: 1 }],
+        sessions: [
+          {
+            _id: SESSION,
+            teacherId: TEACHER,
+            title: "Quadratics",
+            joinCode: "QN47XB",
+            status: "live",
+            latestBoardVersion: 0,
+          },
+        ],
+      },
+    });
+  }
+
+  it("counts a student once, however many times they rejoin", async () => {
+    const fake = room();
+    const proof = "anonymous-proof-long-enough";
+
+    await join(fake.ctx, { code: "QN47XB", anonymousProof: proof });
+    expect(await count(fake.ctx, { sessionId: SESSION })).toEqual({ connectedCount: 1 });
+
+    // A refresh re-runs joinByCode with the same proof. It must patch lastSeenAt and
+    // leave the counter alone, or a class of 30 reports hundreds of students.
+    await join(fake.ctx, { code: "QN47XB", anonymousProof: proof });
+    await join(fake.ctx, { code: "QN47XB", anonymousProof: proof });
+    expect(fake.rows("participants")).toHaveLength(1);
+    expect(await count(fake.ctx, { sessionId: SESSION })).toEqual({ connectedCount: 1 });
+
+    await join(fake.ctx, { code: "QN47XB", anonymousProof: "a-different-anonymous-proof" });
+    expect(await count(fake.ctx, { sessionId: SESSION })).toEqual({ connectedCount: 2 });
+  });
+
+  it("answers the count without reading a participant row", async () => {
+    const fake = room();
+    await join(fake.ctx, { code: "QN47XB", anonymousProof: "anonymous-proof-long-enough" });
+
+    fake.resetReads();
+    await count(fake.ctx, { sessionId: SESSION });
+    expect(fake.readsOf("participants")).toHaveLength(0);
+  });
+
+  it("builds the teacher dashboard without fanning out over participants", async () => {
+    const fake = room();
+    await join(fake.ctx, { code: "QN47XB", anonymousProof: "anonymous-proof-long-enough" });
+    await join(fake.ctx, { code: "QN47XB", anonymousProof: "a-different-anonymous-proof" });
+
+    fake.resetReads();
+    const result = await dashboard(fake.ctx, {});
+    expect(result.totals.studentJoins).toBe(2);
+    // The collect this replaced re-read every participant of every class the teacher
+    // owns each time any doubt submission patched a lastSeenAt.
+    expect(fake.readsOf("participants")).toHaveLength(0);
   });
 });

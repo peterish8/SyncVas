@@ -9,6 +9,8 @@
  *   styles/base.css        element defaults, focus, reduced motion
  *   styles/components.css  syncvas-* product components
  *   styles/landing.css     origin-* marketing surface
+ *   styles/board-preview.css  sv-board-* hero product preview
+ *   styles/showcase.css       sv-show-* floating-dock use-case section
  *
  * Adding a fifth parallel system is what produced the dead `landing-*` and
  * `landing-v2-*` blocks removed in this pass. Extend a layer instead.
@@ -20,6 +22,8 @@
 @import "./styles/base.css";
 @import "./styles/components.css";
 @import "./styles/landing.css";
+@import "./styles/board-preview.css";
+@import "./styles/showcase.css";
 
 /**
  * Tailwind utility surface. Every entry points at a SEMANTIC token, so

@@ -137,6 +137,8 @@ export function JoinQrButton({ joinCode }: JoinQrProps) {
           className="syncvas-icon-btn syncvas-modal-close"
           onClick={close}
           aria-label="Close QR code"
+          data-tooltip="Close"
+          data-tooltip-below
         >
           <CloseGlyph />
         </button>

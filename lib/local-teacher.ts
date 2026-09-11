@@ -1,6 +1,7 @@
 /** Client helpers for anonymous Convex local-teacher bootstrap (ALLOW_DEV_TEACHER). */
 
 import { notifyStoredValue } from "@/lib/client-store";
+import type { SessionStatus } from "@/shared/types/session";
 
 export const LOCAL_TEACHER_STORAGE_KEY = "syncvas:local-teacher:v1";
 export const ACTIVE_TEACHER_SESSION_STORAGE_KEY = "syncvas:teacher-session:v1";
@@ -14,7 +15,7 @@ export type LocalTeacherBootstrap = {
 export type ActiveTeacherSession = {
   sessionId: string;
   joinCode: string;
-  status: "draft" | "live" | "ending" | "ended";
+  status: SessionStatus;
 };
 
 export function parseActiveTeacherSession(raw: string | null): ActiveTeacherSession | null {

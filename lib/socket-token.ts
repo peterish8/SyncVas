@@ -2,7 +2,9 @@
 
 import { createHmac, randomBytes } from "node:crypto";
 
-const SOCKET_TOKEN_TTL_SECONDS = 5 * 60;
+import { ROOM_TOKEN_TTL_SECONDS } from "../shared/constants/limits";
+
+const SOCKET_TOKEN_TTL_SECONDS = ROOM_TOKEN_TTL_SECONDS;
 
 export type RoomTokenRole = "teacher" | "student";
 
@@ -12,16 +14,9 @@ export function isProofSocketAllowed(
   return env.NODE_ENV === "development" && env.ALLOW_PROOF_SOCKET === "1";
 }
 
-export function parseRoomTokenExpiry(token: string): number | null {
-  const payload = token.split(".")[1];
-  if (!payload) return null;
-  try {
-    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { exp?: unknown };
-    return typeof decoded.exp === "number" && Number.isInteger(decoded.exp) ? decoded.exp : null;
-  } catch {
-    return null;
-  }
-}
+// One implementation, and it is the browser-safe one: see lib/room-token-expiry.ts
+// for why the `Buffer`-based version returned null in every browser.
+export { parseRoomTokenExpiry } from "./room-token-expiry";
 
 export function encodeJsonPart(value: unknown): string {
   return Buffer.from(JSON.stringify(value)).toString("base64url");

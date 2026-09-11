@@ -3,9 +3,14 @@
  *
  * It is deliberately small: enough of `db`, `auth`, `scheduler` and `storage`
  * for the query shapes this codebase actually uses (`withIndex` + `.eq(...)`,
- * `order`, `take`, `unique`, `collect`). It is NOT a Convex emulator — it does
- * not enforce index existence, pagination, or transaction semantics. Tests that
- * need those belong in a deploy-linked integration run.
+ * `order`, `take`, `unique`, `collect`, `paginate`). It is NOT a Convex emulator — it
+ * does not enforce index existence or transaction semantics. Tests that need those
+ * belong in a deploy-linked integration run.
+ *
+ * It also records every terminal read as `{ table, rows }` in `reads`. Phase 24 removed
+ * a set of N+1 collects from reactive queries; asserting the *shape* of a handler's
+ * reads is what stops them growing back, since a re-introduced collect still returns the
+ * right answer and would pass a value-only test.
  */
 
 export type FakeRow = Record<string, unknown> & { _id: string; _creationTime: number };
@@ -13,6 +18,9 @@ export type FakeRow = Record<string, unknown> & { _id: string; _creationTime: nu
 type IndexConstraint = [field: string, value: unknown];
 
 type ScheduledCall = { delayMs: number; fn: unknown; args: unknown };
+
+/** One terminal read: which table, and how many rows it returned. */
+export type FakeRead = { table: string; rows: number };
 
 function sortKey(row: FakeRow): number {
   const created = row.createdAt;
@@ -26,7 +34,9 @@ export function createFakeConvex(options?: {
   identity?: { subject: string } | null;
 }) {
   const tables = new Map<string, FakeRow[]>();
+  const reads: FakeRead[] = [];
   const scheduled: ScheduledCall[] = [];
+  const mutations: Array<{ fn: unknown; args: unknown }> = [];
   const stored: Array<{ id: string; blob: unknown }> = [];
   let counter = 0;
   let clock = 1_000;
@@ -94,6 +104,11 @@ export function createFakeConvex(options?: {
       let constraints: IndexConstraint[] = [];
       let direction: "asc" | "desc" = "asc";
 
+      const record = (rows: FakeRow[]): FakeRow[] => {
+        reads.push({ table, rows: rows.length });
+        return rows;
+      };
+
       const matching = (): FakeRow[] => {
         const rows = tableOf(table).filter((row) =>
           constraints.every(([field, value]) => row[field] === value),
@@ -122,18 +137,38 @@ export function createFakeConvex(options?: {
           return builder;
         },
         async take(count: number) {
-          return matching().slice(0, count);
+          return record(matching().slice(0, count));
         },
         async collect() {
-          return matching();
+          return record(matching());
         },
         async first() {
-          return matching()[0] ?? null;
+          const rows = matching().slice(0, 1);
+          record(rows);
+          return rows[0] ?? null;
         },
         async unique() {
           const rows = matching();
           if (rows.length > 1) throw new Error(`fake-convex: ${table} unique() matched ${rows.length} rows`);
+          record(rows);
           return rows[0] ?? null;
+        },
+        /**
+         * Offset-encoded cursor. Enough for the bounded batch walks in
+         * `convex/internal/backfillCounts.ts`; it is not Convex's real cursor format
+         * and carries no ordering guarantee beyond `matching()`.
+         */
+        async paginate({ cursor, numItems }: { cursor: string | null; numItems: number }) {
+          const rows = matching();
+          const offset = cursor ? Number(cursor) : 0;
+          const page = rows.slice(offset, offset + numItems);
+          record(page);
+          const next = offset + page.length;
+          return {
+            page,
+            isDone: next >= rows.length,
+            continueCursor: String(next),
+          };
         },
       };
       return builder;
@@ -142,10 +177,34 @@ export function createFakeConvex(options?: {
 
   type IndexQuery = { eq(field: string, value: unknown): IndexQuery };
 
+  /**
+   * Convex Auth puts the user document id in the JWT subject as
+   * `<userId>|<sessionId>`, and `getAuthUserId` reads it back by splitting on
+   * that divider. Fixtures name a teacher by their logical `authSubject`
+   * ("auth|owner"), so resolve it to the seeded user id and present the subject
+   * the way production does. Without this, `getAuthUserId` returns the fragment
+   * before the first `|` ("auth"), `ctx.db.get` misses, and every ownership
+   * check fails as "A teacher account is required" before it can compare owners.
+   *
+   * Read lazily: rows may be inserted after the ctx is built.
+   */
+  function authSubjectClaim(subject: string): string {
+    const user = tableOf("users").find((row) => row.authSubject === subject);
+    return user ? `${user._id}|fake-session` : subject;
+  }
+
   const ctx = {
     db,
     auth: {
-      getUserIdentity: async () => options?.identity ?? null,
+      getUserIdentity: async () =>
+        options?.identity
+          ? { ...options.identity, subject: authSubjectClaim(options.identity.subject) }
+          : null,
+    },
+    /** Actions reach mutations through this; record the call rather than running it. */
+    runMutation: async (fn: unknown, args: unknown) => {
+      mutations.push({ fn, args });
+      return null;
     },
     scheduler: {
       runAfter: async (delayMs: number, fn: unknown, args: unknown) => {
@@ -169,7 +228,16 @@ export function createFakeConvex(options?: {
     ctx: ctx as never,
     rows: (table: string) => tableOf(table),
     scheduled,
+    /** Mutations an action asked to run, in order. */
+    mutations,
     stored,
+    /** Every terminal read since the last `resetReads()`, in order. */
+    reads,
+    resetReads: () => {
+      reads.length = 0;
+    },
+    /** Reads against one table, for shape assertions. */
+    readsOf: (table: string) => reads.filter((read) => read.table === table),
   };
 }
 

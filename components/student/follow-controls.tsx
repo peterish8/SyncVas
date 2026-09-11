@@ -15,7 +15,6 @@ export type FollowControlsProps = {
   followEnabled: boolean;
   hasTeacherViewport: boolean;
   onFollowTeacher: () => void;
-  onReturnToTeacher: () => void;
   onFreeRoam: () => void;
 };
 
@@ -23,7 +22,6 @@ export function FollowControls({
   followEnabled,
   hasTeacherViewport,
   onFollowTeacher,
-  onReturnToTeacher,
   onFreeRoam,
 }: FollowControlsProps) {
   const statusLabel = followEnabled ? "Following" : "Free roam";
@@ -45,34 +43,33 @@ export function FollowControls({
       {followEnabled ? (
         <button
           type="button"
-          className="min-h-11 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="syncvas-btn syncvas-btn-secondary min-h-11 rounded-full px-3"
+          data-tooltip="Pan and zoom on your own"
           onClick={onFreeRoam}
         >
           Explore freely
         </button>
       ) : (
+        /**
+         * One button, not two. "Follow Teacher" and "Return to Teacher" both
+         * rendered here and both called the same handler — two labels for one
+         * action, which reads as a broken control rather than a choice.
+         */
         <button
           type="button"
-          className="min-h-11 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-          onClick={onFollowTeacher}
-        >
-          Follow Teacher
-        </button>
-      )}
-
-      {!followEnabled ? (
-        <button
-          type="button"
-          className="min-h-11 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          onClick={onReturnToTeacher}
-          disabled={!hasTeacherViewport}
-          aria-describedby={
-            hasTeacherViewport ? undefined : "return-teacher-hint"
+          className="syncvas-btn syncvas-btn-secondary min-h-11 rounded-full px-3"
+          data-tooltip={
+            hasTeacherViewport
+              ? "Snap back to the teacher's view and keep following"
+              : "Waiting for the teacher's camera"
           }
+          onClick={onFollowTeacher}
+          disabled={!hasTeacherViewport}
+          aria-describedby={hasTeacherViewport ? undefined : "return-teacher-hint"}
         >
           Return to Teacher
         </button>
-      ) : null}
+      )}
 
       {!followEnabled && !hasTeacherViewport ? (
         <span id="return-teacher-hint" className="text-xs text-ink-muted">

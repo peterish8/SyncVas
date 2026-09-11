@@ -11,12 +11,13 @@
 import { v } from "convex/values";
 import { action, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { getLocalDevTeacher, requireTeacher } from "./auth";
+import { getLocalDevTeacher, requireTeacher } from "./permissions";
 import {
   boardDraftRequestSchema,
   getBoardAuthoringAdapter,
   type BoardDraftResult,
 } from "../lib/ai/board-authoring-adapter";
+import { fail } from "./errors";
 
 const DRAFT_ARGS = {
   topic: v.string(),
@@ -37,7 +38,7 @@ export const assertLocalTeacher = internalQuery({
   args: {},
   handler: async (ctx) => {
     const teacher = await getLocalDevTeacher(ctx);
-    if (!teacher) throw new Error("FORBIDDEN: A teacher account is required.");
+    if (!teacher) fail("FORBIDDEN", "A teacher account is required.");
     return { teacherId: teacher._id };
   },
 });
@@ -63,10 +64,3 @@ export const draft = action({
   },
 });
 
-export const draftAsLocalTeacher = action({
-  args: DRAFT_ARGS,
-  handler: async (ctx, args): Promise<BoardDraftResult> => {
-    await ctx.runQuery(internal.boardAuthoring.assertLocalTeacher, {});
-    return await runDraft(args);
-  },
-});

@@ -71,7 +71,7 @@ const beginExport = handlerOf<{ exportId: string }, Record<string, unknown> | nu
 const finishExport = handlerOf<{ exportId: string; storageId: string }, unknown>(markReady);
 const failExport = handlerOf<{ exportId: string; errorCode: string }, unknown>(markFailed);
 const history = handlerOf<Record<string, never>, Array<Record<string, unknown>>>(listTeacherHistory);
-const finalizeSession = handlerOf<{ sessionId: string }, { ok?: boolean; reason?: string } | null>(finalize);
+const finalizeSession = handlerOf<{ sessionId: string; attempt?: number }, { ok?: boolean; reason?: string } | null>(finalize);
 const saveFinalBoard = handlerOf<{ sessionId: string; boardVersion: number; sceneJson: string }, unknown>(saveFinal);
 const latestFinal = handlerOf<{ sessionId: string }, Record<string, unknown> | null>(getLatestFinal);
 
@@ -195,13 +195,25 @@ describe("HIST-01 teacher history", () => {
 });
 
 describe("FIN-01 finalization protects the durable board", () => {
-  it("refuses to mark a room ended when no final board was saved", async () => {
+  it("reschedules itself rather than ending while no final board exists", async () => {
     const fake = world({ status: "ending", withSnapshot: false });
     const result = await finalizeSession(fake.ctx, { sessionId: SESSION });
 
-    expect(result).toMatchObject({ ok: false, reason: "FINAL_SNAPSHOT_MISSING" });
+    expect(result).toMatchObject({ ok: false, reason: "FINAL_SNAPSHOT_PENDING" });
     expect(fake.rows("sessions")[0].status).toBe("ending");
-    // Nothing downstream may run while the board is still unrecoverable.
+    // The only thing scheduled is the retry; the summary stays downstream of a
+    // durable board.
+    expect(fake.scheduled).toHaveLength(1);
+  });
+
+  it("still terminates the room after the retries are spent, flagging the lost board", async () => {
+    const fake = world({ status: "ending", withSnapshot: false });
+    const result = await finalizeSession(fake.ctx, { sessionId: SESSION, attempt: 4 });
+
+    expect(result).toMatchObject({ ok: false, reason: "FINAL_SNAPSHOT_MISSING" });
+    expect(fake.rows("sessions")[0].status).toBe("ended");
+    expect(fake.rows("sessions")[0].finalizeWarning).toBe("FINAL_SNAPSHOT_MISSING");
+    // No summary: there is no board to summarize.
     expect(fake.scheduled).toHaveLength(0);
   });
 

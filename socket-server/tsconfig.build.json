@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    // The relay imports the shared protocol as ../../shared/..., so the compiled
+    // tree has to keep that shape: rootDir is the repo root, giving
+    // dist/socket-server/src/* alongside dist/shared/*.
+    "rootDir": "..",
+    "declaration": false,
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts", "../shared/**/*.ts"],
+  "exclude": ["test/**/*.ts"]
+}

@@ -6,7 +6,8 @@
  *   - dynamic import @excalidraw/excalidraw (ssr:false); real container height
  *   - teacher: onChange → throttle → board:update (versioned Zod envelope)
  *   - student: viewModeEnabled / no mutate tools; never emit board:update
- *   - on connect: board:request-current; apply only newer versions; gap → resync
+ *   - on connect: board:request-current; apply any newer version; the teacher
+ *     republishes its scene when the relay is behind or an edit is unsent
  *   - guard applyingRemote so remote apply does not rebroadcast
  *   - student pan/zoom stays in LOCAL React state only
  * Phase 4 IMPLEMENT:
@@ -36,16 +37,32 @@ import {
   useTeacherViewport,
   type TeacherViewportCoords,
 } from "@/components/board/use-teacher-viewport";
+import { ReconnectBanner } from "@/components/connection/reconnect-banner";
 import { FollowControls } from "@/components/student/follow-controls";
 import { BOARD_UPDATE_MIN_MS } from "@/shared/constants/limits";
 import { THEME_CHANGE_EVENT } from "@/components/ui/theme-toggle";
 import { BlockPanel } from "@/components/blocks/block-panel";
 import type { BlockCompileResult } from "@/lib/blocks/types";
+import { boardSyncStatusLabel } from "@/lib/user-facing-errors";
 import type { BlockHighlight } from "@/shared/protocol/socket";
 import { SOCKET_PROTOCOL_VERSION } from "@/shared/protocol/socket";
-import type { PublishAcknowledgement } from "@/components/board/use-board-sync";
+import type { BoardCurrentInfo } from "@/components/board/use-board-sync";
+import { ClassEndedPanel } from "@/components/connection/class-ended-panel";
+import { reconcileTeacherScene, shouldRetryPublishImmediately } from "@/lib/board-sync-logic";
 
 import "@excalidraw/excalidraw/index.css";
+
+/** Pause before retrying a publish the relay refused for a reason other than staleness. */
+const PUBLISH_RETRY_MS = 1_000;
+
+/** The live canvas scene plus the last version the relay accepted. */
+export type BoardSceneReader = () => {
+  scene: {
+    elements: readonly ExcalidrawElement[];
+    appState: { viewBackgroundColor: string };
+  };
+  boardVersion: number;
+} | null;
 
 const Excalidraw = dynamic(
   () => import("@excalidraw/excalidraw").then((module) => module.Excalidraw),
@@ -73,6 +90,12 @@ export type BoardCanvasProps = {
    * existing board path and every element stays editable.
    */
   initialScene?: unknown;
+  /**
+   * Receives a reader for the live canvas scene. End Class and Save Template
+   * read through it: a board restored from the relay after a reload never
+   * passes through `onSceneChange`, so that callback alone saved it blank.
+   */
+  onSceneReader?: (reader: BoardSceneReader | null) => void;
 };
 
 type SceneData = {
@@ -100,25 +123,31 @@ function sceneData(value: unknown): SceneData {
   };
 }
 
-export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refreshRoomToken, onSceneChange, initialScene }: BoardCanvasProps) {
+export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refreshRoomToken, onSceneChange, initialScene, onSceneReader }: BoardCanvasProps) {
   const isTeacher = role === "teacher";
   // Only the writer may open a class on a prepared board.
   const preparedElements = isTeacher ? sceneData(initialScene).elements : [];
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const mountedRef = useRef(false);
   const canvasInitFrameRef = useRef<number | null>(null);
+  const viewportAnimationRef = useRef<{
+    frame: number;
+    resolve: () => void;
+  } | null>(null);
   const applyingRemoteRef = useRef(false);
   const sceneElementsRef = useRef<readonly ExcalidrawElement[]>(preparedElements);
   const sceneFilesRef = useRef<BinaryFiles>({});
   const pendingRemoteSceneRef = useRef<{ scene: unknown; files?: BinaryFiles } | null>(null);
   const pendingRef = useRef<{
     elements: readonly ExcalidrawElement[];
-    appState: AppState;
+    background?: string;
     files: BinaryFiles;
   } | null>(null);
   const broadcastTimerRef = useRef<number | null>(null);
   const lastPublishedElementsRef = useRef<string>("[]");
   const publishInFlightRef = useRef(false);
+  const lastFlushAtRef = useRef(0);
+  const ackedVersionRef = useRef(0);
 
   const publishViewportRef = useRef<
     ((viewport: { x: number; y: number; zoom: number; pageId?: string }) => void) | null
@@ -130,6 +159,8 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
   const flushPendingRef = useRef<(() => void) | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [canvasReady, setCanvasReady] = useState(false);
+  const initialViewportSentRef = useRef(false);
 
   // Proof mode mints its own token; a supplied prop always wins by derivation.
   const [mintedToken, setMintedToken] = useState<string | undefined>(undefined);
@@ -215,14 +246,58 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
 
   const applyTeacherViewportToApi = useCallback((viewport: TeacherViewportCoords) => {
     const api = apiRef.current;
-    if (!api || !mountedRef.current) return;
-    api.updateScene({
-      appState: {
-        scrollX: viewport.x,
-        scrollY: viewport.y,
-        zoom: { value: viewport.zoom as NormalizedZoomValue },
-      },
-      captureUpdate: "NEVER",
+    if (!api || !mountedRef.current) return Promise.resolve();
+
+    if (viewportAnimationRef.current) {
+      window.cancelAnimationFrame(viewportAnimationRef.current.frame);
+      viewportAnimationRef.current.resolve();
+      viewportAnimationRef.current = null;
+    }
+
+    const current = api.getAppState();
+    const start = {
+      x: current.scrollX,
+      y: current.scrollY,
+      zoom: current.zoom.value,
+    };
+    const target = {
+      x: viewport.x,
+      y: viewport.y,
+      zoom: viewport.zoom as NormalizedZoomValue,
+    };
+    const duration = 360;
+
+    return new Promise<void>((resolve) => {
+      const animation = { frame: 0, resolve };
+      const startedAt = performance.now();
+      const tick = (now: number) => {
+        if (viewportAnimationRef.current !== animation || !mountedRef.current) {
+          resolve();
+          return;
+        }
+        const progress = Math.min(1, (now - startedAt) / duration);
+        const eased = progress < 0.5
+          ? 2 * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+        api.updateScene({
+          appState: {
+            scrollX: start.x + (target.x - start.x) * eased,
+            scrollY: start.y + (target.y - start.y) * eased,
+            zoom: {
+              value: (start.zoom + (target.zoom - start.zoom) * eased) as NormalizedZoomValue,
+            },
+          },
+          captureUpdate: "NEVER",
+        });
+        if (progress >= 1) {
+          viewportAnimationRef.current = null;
+          resolve();
+          return;
+        }
+        animation.frame = window.requestAnimationFrame(tick);
+      };
+      viewportAnimationRef.current = animation;
+      animation.frame = window.requestAnimationFrame(tick);
     });
   }, []);
 
@@ -280,15 +355,14 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
   const onExcalidrawApi = useCallback(
     (api: ExcalidrawImperativeAPI) => {
       apiRef.current = api;
+      setCanvasReady(true);
       scheduleCanvasInitialization(api);
     },
     [scheduleCanvasInitialization],
   );
 
   const viewport = useTeacherViewport({
-    sessionId,
     role,
-    roomToken,
     onEmitViewport: (coords) => {
       publishViewportRef.current?.({
         x: coords.x,
@@ -300,12 +374,49 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
     applyViewport: applyTeacherViewportToApi,
   });
 
-  const { status, latestVersion, publishScene, publishViewport, publishBlockHighlight, error: syncError } = useBoardSync({
+  // The relay reports its board on every (re)connect. The teacher's canvas is
+  // the authority: an unsent edit, or a relay emptied by a restart, the idle
+  // sweep or eviction, gets the local scene republished rather than waiting for
+  // the teacher's next stroke while late joiners stare at a blank board.
+  const onBoardCurrent = useCallback((info: BoardCurrentInfo) => {
+    if (!isTeacher) return;
+    const api = mountedRef.current ? apiRef.current : null;
+    const elements = api ? api.getSceneElements() : sceneElementsRef.current;
+    const decision = reconcileTeacherScene({
+      localVersion: info.previousLocalVersion,
+      serverVersion: info.serverVersion,
+      localHasElements: elements.length > 0,
+      serverHasElements: info.serverHasElements,
+      hasPendingEdit: pendingRef.current !== null,
+    });
+    if (decision !== "republish-local") return;
+    if (!pendingRef.current) {
+      pendingRef.current = {
+        elements,
+        background: api?.getAppState().viewBackgroundColor,
+        files: api ? api.getFiles() : sceneFilesRef.current,
+      };
+    }
+    // The relay no longer holds what was last sent, so the dedupe must not skip it.
+    lastPublishedElementsRef.current = "";
+    flushPendingRef.current?.();
+  }, [isTeacher]);
+
+  const {
+    status,
+    latestVersion,
+    publishScene,
+    publishViewport,
+    publishBlockHighlight,
+    reconnect,
+    error: syncError,
+  } = useBoardSync({
     sessionId,
     role,
     roomToken,
     refreshRoomToken,
     onRemoteScene: applyRemoteScene,
+    onBoardCurrent,
     onTeacherViewport: (packet) => {
       handleRemoteViewportRef.current?.({
         x: packet.x,
@@ -325,6 +436,35 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
     disposeViewportRef.current = viewport.dispose;
   });
 
+  const onTeacherCameraChange = viewport.onTeacherCameraChange;
+
+  // A student may join after the teacher has stopped moving. Publish the
+  // current camera once per connected teacher session so Follow Teacher has a
+  // real target immediately, instead of waiting for the next scroll event.
+  // This runs after the latest-callback refs above, so the first frame cannot
+  // be consumed before the socket publisher is installed.
+  useEffect(() => {
+    if (!isTeacher || status !== "connected") {
+      initialViewportSentRef.current = false;
+      return;
+    }
+    if (initialViewportSentRef.current || !canvasReady) return;
+    const api = apiRef.current;
+    if (!api) return;
+    const appState = api.getAppState();
+    initialViewportSentRef.current = true;
+    onTeacherCameraChange(appState.scrollX, appState.scrollY, appState.zoom.value);
+  }, [canvasReady, isTeacher, onTeacherCameraChange, status]);
+
+  /** Arm the single flush timer; the throttle and the retry path both use it. */
+  const scheduleFlush = useCallback((delayMs: number) => {
+    if (broadcastTimerRef.current !== null) return;
+    broadcastTimerRef.current = window.setTimeout(() => {
+      broadcastTimerRef.current = null;
+      flushPendingRef.current?.();
+    }, delayMs);
+  }, []);
+
   const flushPending = useCallback(() => {
     const pending = pendingRef.current;
     if (!pending || !isTeacher || publishInFlightRef.current) return;
@@ -333,29 +473,64 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
       pendingRef.current = null;
       return;
     }
-    publishInFlightRef.current = true;
-    const published = publishScene({
-      elements: pending.elements,
-      appState: { viewBackgroundColor: pending.appState.viewBackgroundColor },
-    }, pending.files, ((result) => {
-      publishInFlightRef.current = false;
-      if (result.ok) {
-        pendingRef.current = null;
-        lastPublishedElementsRef.current = fingerprint;
-      }
-      // Drain via the latest-callback ref: this acknowledgement fires after the
-      // render that created it, so the closed-over binding may be stale.
-      if (pendingRef.current) flushPendingRef.current?.();
-    }) as PublishAcknowledgement);
-    if (published) {
+    // At most one publish per BOARD_UPDATE_MIN_MS, measured from the last send,
+    // so sustained drawing stays inside the relay's per-minute budget.
+    const waitMs = lastFlushAtRef.current + BOARD_UPDATE_MIN_MS - Date.now();
+    if (waitMs > 0) {
+      scheduleFlush(waitMs);
       return;
     }
-    publishInFlightRef.current = false;
-  }, [isTeacher, publishScene]);
+    publishInFlightRef.current = true;
+    lastFlushAtRef.current = Date.now();
+    const published = publishScene({
+      elements: pending.elements,
+      appState: pending.background !== undefined ? { viewBackgroundColor: pending.background } : {},
+    }, pending.files, (result) => {
+      // Always called — ack, timeout, or the disconnect that cut it off — so
+      // this flag can never outlive the publish it guards.
+      publishInFlightRef.current = false;
+      if (result.ok) {
+        lastPublishedElementsRef.current = fingerprint;
+        // A newer edit may have replaced `pending` while this one was in
+        // flight; only the scene that was actually sent is settled.
+        if (pendingRef.current === pending) pendingRef.current = null;
+      }
+      if (!pendingRef.current) return;
+      // Drain via the latest-callback ref: this acknowledgement fires after the
+      // render that created it, so the closed-over binding may be stale.
+      if (result.ok || shouldRetryPublishImmediately(result)) flushPendingRef.current?.();
+      else scheduleFlush(PUBLISH_RETRY_MS);
+    });
+    if (!published) {
+      // Offline: the edit stays pending and is republished once the relay
+      // reports its board on reconnect.
+      publishInFlightRef.current = false;
+    }
+  }, [isTeacher, publishScene, scheduleFlush]);
 
   useEffect(() => {
     flushPendingRef.current = flushPending;
   });
+
+  useEffect(() => {
+    ackedVersionRef.current = latestVersion;
+  }, [latestVersion]);
+
+  useEffect(() => {
+    if (!onSceneReader) return;
+    onSceneReader(() => {
+      const api = mountedRef.current ? apiRef.current : null;
+      if (!api) return null;
+      return {
+        scene: {
+          elements: api.getSceneElements(),
+          appState: { viewBackgroundColor: api.getAppState().viewBackgroundColor },
+        },
+        boardVersion: ackedVersionRef.current,
+      };
+    });
+    return () => onSceneReader(null);
+  }, [onSceneReader]);
 
   const onChange = useCallback(
     (elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) => {
@@ -363,17 +538,11 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
       // Ignore Excalidraw mount/appState churn until the element set actually changes.
       const fingerprint = JSON.stringify(elements);
       if (fingerprint === lastPublishedElementsRef.current) return;
-      pendingRef.current = { elements, appState, files };
+      pendingRef.current = { elements, background: appState.viewBackgroundColor, files };
       sceneElementsRef.current = elements;
       sceneFilesRef.current = files;
-      onSceneChange?.({ elements, appState: { viewBackgroundColor: appState.viewBackgroundColor }, files }, latestVersion + 1);
-      if (broadcastTimerRef.current === null) {
-        flushPending();
-        broadcastTimerRef.current = window.setTimeout(() => {
-          broadcastTimerRef.current = null;
-          flushPending();
-        }, BOARD_UPDATE_MIN_MS);
-      }
+      onSceneChange?.({ elements, appState: { viewBackgroundColor: appState.viewBackgroundColor }, files }, latestVersion);
+      flushPending();
     },
     [flushPending, isTeacher, latestVersion, onSceneChange],
   );
@@ -389,6 +558,11 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
         canvasInitFrameRef.current = null;
       }
       disposeViewportRef.current?.();
+      if (viewportAnimationRef.current) {
+        window.cancelAnimationFrame(viewportAnimationRef.current.frame);
+        viewportAnimationRef.current.resolve();
+        viewportAnimationRef.current = null;
+      }
     };
   }, []);
 
@@ -482,7 +656,6 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
             followEnabled={viewport.followEnabled}
             hasTeacherViewport={viewport.lastTeacherViewport !== null}
             onFollowTeacher={viewport.followTeacher}
-            onReturnToTeacher={viewport.returnToTeacher}
             onFreeRoam={() => viewport.setFollowEnabled(false)}
           />
         </div>
@@ -526,23 +699,44 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
           autoFocus={isTeacher}
         />
         <div className="syncvas-board-theme-scrim" aria-hidden="true" />
+        {status === "ended" ? <ClassEndedPanel role={role} sessionId={sessionId} /> : null}
         {/* Excalidraw owns the top-left menu, top-centre tool rail, top-right
             library, and both bottom corners. Keep Syncvas status below that
             native control band so our chrome never hides a drawing action. */}
         {/* Hidden below `sm`: Excalidraw's mobile toolbar owns the top of the
             frame, and the room dock already carries live/room state there. */}
-        <div className="syncvas-board-chrome absolute left-3 top-[4.5rem] z-10 hidden max-w-[min(19rem,calc(100%-2rem))] flex-col items-start gap-2 sm:left-4 sm:flex">
-          <div className="flex items-center gap-2">
+        <div
+          className={
+            isTeacher
+              ? "syncvas-board-chrome syncvas-teacher-board-strip absolute left-3 right-3 top-[4.5rem] z-10 hidden items-center justify-between gap-3 sm:left-4 sm:right-4 sm:flex"
+              : "syncvas-board-chrome absolute left-3 top-[4.5rem] z-10 hidden max-w-[min(19rem,calc(100%-2rem))] flex-col items-start gap-2 sm:left-4 sm:flex"
+          }
+        >
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <span className="syncvas-pill">
               {isTeacher ? "Teacher canvas" : "Read-only view"} · v{latestVersion}
             </span>
+            {isTeacher ? (
+              <span
+                className={
+                  status === "connected"
+                    ? "syncvas-pill syncvas-pill-accent"
+                    : status === "offline"
+                      ? "syncvas-pill syncvas-pill-danger"
+                      : "syncvas-pill syncvas-pill-warning"
+                }
+              >
+                {status === "connected" ? <span className="syncvas-live-dot" aria-hidden="true" /> : null}
+                {boardSyncStatusLabel(status)}
+              </span>
+            ) : null}
             <button
               type="button"
               className="syncvas-icon-btn"
               onClick={toggleFullscreen}
               aria-pressed={isFullscreen}
               aria-label={isFullscreen ? "Exit fullscreen board" : "Show board fullscreen"}
-              title={isFullscreen ? "Exit fullscreen" : "Fullscreen board"}
+              data-tooltip={isFullscreen ? "Exit fullscreen" : "Fullscreen board"}
             >
               {isFullscreen ? <ExitFullscreenGlyph /> : <FullscreenGlyph />}
             </button>
@@ -553,7 +747,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
                 className="syncvas-icon-btn"
                 onClick={revealNext}
                 aria-label="Reveal next block step"
-                title={`Reveal next step (${revealState.visible}/${revealState.all.length})`}
+                data-tooltip={`Reveal next step (${revealState.visible}/${revealState.all.length})`}
               >
                 <span aria-hidden="true">»</span>
               </button>
@@ -563,15 +757,17 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
           <div className="pointer-events-none flex flex-wrap gap-2">
             <span
               className={
-                status === "connected"
+                !isTeacher && status === "connected"
                   ? "syncvas-pill"
-                  : status === "offline"
+                  : !isTeacher && status === "offline"
                     ? "syncvas-pill syncvas-pill-danger"
-                    : "syncvas-pill syncvas-pill-warning"
+                    : !isTeacher
+                      ? "syncvas-pill syncvas-pill-warning"
+                      : "hidden"
               }
             >
-              {status === "connected" ? <span className="syncvas-live-dot" aria-hidden="true" /> : null}
-              {status}
+              {!isTeacher && status === "connected" ? <span className="syncvas-live-dot" aria-hidden="true" /> : null}
+              {boardSyncStatusLabel(status)}
             </span>
             {!isTeacher ? (
               <span className="syncvas-pill">
@@ -580,12 +776,17 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
               </span>
             ) : null}
           </div>
+          {status === "offline" ? (
+            <div className="pointer-events-auto w-full max-w-[min(22rem,calc(100vw-2rem))]">
+              <ReconnectBanner onRetry={reconnect} />
+            </div>
+          ) : null}
         </div>
         {displayError ? (
           <div
             className="syncvas-board-alert absolute right-3 bottom-14 z-10 flex max-w-[min(23rem,calc(100%-1.5rem))] items-start gap-2 px-3 py-2 sm:right-4 sm:bottom-16"
             role="alert"
-            title={displayError}
+            data-tooltip={displayError}
           >
             <AlertGlyph />
             <span className="min-w-0 truncate">{displayError}</span>

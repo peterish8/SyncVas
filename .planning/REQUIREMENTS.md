@@ -194,6 +194,22 @@ Design contract: `docs/38_AI_LESSON_STUDIO_AND_MCP.md`. Both the in-app AI adapt
 - [ ] **AI-LESSON-07**: Remote MCP exposes Streamable HTTP, protected-resource metadata, OAuth 2.1 + PKCE, scoped grants, revocation, rate limits, sanitized errors, and no-store responses.
 - [ ] **AI-LESSON-08**: A Connections UI lists ChatGPT/Claude grants and supports immediate revoke; tool inventory tests prove no live-room or student-data access.
 
+## v1.4 Requirements — Backend cost & depth
+
+Phase 24. Measurements, assumptions and sequencing: `.planning/BACKEND-OPTIMIZATION-DECISIONS.md`.
+These implement existing specs rather than adding product surface — docs/21 "keep reactive
+queries narrow" and docs/11 "incremental scene state" are already written; the code does not
+yet follow them. No product behaviour changes except the `myStanding` → `leaderboardForRoom`
+swap in COST-02.
+
+- [ ] **COST-01**: `board:update` stops broadcasting the whole scene and binary files on every stroke; the wire carries element patches and the full scene only on resync or late join
+- [x] **COST-02**: No reactive Convex query collects a child table to produce a count; counters are written in the same transaction as the child
+- [x] **COST-03**: Duplicate doubt detection is indexed and unbounded in time, and a duplicate inherits the original's triage verdict instead of paying for a second provider call
+- [ ] **COST-04**: Every teacher socket event has a rate-limit budget, and the client board cadence sits inside the relay's own budget
+- [ ] **DEPTH-01**: Socket admission is one interface — parse, claims, expiry, revocation, room match, role and rate limit cannot be skipped by a new event
+- [ ] **DEPTH-02**: Teacher identity resolves once behind one interface; the 29 `*AsLocalTeacher` exports are deleted and no local-dev mutation ships in a production build
+- [ ] **DEPTH-03**: *(blocked — needs a ruling)* The SVRT1 token format has one implementation with the HMAC primitive as its only adapter
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current executable roadmap.
@@ -334,14 +350,22 @@ Deferred to future release. Tracked but not in current executable roadmap.
 | AI-LESSON-06 | Phase 23 | Planned |
 | AI-LESSON-07 | Phase 23 | Planned |
 | AI-LESSON-08 | Phase 23 | Planned |
+| COST-01 | Phase 24 (24-04) | Planned |
+| COST-02 | Phase 24 (24-01) | Complete — 2026-09-07 |
+| COST-03 | Phase 24 (24-02) | Complete — 2026-09-07 |
+| COST-04 | Phase 24 (24-03) | Planned |
+| DEPTH-01 | Phase 24 (24-03) | Planned |
+| DEPTH-02 | Phase 24 (24-05) | Planned |
+| DEPTH-03 | Phase 24 (24-06) | Blocked — CLAUDE.md ruling required |
 
 **Coverage:**
 - v1.0 requirements: 66 total — 38 mapped to phases 1–10, 28 mapped to phases 11–16, unmapped 0 ✓
 - v1.1 requirements: 20 total — mapped to phases 17–21, complete ✓
 - v1.2 requirements: 6 total — mapped to phase 22, complete ✓
 - v1.3 requirements: 8 total — mapped to phase 23, planned
+- v1.4 requirements: 7 total — mapped to phase 24, 2 complete + 4 planned + 1 blocked
 - v2 deferred (not mapped to executable phases): 14
 
 ---
 *Requirements defined: 2026-09-04*
-*Last updated: 2026-09-05 — added Prepared Boards / AI Authoring / Quiz / Leaderboard / MCP Authoring to v1.0 (phases 11–16); Board Grammars renumbered to phases 17–21*
+*Last updated: 2026-09-07 — added v1.4 Backend cost & depth (phase 24) from the backend architecture review*

@@ -4,14 +4,14 @@ milestone: v1.3
 milestone_name: AI Lesson Studio + MCP Interop
 status: complete-local
 stopped_at: null
-last_updated: "2026-09-05T21:45:00.000Z"
-last_activity: 2026-09-05 — Completed v1.1 phases 17–21 and v1.2 course grammars with bounded compiler registry, binary-file transport, step reveal, snippets, and volatile line pointers
+last_updated: "2026-09-07T16:00:00.000Z"
+last_activity: 2026-09-07 — Backend architecture review produced phase 24 (v1.4 Backend Cost & Depth), six plans covering relay egress, Convex read amplification, doubt intake, socket admission, teacher-identity duplication, and the blocked token-module question
 progress:
-  total_phases: 23
+  total_phases: 24
   completed_phases: 8
-  total_plans: 24
-  completed_plans: 10
-  percent: 42
+  total_plans: 30
+  completed_plans: 12
+  percent: 40
 ---
 
 # Project State
@@ -93,6 +93,10 @@ Recent decisions affecting current work:
 - ~~Resolve the remaining full-repo ESLint hook-rule errors.~~ Done 2026-09-05 (lint clean).
 - ~~Implement the 4 remaining scaffold test suites: moderation (7), export/history/reconnect (8), security/permissions (9), ai-adapter (10).~~ Done 2026-09-06 — all four are live; 164 root tests pass with none skipped.
 - Configure an optional moderation provider only if live AI triage is required.
+- Rule on 24-06: keep the three SVRT1 token implementations, or collapse them to one module
+  with a signer adapter. Either way the reasoning belongs in `CLAUDE.md`.
+- Phase 24 execution order is 24-01 → 24-02 → 24-03 → 24-04 → 24-05; run 24-05 against a
+  quiet tree since it rewrites 29 Convex exports and regenerates `api.d.ts`.
 - ~~Wire `triageDoubt` into the doubt pipeline, or drop it.~~ Done 2026-09-06 — `doubts.submit` schedules it after a deterministic accept, and `moderation.applyTriage` records a `moderationEvents` row for every outcome.
 - ~~Surface `duplicateOf` in the teacher queue UI.~~ Done 2026-09-06 — the queue numbers each doubt and marks a repeat as "Repeat of #n".
 - ~~Blocks v1.1: send binary `files` over the board socket path.~~ Already resolved before this pass; covered by `tests/board-sync.test.ts`.
@@ -133,6 +137,41 @@ Next: Link deployment and run hosted multi-browser + XP-Pen acceptance, then pla
 
 The v1.1 Board Grammars phases 17–21 and v1.2 course-specific grammars are implemented. See .planning/PHASE-V1.1-V1.2-COMPLETION.md and docs/37_BOARD_GRAMMARS.md.
 
+
+### Backend cost & depth review (2026-09-07)
+
+Architecture review of `convex/`, `socket-server/`, `shared/protocol/`, `lib/ai/` produced
+**phase 24** (v1.4), six plans under `.planning/phases/24-backend-cost-and-depth/`.
+Analysis, estimates and assumptions: `.planning/BACKEND-OPTIMIZATION-DECISIONS.md`.
+
+Headline findings, all estimates from constants in the code rather than a running deployment:
+
+- The relay re-broadcasts the whole scene plus all binary files on every stroke — ~45 MB/s
+  while drawing at 30 students, and the scene is serialized four times per event.
+- Reactive Convex queries recompute aggregates by collecting child tables. `doubts.submit`
+  patches `participants.lastSeenAt`, which invalidates a dashboard that collects the
+  participants of up to 100 sessions.
+- The quiz N+1s have no `useQuery` caller yet, so the shape is set but the bill has not
+  started — cheapest possible moment to fix them.
+- Two defects found while reading: `block:highlight` has no rate limit, and the client
+  board cadence (20/s) is double the relay's own budget (10/s).
+
+**24-01 (COST-02) complete 2026-09-07** — counters on `sessions.studentCount` and the quiz
+questions, `by_session_participant` index, `myStanding` replaced by the shared-args
+`leaderboardForRoom`, cursor-resumable backfill in `convex/internal/backfillCounts.ts`.
+`npm run verify` green; 273 → 285 root tests. See `24-01-SUMMARY.md`.
+
+Run `npx convex run internal/backfillCounts:sessions` and `:quizQuestions` once per
+environment after deploying, paging by the returned cursor until `isDone`.
+
+**24-02 (COST-03) complete 2026-09-07** — `doubts.by_session_normalized` index (deployed
+live, confirmed by `convex dev`), duplicate detection no longer capped at 100 rows, and a
+duplicate inherits the original's triage verdict instead of paying for a second provider
+call. `npm run verify` green; 285 → 291 root tests. See `24-02-SUMMARY.md`.
+
+Next: execute 24-03. 24-06 is **blocked** pending a ruling — it reverses the three-copy
+SVRT1 token decision recorded in `CLAUDE.md`, and closing it with that reasoning written
+down is an acceptable outcome.
 
 ### AI lesson/MCP planning (2026-09-05)
 

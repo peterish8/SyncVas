@@ -1,0 +1,335 @@
+/**
+ * "Ways in" showcase — sv-show-* only.
+ *
+ * Owns the floating-dock section in the landing page
+ * (components/landing/landing-showcase.tsx). These rules are intentionally
+ * unlayered so they win over the Tailwind utilities baked into the upstream
+ * FloatingDock markup, which otherwise paints it gray-50 / neutral-900.
+ */
+
+.sv-show {
+  width: min(100% - 48px, 1280px);
+  margin: clamp(80px, 9vw, 128px) auto 0;
+  display: grid;
+  justify-items: center;
+  gap: clamp(22px, 3vw, 36px);
+}
+
+.sv-show-head {
+  display: grid;
+  justify-items: center;
+  max-width: none;
+  text-align: center;
+}
+
+.sv-show-head h2 {
+  margin: 0;
+  font-family: var(--font-bricolage), var(--font-geist-sans), ui-sans-serif, sans-serif;
+  font-size: clamp(30px, 3.6vw, 50px);
+  font-weight: 600;
+  letter-spacing: -.045em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sv-show-lede {
+  margin: 14px 0 0;
+  color: var(--o-ink-muted, #65635d);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .sv-show-head { max-width: 640px; }
+  .sv-show-head h2 { white-space: normal; }
+}
+
+/* The raised screen. Sized so swapping cases never reflows the section. */
+.sv-show-stage {
+  width: 100%;
+  display: grid;
+  place-items: center;
+  min-height: clamp(230px, 26vw, 290px);
+}
+
+.sv-show-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, .95fr);
+  align-items: center;
+  gap: clamp(20px, 3vw, 44px);
+  width: min(100%, 880px);
+  padding: clamp(22px, 2.6vw, 34px);
+  border: 1px solid var(--o-line);
+  border-radius: 22px;
+  background: var(--o-surface);
+  box-shadow:
+    0 2px 3px rgb(24 24 22 / .04),
+    0 26px 60px rgb(24 24 22 / .12);
+}
+
+.sv-show-screen-copy h3 {
+  margin: 13px 0 10px;
+  font-family: var(--font-bricolage), var(--font-geist-sans), ui-sans-serif, sans-serif;
+  font-size: clamp(21px, 2.3vw, 31px);
+  font-weight: 600;
+  letter-spacing: -.04em;
+  line-height: 1.05;
+}
+
+.sv-show-screen-copy p {
+  margin: 0;
+  max-width: 42ch;
+  color: var(--o-ink-muted, #65635d);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.sv-show-audience {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid var(--o-line);
+  border-radius: 999px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9.5px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.sv-show-audience[data-audience="For teachers"] {
+  border-color: color-mix(in srgb, var(--o-lime) 55%, transparent);
+  background: color-mix(in srgb, var(--o-lime) 16%, transparent);
+}
+
+.sv-show-audience[data-audience="For students"] {
+  border-color: color-mix(in srgb, var(--o-sky) 45%, transparent);
+  background: color-mix(in srgb, var(--o-sky) 12%, transparent);
+}
+
+.sv-show-audience[data-audience="For everyone"] {
+  border-color: color-mix(in srgb, var(--o-coral) 45%, transparent);
+  background: color-mix(in srgb, var(--o-coral) 12%, transparent);
+}
+
+/* ---- Per-case mocks ---- */
+.sv-show-mock {
+  display: grid;
+  gap: 9px;
+  align-content: center;
+  min-height: 148px;
+  padding: 16px;
+  border: 1px solid var(--o-line);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--o-paper, #fffefa) 70%, transparent);
+  background-image: radial-gradient(color-mix(in srgb, var(--o-ink) 12%, transparent) .8px, transparent .8px);
+  background-size: 14px 14px;
+}
+
+.sv-show-mock-label,
+.sv-show-mock-foot {
+  color: var(--o-ink-muted, #6d6b64);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  letter-spacing: .07em;
+}
+
+.sv-show-mock-foot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sv-show-mock-foot i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--o-lime);
+}
+
+.sv-show-code {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 600;
+  letter-spacing: -.04em;
+}
+
+.sv-show-mock-board { align-content: center; position: relative; }
+
+.sv-show-stroke {
+  height: 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--o-ink) 22%, transparent);
+}
+
+.sv-show-stroke-accent { background: var(--o-coral); }
+
+.sv-show-pen {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--o-lime);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--o-lime) 22%, transparent);
+}
+
+.sv-show-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--o-line);
+  border-radius: 9px;
+  background: var(--o-surface);
+  font-size: 11.5px;
+}
+
+.sv-show-row b {
+  color: var(--o-ink-muted, #6d6b64);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9.5px;
+}
+
+.sv-show-row.is-top {
+  border-color: color-mix(in srgb, var(--o-lime) 60%, transparent);
+  background: color-mix(in srgb, var(--o-lime) 14%, transparent);
+}
+
+.sv-show-mock-join { grid-template-columns: auto 1fr; align-items: center; gap: 14px; }
+
+.sv-show-qr {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  background:
+    conic-gradient(from 0deg, var(--o-ink) 25%, transparent 0 50%, var(--o-ink) 0 75%, transparent 0),
+    var(--o-surface);
+  background-size: 13px 13px;
+  box-shadow: inset 0 0 0 1px var(--o-line);
+}
+
+.sv-show-slots { display: flex; gap: 5px; }
+
+.sv-show-slots i {
+  display: grid;
+  width: 25px;
+  height: 31px;
+  place-items: center;
+  border: 1px solid var(--o-line);
+  border-radius: 6px;
+  background: var(--o-surface);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.sv-show-mock-views { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.sv-show-view {
+  display: grid;
+  gap: 7px;
+  padding: 9px;
+  border: 1px solid var(--o-line);
+  border-radius: 10px;
+  background: var(--o-surface);
+}
+
+.sv-show-view b {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: .07em;
+}
+
+.sv-show-view i {
+  height: 40px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--o-ink) 9%, transparent);
+}
+
+.sv-show-view.is-student i {
+  background: color-mix(in srgb, var(--o-sky) 26%, transparent);
+  transform: scale(1.06) translateX(4px);
+}
+
+.sv-show-mock-follow { justify-items: start; align-content: center; }
+
+.sv-show-follow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid color-mix(in srgb, var(--o-lime) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--o-lime) 16%, transparent);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sv-show-follow-pill i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--o-lime);
+}
+
+/* ---- Dock skin ----------------------------------------------------------
+   Overrides the upstream Tailwind utilities. Unlayered, so these win over
+   @layer utilities without needing !important. */
+.sv-show-dock.sv-show-dock {
+  height: 68px;
+  gap: 14px;
+  padding: 0 16px 12px;
+  border: 1px solid var(--o-line);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--o-surface) 92%, transparent);
+  box-shadow: 0 18px 44px rgb(24 24 22 / .14);
+  backdrop-filter: blur(10px);
+}
+
+.sv-show-dock a > div {
+  border: 1px solid var(--o-line);
+  background: color-mix(in srgb, var(--o-paper, #fffefa) 88%, transparent);
+  transition: border-color 200ms ease, background 200ms ease;
+}
+
+.sv-show-dock a:hover > div,
+.sv-show-dock a:focus-visible > div {
+  border-color: color-mix(in srgb, var(--o-lime) 70%, transparent);
+  background: color-mix(in srgb, var(--o-lime) 20%, transparent);
+}
+
+.sv-show-icon {
+  display: grid;
+  width: 46%;
+  height: 46%;
+  place-items: center;
+  color: var(--o-ink);
+}
+
+.sv-show-dock-mobile { margin-inline: auto; }
+
+.sv-show-dock-mobile > button {
+  border: 1px solid var(--o-line);
+  background: var(--o-surface);
+  color: var(--o-ink);
+}
+
+.sv-show-dock-mobile a {
+  border: 1px solid var(--o-line);
+  background: var(--o-surface);
+}
+
+@media (max-width: 900px) {
+  .sv-show-screen { grid-template-columns: 1fr; }
+  .sv-show-stage { min-height: 0; }
+}
+
+@media (max-width: 640px) {
+  .sv-show { width: min(100% - 32px, 1280px); }
+  .sv-show-screen { padding: 20px; border-radius: 18px; }
+  .sv-show-mock { min-height: 124px; }
+}
