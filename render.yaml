@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: syncvas-relay
+    runtime: docker
+    plan: free
+    repo: https://github.com/peterish8/SyncVas
+    branch: main
+    dockerfilePath: ./socket-server/Dockerfile
+    dockerContext: .
+    numInstances: 1
+    healthCheckPath: /healthz
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - socket-server/**
+        - shared/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+        - .dockerignore
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4001"
+      - key: SOCKET_PORT
+        value: "4001"
+      - key: SOCKET_INTERNAL_SECRET
+        generateValue: true
+      - key: ALLOWED_WEB_ORIGINS
+        value: https://syncvas-preview-pratzys-projects.vercel.app
+      - key: RELAY_SINGLE_INSTANCE
+        value: "1"
+      - key: RELAY_TRUST_PROXY
+        value: "1"
