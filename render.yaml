@@ -28,7 +28,7 @@ services:
       - key: SOCKET_INTERNAL_SECRET
         generateValue: true
       - key: ALLOWED_WEB_ORIGINS
-        value: https://syncvas-preview-pratzys-projects.vercel.app
+        value: https://syncvas-pratzys-projects.vercel.app,https://syncvas-preview-pratzys-projects.vercel.app
       - key: RELAY_SINGLE_INSTANCE
         value: "1"
       - key: RELAY_TRUST_PROXY

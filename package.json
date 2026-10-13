@@ -4,6 +4,7 @@
   "description": "This repository pack is the specification set for a classroom-first live whiteboard product.",
   "scripts": {
     "build": "next build",
+    "build:vercel": "node scripts/vercel-build.mjs",
     "dev": "next dev",
     "dev:all": "concurrently --kill-others-on-fail \"npm run dev\" \"npm run dev:socket\"",
     "dev:socket": "npm --prefix socket-server run dev",
@@ -44,6 +45,7 @@
     "concurrently": "^10.0.5",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.4",
+    "happy-dom": "^21.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"

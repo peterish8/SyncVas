@@ -53,8 +53,6 @@ export function BoardPreview() {
   return (
     <motion.div
       className="sv-board"
-      animate={reduceMotion ? undefined : { y: [0, -4, 0] }}
-      transition={reduceMotion ? undefined : { duration: 9.5, repeat: Infinity, ease: "easeInOut" }}
     >
       <div className="sv-board-chrome" aria-hidden="true">
         <span className="sv-board-lights">

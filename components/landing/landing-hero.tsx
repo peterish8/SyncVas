@@ -30,6 +30,9 @@ export function LandingHero() {
           <br />
           has <em>room</em> to move.
         </motion.h1>
+        <motion.p className="origin-hero-description" variants={fadeUp}>
+          A calm place to teach, follow an idea, and ask the question that makes it click.
+        </motion.p>
         <motion.div className="origin-hero-cta" variants={fadeUp}>
           <motion.div whileHover={reduceMotion ? undefined : { y: -2 }} whileTap={reduceMotion ? undefined : { scale: 0.98 }}>
             <Link className="origin-button origin-button-dark" href="/teacher">

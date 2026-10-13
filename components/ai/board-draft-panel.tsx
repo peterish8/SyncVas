@@ -16,6 +16,7 @@ import { buildLessonDraft, type LessonDraft } from "@/lib/ai/lesson-authoring";
 import type { BoardDraftBlock } from "@/lib/ai/board-authoring-adapter";
 
 import { SyncvasSelect } from "@/components/ui/syncvas-select";
+import type { PreparedBoard } from "@/components/templates/template-library";
 
 type DraftState = {
   topic: string;
@@ -25,7 +26,7 @@ type DraftState = {
 
 const UNAVAILABLE_COPY = "AI drafting is not configured.";
 
-export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (scene: unknown, title: string) => void }) {
+export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (board: PreparedBoard) => void }) {
   const requestDraft = useAction(
     api.boardAuthoring.draft,
   );
@@ -42,6 +43,7 @@ export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (scene: unknown, 
   const [error, setError] = useState<string | null>(null);
 
   const generate = async () => {
+    if (state !== "idle") return;
     const trimmed = topic.trim();
     if (trimmed.length < 3) {
       setError("Describe the lesson in a few words first.");
@@ -60,14 +62,14 @@ export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (scene: unknown, 
       }
       setPending({ topic: trimmed, blocks: result.blocks, draft: buildLessonDraft(result.blocks, result.writingZones) });
     } catch {
-      setUnavailable(true);
+      setError("The draft request could not be completed. Try again when connected.");
     } finally {
       setState("idle");
     }
   };
 
   const accept = async () => {
-    if (!pending) return;
+    if (!pending || state !== "idle") return;
     setState("saving");
     setError(null);
     try {
@@ -76,9 +78,9 @@ export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (scene: unknown, 
         pending.draft.elements as Parameters<typeof convertToExcalidrawElements>[0],
         { regenerateIds: true },
       );
-      const sceneJson = JSON.stringify({ elements, appState: { viewBackgroundColor: "#fffefa" } });
-      await saveTemplate({ title: pending.topic.slice(0, 120), sceneJson, origin: "ai-assisted" });
-      onUseDraft?.({ elements }, pending.topic);
+      const scene = { elements, appState: { viewBackgroundColor: "#fffefa" } };
+      const saved = await saveTemplate({ title: pending.topic.slice(0, 120), sceneJson: JSON.stringify(scene), origin: "ai-assisted" });
+      onUseDraft?.({ ...saved, scene });
       setPending(null);
       setTopic("");
     } catch {
@@ -200,6 +202,7 @@ export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (scene: unknown, 
             <button
               type="button"
               className="syncvas-btn syncvas-btn-ghost syncvas-btn-sm"
+              disabled={busy}
               onClick={() => setPending(null)}
             >
               Discard

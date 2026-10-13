@@ -47,15 +47,14 @@ export function useTeacherViewport(args: {
   const { role, onEmitViewport, applyViewport } = args;
 
   const [followEnabled, setFollowEnabledState] = useState(false);
-  const [lastTeacherViewport, setLastTeacherViewport] = useState<TeacherViewportCoords | null>(
-    null,
-  );
+  const [hasTeacherViewport, setHasTeacherViewport] = useState(false);
 
   const followEnabledRef = useRef(false);
   const lastAppliedTsRef = useRef<number | null>(null);
   const lastTeacherViewportRef = useRef<TeacherViewportCoords | null>(null);
   const applyingViewportRef = useRef(false);
   const applyGenerationRef = useRef(0);
+  const settleTimerRef = useRef<number | null>(null);
 
   const pendingTeacherRef = useRef<TeacherViewportCoords | null>(null);
   const throttleTimerRef = useRef<number | null>(null);
@@ -70,6 +69,12 @@ export function useTeacherViewport(args: {
   });
 
   const setFollowEnabled = useCallback((enabled: boolean) => {
+    if (!enabled) {
+      applyGenerationRef.current += 1;
+      applyingViewportRef.current = false;
+      if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
+    }
     followEnabledRef.current = enabled;
     setFollowEnabledState(enabled);
   }, []);
@@ -108,28 +113,27 @@ export function useTeacherViewport(args: {
 
   const applyIfFollowing = useCallback((viewport: TeacherViewportCoords) => {
     const generation = ++applyGenerationRef.current;
+    if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
     applyingViewportRef.current = true;
-    const result = applyViewportRef.current?.(viewport);
-    if (result && typeof (result as PromiseLike<void>).then === "function") {
-      void Promise.resolve(result).finally(() => {
-        // Excalidraw may deliver the final onScrollChange on the next task
-        // after updateScene resolves. Keep the guard alive through that
-        // trailing event so a remote camera frame never looks like a local
-        // student pan and accidentally exits follow mode.
-        window.setTimeout(() => {
-          if (applyGenerationRef.current === generation) {
-            applyingViewportRef.current = false;
-          }
-        }, APPLYING_VIEWPORT_SETTLE_MS);
+    const settle = () => {
+      if (applyGenerationRef.current !== generation) return;
+      // Ignore trailing Excalidraw callbacks, while explicit student gestures
+      // can always exit follow immediately through onManualNavigation.
+      settleTimerRef.current = window.setTimeout(() => {
+        settleTimerRef.current = null;
+        if (applyGenerationRef.current === generation) applyingViewportRef.current = false;
+      }, APPLYING_VIEWPORT_SETTLE_MS);
+    };
+    try {
+      const result = applyViewportRef.current?.(viewport);
+      if (result) void Promise.resolve(result).then(settle, () => {
+        if (applyGenerationRef.current === generation) setFollowEnabled(false);
       });
-      return;
+      else settle();
+    } catch {
+      setFollowEnabled(false);
     }
-    window.setTimeout(() => {
-      if (applyGenerationRef.current === generation) {
-        applyingViewportRef.current = false;
-      }
-    }, 0);
-  }, []);
+  }, [setFollowEnabled]);
 
   /** Student: validated remote teacher:viewport packet. */
   const handleRemoteViewport = useCallback(
@@ -140,13 +144,15 @@ export function useTeacherViewport(args: {
 
       lastAppliedTsRef.current = ts;
       lastTeacherViewportRef.current = viewport;
-      setLastTeacherViewport(viewport);
+      // Only camera availability belongs in React state. The latest packet
+      // stays in a ref, avoiding a full board render for every advisory frame.
+      if (!hasTeacherViewport) setHasTeacherViewport(true);
 
       if (followEnabledRef.current) {
         applyIfFollowing(viewport);
       }
     },
-    [applyIfFollowing, role],
+    [applyIfFollowing, hasTeacherViewport, role],
   );
 
   /** Student manual pan/zoom — exit follow locally; never emit camera. */
@@ -164,6 +170,10 @@ export function useTeacherViewport(args: {
     if (latest) applyIfFollowing(latest);
   }, [applyIfFollowing, role, setFollowEnabled]);
 
+  const onManualNavigation = useCallback(() => {
+    if (role === "student" && followEnabledRef.current) setFollowEnabled(false);
+  }, [role, setFollowEnabled]);
+
   const dispose = useCallback(() => {
     if (throttleTimerRef.current !== null) {
       window.clearTimeout(throttleTimerRef.current);
@@ -171,13 +181,19 @@ export function useTeacherViewport(args: {
     }
     applyGenerationRef.current += 1;
     applyingViewportRef.current = false;
+    pendingTeacherRef.current = null;
+    if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
+    settleTimerRef.current = null;
   }, []);
+
+  useEffect(() => dispose, [dispose]);
 
   return {
     followEnabled,
     setFollowEnabled,
-    lastTeacherViewport,
+    hasTeacherViewport,
     onLocalPanZoom,
+    onManualNavigation,
     onTeacherCameraChange,
     handleRemoteViewport,
     followTeacher,

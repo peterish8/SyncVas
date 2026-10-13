@@ -18,7 +18,7 @@ WORKDIR /app
 # are needed before install.
 COPY package.json package-lock.json ./
 COPY socket-server/package.json ./socket-server/
-RUN npm ci --workspace @syncvas/socket-server --include-workspace-root
+RUN npm ci --workspace @syncvas/socket-server --include-workspace-root=false
 
 COPY shared ./shared
 COPY socket-server ./socket-server
@@ -32,7 +32,7 @@ ENV NODE_ENV=production
 # Production dependencies only; tsx and the test toolchain stay out of the image.
 COPY package.json package-lock.json ./
 COPY socket-server/package.json ./socket-server/
-RUN npm ci --omit=dev --workspace @syncvas/socket-server --include-workspace-root \
+RUN npm ci --omit=dev --workspace @syncvas/socket-server --include-workspace-root=false \
     && npm cache clean --force
 
 COPY --from=build /app/socket-server/dist ./socket-server/dist

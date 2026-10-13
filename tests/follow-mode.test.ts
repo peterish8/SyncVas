@@ -121,6 +121,29 @@ describe("follow viewport ordering (unit)", () => {
 });
 
 describe("follow mode sockets", () => {
+  it("preserves the teacher camera after drawing for a late-joining student", async () => {
+    const sessionId = "follow-camera-after-drawing";
+    const { url } = await runningSocketServer();
+    const teacher = await connectReady(url, sessionId, "teacher");
+    const observer = await connectReady(url, sessionId, "student");
+    const cameraSeen = waitForEvent(observer, SOCKET_EVENTS.teacherViewport);
+    teacher.emit(SOCKET_EVENTS.teacherViewport, {
+      ...envelope(sessionId, 4_000), x: 42, y: -18, zoom: 1.5,
+    });
+    await cameraSeen;
+    const drawingSeen = waitForEvent(observer, SOCKET_EVENTS.boardUpdate);
+    teacher.emit(SOCKET_EVENTS.boardUpdate, {
+      ...envelope(sessionId), boardVersion: 1, scene: { elements: [{ id: "new-stroke" }] },
+    });
+    await drawingSeen;
+    const lateStudent = await connectReady(url, sessionId, "student");
+    const received = waitForEvent(lateStudent, SOCKET_EVENTS.boardCurrent);
+    lateStudent.emit(SOCKET_EVENTS.boardRequestCurrent, envelope(sessionId));
+    const current = boardCurrentSchema.parse(await received);
+    expect(current.boardVersion).toBe(1);
+    expect(current.teacherViewport).toMatchObject({ x: 42, y: -18, zoom: 1.5, ts: 4_000 });
+  });
+
   it("rejects student teacher:viewport with FORBIDDEN", async () => {
     const sessionId = "follow-forbid";
     const { url } = await runningSocketServer();
@@ -260,6 +283,7 @@ describe("follow mode sockets", () => {
     const board = boardCurrentSchema.parse(await current);
     expect(board.boardVersion).toBe(4);
     expect(board.scene).toEqual({ elements: [{ id: "stable" }] });
+    expect(board.teacherViewport).toMatchObject({ x: 10, y: 10, ts: 2_000 });
   });
 
   it("survives dropped viewport frames without corrupting board content", async () => {

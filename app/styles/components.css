@@ -1730,6 +1730,8 @@ select.syncvas-control-sm {
 }
 
 .syncvas-teacher-board-strip {
+  width: max-content;
+  max-width: calc(100% - 2rem);
   min-height: 2.55rem;
   padding: var(--sv-space-1) var(--sv-space-2);
   border: 1px solid color-mix(in srgb, var(--border) 84%, var(--surface));
@@ -2606,4 +2608,29 @@ select.syncvas-control-sm {
   .syncvas-count[data-bump] {
     transform: none;
   }
+}
+
+/* Private lesson preparation, loaded only when the teacher opens it. */
+.syncvas-preparation-dialog {
+  margin: auto;
+  width:min(96vw,90rem);max-width:none;height:92dvh;max-height:92dvh;
+  padding:0;border:1px solid var(--border);border-radius:var(--radius-surface);
+  background:var(--surface);color:var(--ink);box-shadow:var(--shadow-overlay);
+}
+.syncvas-preparation-dialog[open] {display:flex;flex-direction:column;}
+.syncvas-preparation-dialog::backdrop {background:color-mix(in srgb,var(--ink) 45%,transparent);}
+.syncvas-preparation-header {display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);padding:var(--space-5) var(--space-6);border-bottom:1px solid var(--border);}
+.syncvas-preparation-header h2 {margin:0;font-size:var(--text-xl);font-weight:500;letter-spacing:var(--tracking-tight);}
+.syncvas-preparation-header p {margin:0 0 var(--space-1);font-size:var(--text-xs);color:var(--ink-muted);}
+.syncvas-preparation-toolbar {display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-3);padding:var(--space-3) var(--space-6);border-bottom:1px solid var(--border);background:var(--surface-sunken);}
+.syncvas-preparation-toolbar label {font-size:var(--text-sm);}
+.syncvas-preparation-toolbar input {flex:1;min-width:12rem;}
+.syncvas-preparation-toolbar p {margin:0;font-size:var(--text-xs);color:var(--ink-muted);}
+.syncvas-preparation-canvas {flex:1;min-height:0;position:relative;}
+.syncvas-preparation-canvas .excalidraw {height:100%;min-height:0;}
+@media(max-width:640px) {
+  .syncvas-preparation-dialog {width:100vw;height:100dvh;max-height:100dvh;border-radius:0;}
+  .syncvas-preparation-toolbar {padding:var(--space-3);}
+  .syncvas-preparation-header {padding:var(--space-4);}
+  .syncvas-preparation-toolbar input {flex-basis:100%;}
 }

@@ -28,7 +28,7 @@ export function AppShell({
 }: AppShellProps) {
   if (classroom) {
     return (
-      <main className={cn("flex h-dvh flex-col bg-canvas text-ink", className)}>
+      <main className={cn("flex h-dvh min-w-0 flex-col overflow-x-clip bg-canvas text-ink", className)}>
         {showClassroomHeader ? (
           <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border bg-surface px-4 py-3 sm:px-5">
             <div className="flex min-w-0 items-center gap-3">

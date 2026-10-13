@@ -2,7 +2,6 @@
 
 import { MotionConfig } from "motion/react";
 
-import { AuralisField } from "@/components/landing/auralis-field";
 import { LandingCapabilities } from "@/components/landing/landing-capabilities";
 import { LandingHero } from "@/components/landing/landing-hero";
 import { LandingShowcase } from "@/components/landing/landing-showcase";
@@ -19,8 +18,7 @@ import { SiteFooter } from "@/components/ui/site-footer";
 export function LandingPage() {
   return (
     <MotionConfig reducedMotion="user">
-      <main className="origin-landing origin-landing-motion origin-landing-auralis">
-        <AuralisField className="origin-auralis-layer" />
+      <main className="origin-landing origin-landing-motion origin-landing-refined">
         <div className="origin-landing-foreground">
           <SiteStructuredData />
           <LandingNavigation />

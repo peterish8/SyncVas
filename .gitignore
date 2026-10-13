@@ -15,3 +15,6 @@ tsconfig.tsbuildinfo
 
 .vercel
 .env*
+/.verification-hosting.log
+/.local-server.log
+/.draft-verification.log

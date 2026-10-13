@@ -45,6 +45,7 @@ export function FollowControls({
           type="button"
           className="syncvas-btn syncvas-btn-secondary min-h-11 rounded-full px-3"
           data-tooltip="Pan and zoom on your own"
+          aria-label="Explore freely"
           onClick={onFreeRoam}
         >
           Explore freely
@@ -64,6 +65,7 @@ export function FollowControls({
               : "Waiting for the teacher's camera"
           }
           onClick={onFollowTeacher}
+          aria-label="Return to Teacher"
           disabled={!hasTeacherViewport}
           aria-describedby={hasTeacherViewport ? undefined : "return-teacher-hint"}
         >

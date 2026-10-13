@@ -60,12 +60,15 @@ function enforceRoomCap(): void {
 export function setHotScene(sessionId: string, next: HotScene): void {
   const prev = rooms.get(sessionId);
   if (prev && next.version <= prev.version) return;
-  rooms.set(sessionId, next);
+  // Scene and camera have independent streams. Drawing must not discard the
+  // latest camera needed by a student joining while the teacher is stationary.
+  rooms.set(sessionId, { ...next, viewport: next.viewport ?? prev?.viewport });
   enforceRoomCap();
 }
 
 export function setHotViewport(sessionId: string, viewport: HotViewport): void {
   const current = rooms.get(sessionId);
+  if (current?.viewport && viewport.ts < current.viewport.ts) return;
   if (!current) {
     rooms.set(sessionId, { version: 0, scene: {}, updatedAt: Date.now(), viewport });
     enforceRoomCap();

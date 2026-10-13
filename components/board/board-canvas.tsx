@@ -40,7 +40,7 @@ import {
 import { ReconnectBanner } from "@/components/connection/reconnect-banner";
 import { FollowControls } from "@/components/student/follow-controls";
 import { BOARD_UPDATE_MIN_MS } from "@/shared/constants/limits";
-import { THEME_CHANGE_EVENT } from "@/components/ui/theme-toggle";
+import { readTheme, THEME_CHANGE_EVENT, THEME_STORAGE_KEY } from "@/components/ui/theme-toggle";
 import { BlockPanel } from "@/components/blocks/block-panel";
 import type { BlockCompileResult } from "@/lib/blocks/types";
 import { boardSyncStatusLabel } from "@/lib/user-facing-errors";
@@ -130,10 +130,6 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
   const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const mountedRef = useRef(false);
   const canvasInitFrameRef = useRef<number | null>(null);
-  const viewportAnimationRef = useRef<{
-    frame: number;
-    resolve: () => void;
-  } | null>(null);
   const applyingRemoteRef = useRef(false);
   const sceneElementsRef = useRef<readonly ExcalidrawElement[]>(preparedElements);
   const sceneFilesRef = useRef<BinaryFiles>({});
@@ -145,6 +141,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
   } | null>(null);
   const broadcastTimerRef = useRef<number | null>(null);
   const lastPublishedElementsRef = useRef<string>("[]");
+  const observedSceneRef = useRef<{ elements: readonly ExcalidrawElement[]; background: string; files: BinaryFiles } | null>(null);
   const publishInFlightRef = useRef(false);
   const lastFlushAtRef = useRef(0);
   const ackedVersionRef = useRef(0);
@@ -169,7 +166,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
   const tokenError = roomTokenProp ? null : mintError;
   const [studentViewport, setStudentViewport] = useState({ x: 0, y: 0, zoom: 1 });
   const [theme, setTheme] = useState<Theme>("light");
-  const [sceneSeed, setSceneSeed] = useState<{
+  const [sceneSeed] = useState<{
     elements: readonly ExcalidrawElement[];
     files: BinaryFiles;
   }>({ elements: preparedElements, files: {} });
@@ -178,12 +175,18 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
 
   useEffect(() => {
     const updateTheme = () => {
-      setSceneSeed({ elements: sceneElementsRef.current, files: sceneFilesRef.current });
-      setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+      setTheme(readTheme());
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === THEME_STORAGE_KEY || event.key === null) updateTheme();
     };
     updateTheme();
     window.addEventListener(THEME_CHANGE_EVENT, updateTheme);
-    return () => window.removeEventListener(THEME_CHANGE_EVENT, updateTheme);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(THEME_CHANGE_EVENT, updateTheme);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   useEffect(() => {
@@ -246,61 +249,18 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
 
   const applyTeacherViewportToApi = useCallback((viewport: TeacherViewportCoords) => {
     const api = apiRef.current;
-    if (!api || !mountedRef.current) return Promise.resolve();
-
-    if (viewportAnimationRef.current) {
-      window.cancelAnimationFrame(viewportAnimationRef.current.frame);
-      viewportAnimationRef.current.resolve();
-      viewportAnimationRef.current = null;
-    }
-
-    const current = api.getAppState();
-    const start = {
-      x: current.scrollX,
-      y: current.scrollY,
-      zoom: current.zoom.value,
-    };
-    const target = {
-      x: viewport.x,
-      y: viewport.y,
-      zoom: viewport.zoom as NormalizedZoomValue,
-    };
-    const duration = 360;
-
-    return new Promise<void>((resolve) => {
-      const animation = { frame: 0, resolve };
-      const startedAt = performance.now();
-      const tick = (now: number) => {
-        if (viewportAnimationRef.current !== animation || !mountedRef.current) {
-          resolve();
-          return;
-        }
-        const progress = Math.min(1, (now - startedAt) / duration);
-        const eased = progress < 0.5
-          ? 2 * progress * progress
-          : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-        api.updateScene({
-          appState: {
-            scrollX: start.x + (target.x - start.x) * eased,
-            scrollY: start.y + (target.y - start.y) * eased,
-            zoom: {
-              value: (start.zoom + (target.zoom - start.zoom) * eased) as NormalizedZoomValue,
-            },
-          },
-          captureUpdate: "NEVER",
-        });
-        if (progress >= 1) {
-          viewportAnimationRef.current = null;
-          resolve();
-          return;
-        }
-        animation.frame = window.requestAnimationFrame(tick);
-      };
-      viewportAnimationRef.current = animation;
-      animation.frame = window.requestAnimationFrame(tick);
+    if (!api || !mountedRef.current) return;
+    // Camera packets already arrive at a bounded rate. Apply the latest view
+    // directly rather than restarting an animation behind every new packet.
+    api.updateScene({
+      appState: {
+        scrollX: viewport.x,
+        scrollY: viewport.y,
+        zoom: { value: viewport.zoom as NormalizedZoomValue },
+      },
+      captureUpdate: "NEVER",
     });
   }, []);
-
   // Excalidraw can provide its imperative API before its internal React tree
   // has mounted. Updating it synchronously (or on a single zero-delay timer)
   // triggers React's "setState before mounted" warning. Wait for two paint
@@ -468,16 +428,17 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
   const flushPending = useCallback(() => {
     const pending = pendingRef.current;
     if (!pending || !isTeacher || publishInFlightRef.current) return;
-    const fingerprint = JSON.stringify(pending.elements);
-    if (fingerprint === lastPublishedElementsRef.current) {
-      pendingRef.current = null;
-      return;
-    }
     // At most one publish per BOARD_UPDATE_MIN_MS, measured from the last send,
     // so sustained drawing stays inside the relay's per-minute budget.
     const waitMs = lastFlushAtRef.current + BOARD_UPDATE_MIN_MS - Date.now();
     if (waitMs > 0) {
       scheduleFlush(waitMs);
+      return;
+    }
+    // Serialize only a scene ready to send, never on each pen or camera frame.
+    const fingerprint = JSON.stringify(pending.elements);
+    if (fingerprint === lastPublishedElementsRef.current) {
+      pendingRef.current = null;
       return;
     }
     publishInFlightRef.current = true;
@@ -536,8 +497,10 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
     (elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) => {
       if (!isTeacher || applyingRemoteRef.current) return;
       // Ignore Excalidraw mount/appState churn until the element set actually changes.
-      const fingerprint = JSON.stringify(elements);
-      if (fingerprint === lastPublishedElementsRef.current) return;
+      const observed = observedSceneRef.current;
+      if (observed && observed.background === appState.viewBackgroundColor && observed.files === files &&
+        elements.length === observed.elements.length && elements.every((element, index) => element === observed.elements[index])) return;
+      observedSceneRef.current = { elements, background: appState.viewBackgroundColor, files };
       pendingRef.current = { elements, background: appState.viewBackgroundColor, files };
       sceneElementsRef.current = elements;
       sceneFilesRef.current = files;
@@ -558,11 +521,6 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
         canvasInitFrameRef.current = null;
       }
       disposeViewportRef.current?.();
-      if (viewportAnimationRef.current) {
-        window.cancelAnimationFrame(viewportAnimationRef.current.frame);
-        viewportAnimationRef.current.resolve();
-        viewportAnimationRef.current = null;
-      }
     };
   }, []);
 
@@ -574,7 +532,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
       }
 
       // Local camera only — never emit student viewport on the socket.
-      setStudentViewport({ x, y, zoom: zoom.value });
+      setStudentViewport((current) => current.zoom === zoom.value ? current : { x, y, zoom: zoom.value });
       viewport.onLocalPanZoom();
     },
     [isTeacher, viewport],
@@ -654,7 +612,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
         <div className="shrink-0">
           <FollowControls
             followEnabled={viewport.followEnabled}
-            hasTeacherViewport={viewport.lastTeacherViewport !== null}
+            hasTeacherViewport={viewport.hasTeacherViewport}
             onFollowTeacher={viewport.followTeacher}
             onFreeRoam={() => viewport.setFollowEnabled(false)}
           />
@@ -662,11 +620,15 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
       ) : null}
       <div
         ref={frameRef}
-        className="syncvas-board-frame min-h-0 flex-1 [&_.excalidraw]:h-full [&_.excalidraw]:min-h-[24rem]"
+        className="syncvas-board-frame min-h-0 flex-1 [&_.excalidraw]:h-full [&_.excalidraw]:min-h-0"
         data-board-theme={theme}
+        onWheelCapture={isTeacher ? undefined : viewport.onManualNavigation}
+        onPointerDownCapture={isTeacher ? undefined : viewport.onManualNavigation}
+        onKeyDownCapture={isTeacher ? undefined : (event) => {
+          if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "+", "-", "="].includes(event.key)) viewport.onManualNavigation();
+        }}
       >
         <Excalidraw
-          key={theme}
           excalidrawAPI={onExcalidrawApi}
           onChange={isTeacher ? onChange : undefined}
           onScrollChange={onScrollChange}
@@ -698,7 +660,6 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
           zenModeEnabled={false}
           autoFocus={isTeacher}
         />
-        <div className="syncvas-board-theme-scrim" aria-hidden="true" />
         {status === "ended" ? <ClassEndedPanel role={role} sessionId={sessionId} /> : null}
         {/* Excalidraw owns the top-left menu, top-centre tool rail, top-right
             library, and both bottom corners. Keep Syncvas status below that
@@ -708,7 +669,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
         <div
           className={
             isTeacher
-              ? "syncvas-board-chrome syncvas-teacher-board-strip absolute left-3 right-3 top-[4.5rem] z-10 hidden items-center justify-between gap-3 sm:left-4 sm:right-4 sm:flex"
+              ? "syncvas-board-chrome syncvas-teacher-board-strip absolute right-3 top-[4.5rem] z-10 hidden items-center justify-between gap-3 sm:right-4 sm:flex"
               : "syncvas-board-chrome absolute left-3 top-[4.5rem] z-10 hidden max-w-[min(19rem,calc(100%-2rem))] flex-col items-start gap-2 sm:left-4 sm:flex"
           }
         >

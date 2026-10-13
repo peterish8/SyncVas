@@ -126,6 +126,7 @@
   --sv-dur-hover: 140ms;
   --sv-dur-panel: 220ms;
   --sv-dur-modal: 200ms;
+  --sv-font-editorial: Georgia, "Times New Roman", serif;
 
   /* ---------------------------------------------------------------------
    * 2. SEMANTIC — the only names components may use
@@ -134,6 +135,16 @@
   /* Surfaces */
   --canvas: var(--sv-neutral-50);
   --paper: var(--sv-neutral-25);
+  --font-editorial: var(--sv-font-editorial);
+  --space-1: var(--sv-space-1);
+  --space-3: var(--sv-space-3);
+  --space-4: var(--sv-space-4);
+  --space-5: var(--sv-space-5);
+  --space-6: var(--sv-space-6);
+  --text-xs: var(--sv-text-xs);
+  --text-sm: var(--sv-text-sm);
+  --text-xl: var(--sv-text-xl);
+  --tracking-tight: var(--sv-tracking-tight);
   --surface: var(--sv-neutral-0);
   --surface-muted: var(--sv-neutral-100);
   --surface-sunken: var(--sv-neutral-50);

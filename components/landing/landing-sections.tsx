@@ -3,7 +3,6 @@
 import { motion, useReducedMotion } from "motion/react";
 
 import { LandingButtonMotion } from "@/components/landing/landing-hero";
-import { TeacherRibbons } from "@/components/landing/teacher-ribbons";
 import FloatingMenu from "@/components/ui/liquid-morph-floating-menu";
 import { fadeIn, fadeUp, scaleIn, staggerParent, viewportOnce } from "@/lib/landing-motion";
 
@@ -118,7 +117,7 @@ export function LandingTeacher() {
       variants={staggerParent}
     >
       <motion.div className="origin-teacher-art" aria-hidden="true" variants={scaleIn}>
-        <TeacherRibbons />
+        <div className="origin-teacher-ribbon-field" aria-hidden="true" />
         <div className="origin-teacher-ribbons-shade" />
       </motion.div>
 

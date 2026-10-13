@@ -11,7 +11,6 @@
 
 "use client";
 
-import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import { useMutation } from "convex/react";
 
@@ -24,6 +23,7 @@ import { BoardDraftPanel } from "@/components/ai/board-draft-panel";
 import { TeacherDoubtQueue } from "@/components/doubts/teacher-doubt-queue";
 import { SaveTemplateButton } from "@/components/templates/save-template-button";
 import { TemplateLibrary, type PreparedBoard } from "@/components/templates/template-library";
+import { PreparedBoardEditor } from "@/components/templates/prepared-board-editor";
 import { AppShell } from "@/components/ui/app-shell";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { api } from "@/convex/_generated/api";
@@ -45,6 +45,7 @@ export default function TeacherPage() {
   const [liveBoard, setLiveBoard] = useState<LiveBoard | null>(null);
   // Phase 11: the prepared board this class opens on, chosen before it starts.
   const [preparedBoard, setPreparedBoard] = useState<PreparedBoard | null>(null);
+  const [preparing, setPreparing] = useState(false);
   const latestSceneRef = useRef<LatestScene | null>(null);
   // Reads the live canvas. A board restored from the relay after a reload never
   // passes through onSceneChange, so End Class used to save it as a blank board.
@@ -138,10 +139,10 @@ export default function TeacherPage() {
                 <div>
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-muted">Live room</p>
                   <h2 id="board-waiting-title" className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-ink">
-                    Board waiting
+                    A little preparation. A better lesson.
                   </h2>
                   <p className="mt-3 max-w-xs text-sm leading-6 text-ink-muted">
-                    Create and start a room to open the live canvas. Students join with the room code.
+                    Draw your opening board, choose one from your library, or start fresh. Students join when you start the room.
                   </p>
                 </div>
 
@@ -167,12 +168,9 @@ export default function TeacherPage() {
                   ) : null}
                 </div>
 
-                <Link
-                  href="/student/proof-session"
-                  className="mt-8 inline-flex w-fit text-sm font-medium text-ink underline-offset-2 hover:underline"
-                >
-                  Open canvas-only proof ↗
-                </Link>
+                <button type="button" className="syncvas-btn syncvas-btn-primary mt-8" onClick={() => setPreparing(true)}>
+                  {preparedBoard ? "Edit opening board" : "Prepare a board"} <span aria-hidden="true">↗</span>
+                </button>
               </section>
 
               <section className="min-w-0 border-b border-border px-6 py-8 sm:px-8 lg:border-b-0 lg:border-r" aria-label="Prepared boards">
@@ -189,12 +187,14 @@ export default function TeacherPage() {
                 <div className="mb-5">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-muted">Start from an idea</p>
                 </div>
-                <BoardDraftPanel />
+                <BoardDraftPanel onUseDraft={setPreparedBoard} />
               </section>
             </div>
           )}
         </div>
       </div>
+      {preparing && !isLive ? <PreparedBoardEditor initialBoard={preparedBoard}
+        onClose={() => setPreparing(false)} onSaved={(board) => { setPreparedBoard(board); setPreparing(false); }} /> : null}
     </AppShell>
   );
 }
