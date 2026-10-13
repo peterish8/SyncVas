@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="240" viewBox="0 0 1280 240" role="img" aria-labelledby="foot-title foot-desc">
+  <title id="foot-title">Syncvas — teach live, every student follows</title>
+  <desc id="foot-desc">A dark band with the Syncvas mark and wordmark, the tagline, and the core stack: Next.js, Convex, Socket.IO and Excalidraw.</desc>
+  <defs>
+    <style>
+      .sans { font-family: "Bricolage Grotesque", "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      .draw { stroke-dasharray: 900; animation: draw 2.4s cubic-bezier(.22,1,.36,1) .3s both; }
+      @keyframes draw { from { stroke-dashoffset: 900; } to { stroke-dashoffset: 0; } }
+      @media (prefers-reduced-motion: reduce) { .draw { animation: none; } }
+    </style>
+    <symbol id="mark-inverse" viewBox="85 80 330 335">
+      <g transform="skewY(-15)">
+        <rect x="85" y="173" width="245" height="160" rx="46" fill="#f3f2eb"/>
+        <rect x="148" y="316" width="267" height="135" rx="46" fill="#f3f2eb"/>
+        <rect x="148" y="272" width="182" height="108" rx="30" fill="#d7f500"/>
+      </g>
+    </symbol>
+    <clipPath id="foot-frame"><rect width="1280" height="240" rx="32"/></clipPath>
+    <filter id="foot-field" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="60"/></filter>
+  </defs>
+
+  <g clip-path="url(#foot-frame)">
+    <rect width="1280" height="240" fill="#181917"/>
+    <g filter="url(#foot-field)">
+      <circle cx="1180" cy="260" r="170" fill="#d7f500" fill-opacity=".22"/>
+      <circle cx="860" cy="-30" r="150" fill="#f47b68" fill-opacity=".18"/>
+      <circle cx="120" cy="270" r="160" fill="#39a954" fill-opacity=".16"/>
+    </g>
+    <path class="draw" d="M560 70 C 620 26, 690 118, 760 66 S 880 40, 940 86 S 1010 104, 1060 60" fill="none" stroke="#d7f500" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/>
+
+    <use href="#mark-inverse" x="64" y="52" width="62" height="63"/>
+    <text x="140" y="100" class="sans" font-size="40" font-weight="700" letter-spacing="-1.6" fill="#f3f2eb">syncvas</text>
+    <text x="64" y="152" class="sans" font-size="18" fill="#b8b6ae">Teach live. Every student follows.</text>
+
+    <text x="1216" y="116" class="sans" font-size="12" font-weight="700" letter-spacing="1.4" fill="#94928b" text-anchor="end">BUILT WITH</text>
+    <g class="sans" font-size="13" font-weight="600" fill="#f3f2eb">
+      <g fill="none" stroke="#41423d"><rect x="840" y="134" width="79" height="30" rx="15"/><rect x="929" y="134" width="72" height="30" rx="15"/><rect x="1011" y="134" width="94" height="30" rx="15"/><rect x="1115" y="134" width="101" height="30" rx="15"/></g>
+      <text x="879.5" y="154" text-anchor="middle">Next.js</text>
+      <text x="965" y="154" text-anchor="middle">Convex</text>
+      <text x="1058" y="154" text-anchor="middle">Socket.IO</text>
+      <text x="1165.5" y="154" text-anchor="middle">Excalidraw</text>
+    </g>
+
+    <path d="M64 196 H1216" stroke="#2c2d29" stroke-width="1"/>
+    <text x="64" y="222" class="sans" font-size="12.5" fill="#94928b">One writer · every viewer · lessons that stay</text>
+    <text x="1216" y="222" class="sans" font-size="12.5" fill="#94928b" text-anchor="end">Live classroom whiteboarding</text>
+  </g>
+</svg>

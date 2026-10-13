@@ -2277,6 +2277,419 @@ html:not([data-theme="dark"]) .origin-teacher-shot-foot i { background:linear-gr
     linear-gradient(180deg, rgb(255 255 255 / .12), transparent 36%, rgb(34 45 35 / .12));
   pointer-events:none;
 }
+
+/* ---------------------------------------------------------------------
+ * Liquid morph menu — replaces mid-nav text links.
+ * Closed: centered lime pill. Open: wide short bar, still centered.
+ * ------------------------------------------------------------------ */
+.sv-liquid-menu {
+  --sv-liquid-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  z-index: 30;
+  margin-inline: auto;
+  width: 128px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sv-liquid-menu-shell {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 128px;
+  height: 40px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    width 0.75s var(--sv-liquid-ease),
+    height 0.75s var(--sv-liquid-ease),
+    border-radius 0.75s var(--sv-liquid-ease),
+    transform 0.25s var(--sv-liquid-ease),
+    box-shadow 0.3s ease;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    0 2px 0 rgb(67 66 61 / 0.18),
+    0 8px 18px rgb(31 31 27 / 0.1);
+}
+.sv-liquid-menu[data-open="false"] .sv-liquid-menu-shell:hover {
+  transform: translate(-50%, -50%) scale(1.04);
+}
+.sv-liquid-menu[data-open="true"] .sv-liquid-menu-shell {
+  width: min(78vw, 440px);
+  height: 52px;
+  border-radius: 14px;
+  cursor: default;
+  background: #1b1b1a;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    0 16px 36px rgb(24 24 22 / 0.2);
+}
+.sv-liquid-menu-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--o-lime);
+  border: 1px solid #a7be00;
+  border-radius: inherit;
+  pointer-events: none;
+  transition: opacity 0.35s ease 0.2s, border-color 0.2s ease;
+}
+.sv-liquid-menu[data-open="true"] .sv-liquid-menu-bg {
+  opacity: 0;
+  border-color: transparent;
+  transition-delay: 0.2s;
+}
+.sv-liquid-menu-blob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 220%;
+  height: 320%;
+  transform: translate(-50%, 130%);
+  background: #1b1b1a;
+  border-radius: 50%;
+  pointer-events: none;
+  transition: transform 0.75s var(--sv-liquid-ease);
+}
+.sv-liquid-menu[data-open="true"] .sv-liquid-menu-blob {
+  transform: translate(-50%, -50%);
+  transition-delay: 0.06s;
+}
+.sv-liquid-menu-items {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 2.6vw, 32px);
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  width: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, width 0.75s var(--sv-liquid-ease);
+}
+.sv-liquid-menu[data-open="true"] .sv-liquid-menu-items {
+  opacity: 1;
+  width: auto;
+  padding: 0 6px 0 18px;
+  pointer-events: auto;
+}
+/* Beat `.origin-landing a { color: inherit }` so open-state links stay light on dark. */
+.origin-landing .sv-liquid-menu-item,
+.origin-nav .sv-liquid-menu-item,
+.sv-liquid-menu-item {
+  position: relative;
+  border: 0;
+  background: transparent;
+  color: #f8f8f4 !important;
+  font-family: var(--font-geist-sans), ui-sans-serif, sans-serif;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  height: 1.15em;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  transition: opacity 0.35s var(--sv-liquid-ease);
+}
+.origin-landing .sv-liquid-menu-item:hover,
+.origin-nav .sv-liquid-menu-item:hover,
+.sv-liquid-menu-item:hover,
+.origin-landing .sv-liquid-menu-item:focus-visible,
+.origin-nav .sv-liquid-menu-item:focus-visible,
+.sv-liquid-menu-item:focus-visible {
+  color: #ffffff !important;
+  outline: 2px solid var(--o-lime);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.sv-liquid-menu-item-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.sv-liquid-menu-chars {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 1.15em;
+}
+.sv-liquid-menu-char {
+  display: inline-block;
+  overflow: hidden;
+  height: 1.15em;
+  line-height: 1.15em;
+}
+.sv-liquid-menu-char-stack {
+  display: flex;
+  flex-direction: column;
+  transition-property: transform;
+  transition-timing-function: var(--sv-liquid-ease);
+}
+.sv-liquid-menu-char-stack > span {
+  display: block;
+  height: 1.15em;
+  line-height: 1.15em;
+}
+.sv-liquid-menu-chars,
+.sv-liquid-menu-char,
+.sv-liquid-menu-char-stack,
+.sv-liquid-menu-char-stack > span {
+  color: inherit;
+}
+.sv-liquid-menu-bar {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex: 0 0 auto;
+  width: 128px;
+  height: 40px;
+  padding: 0 14px;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: width 0.75s var(--sv-liquid-ease), padding 0.75s var(--sv-liquid-ease);
+}
+.sv-liquid-menu[data-open="true"] .sv-liquid-menu-bar {
+  width: auto;
+  min-width: 96px;
+  height: 40px;
+  padding: 0 18px 0 12px;
+}
+.sv-liquid-menu-label {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: #3d4500;
+  transition: color 0.3s ease;
+}
+.sv-liquid-menu[data-open="true"] .sv-liquid-menu-label,
+.origin-landing .sv-liquid-menu[data-open="true"] .sv-liquid-menu-label {
+  color: #f8f8f4 !important;
+}
+.sv-liquid-menu-burger {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.sv-liquid-menu-burger > span {
+  position: absolute;
+  left: 1px;
+  top: 50%;
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: #3d4500;
+  display: block;
+}
+.sv-liquid-menu[data-open="true"] .sv-liquid-menu-burger > span {
+  background: #f8f8f4 !important;
+}
+.sv-liquid-menu[data-reduced="true"] .sv-liquid-menu-shell,
+.sv-liquid-menu[data-reduced="true"] .sv-liquid-menu-blob,
+.sv-liquid-menu[data-reduced="true"] .sv-liquid-menu-items,
+.sv-liquid-menu[data-reduced="true"] .sv-liquid-menu-bar,
+.sv-liquid-menu[data-reduced="true"] .sv-liquid-menu-label {
+  transition: none;
+}
+
+html[data-theme="dark"] .sv-liquid-menu-shell {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 2px 0 rgb(0 0 0 / 0.35),
+    0 10px 22px rgb(0 0 0 / 0.28);
+}
+html[data-theme="dark"] .sv-liquid-menu[data-open="true"] .sv-liquid-menu-shell {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 18px 40px rgb(0 0 0 / 0.4);
+}
+
+@media (max-width: 640px) {
+  .sv-liquid-menu[data-open="true"] .sv-liquid-menu-shell {
+    width: min(84vw, 360px);
+    height: 48px;
+  }
+  .sv-liquid-menu-item { font-size: 12px; }
+  .sv-liquid-menu[data-open="true"] .sv-liquid-menu-items {
+    gap: 10px;
+    padding-left: 12px;
+  }
+}
+
+.origin-nav.is-compact .sv-liquid-menu {
+  height: 36px;
+}
+.origin-nav.is-compact .sv-liquid-menu-shell {
+  height: 36px;
+  width: 118px;
+}
+.origin-nav.is-compact .sv-liquid-menu-bar {
+  height: 36px;
+  width: 118px;
+}
+.origin-nav.is-compact .sv-liquid-menu-label {
+  height: 36px;
+  font-size: 12px;
+}
+.origin-nav.is-compact .sv-liquid-menu[data-open="true"] .sv-liquid-menu-shell {
+  height: 48px;
+  width: min(78vw, 400px);
+}
+
+/* How it works — liquid menu expands INSIDE the card, not outside it. */
+.origin-seo-answer:has(.sv-liquid-menu--how) {
+  overflow: hidden;
+}
+.origin-answer-liquid {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 16px;
+  overflow: visible;
+}
+.origin-seo-answer .sv-liquid-menu--how {
+  position: relative;
+  margin-inline: 0;
+  width: 128px;
+  height: 40px;
+  max-width: 100%;
+  transition: width 0.75s var(--sv-liquid-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    height 0.75s var(--sv-liquid-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+.origin-seo-answer .sv-liquid-menu--how[data-open="true"] {
+  width: 100%;
+  height: 52px;
+}
+/* Closed pill sits in-flow on the left; open shell fills the card row. */
+.origin-seo-answer .sv-liquid-menu--how .sv-liquid-menu-shell {
+  top: 50%;
+  left: 0;
+  right: auto;
+  transform: translateY(-50%);
+}
+.origin-seo-answer .sv-liquid-menu--how[data-open="false"] .sv-liquid-menu-shell:hover {
+  transform: translateY(-50%) scale(1.04);
+}
+/* Closed pill: Explore label, no heavy green chrome. */
+.origin-seo-answer .sv-liquid-menu--how[data-open="false"] .sv-liquid-menu-bg {
+  background: color-mix(in srgb, var(--o-paper) 88%, #fff) !important;
+  border: 1px solid var(--o-ink) !important;
+}
+.origin-seo-answer .sv-liquid-menu--how[data-open="false"] .sv-liquid-menu-label {
+  color: var(--o-ink) !important;
+}
+.origin-seo-answer .sv-liquid-menu--how[data-open="false"] .sv-liquid-menu-burger > span {
+  background: var(--o-ink) !important;
+}
+.origin-seo-answer .sv-liquid-menu--how[data-open="false"] .sv-liquid-menu-shell {
+  box-shadow: none !important;
+}
+
+/* Open: thin black border only — no lime/dark fill box. */
+.origin-seo-answer .sv-liquid-menu--how[data-open="true"] .sv-liquid-menu-shell {
+  left: 0;
+  top: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  transform: none !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 1px solid var(--o-ink) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: default;
+  overflow: visible;
+}
+.origin-seo-answer .sv-liquid-menu--how[data-open="true"] .sv-liquid-menu-bg,
+.origin-seo-answer .sv-liquid-menu--how[data-open="true"] .sv-liquid-menu-blob {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+.origin-seo-answer .sv-liquid-menu--how[data-open="true"] .sv-liquid-menu-items {
+  gap: clamp(14px, 2.8vw, 32px);
+  padding-left: 12px;
+  padding-right: 8px;
+}
+.origin-seo-answer .sv-liquid-menu--how[data-open="true"] .sv-liquid-menu-bar .sv-liquid-menu-label {
+  color: var(--o-ink) !important;
+}
+.origin-seo-answer .sv-liquid-menu--how[data-open="true"] .sv-liquid-menu-burger > span {
+  background: var(--o-ink) !important;
+}
+.origin-seo-answer .sv-liquid-menu--how .sv-liquid-menu-item,
+.origin-landing .origin-seo-answer .sv-liquid-menu--how .sv-liquid-menu-item {
+  font-size: 13px;
+  color: var(--o-ink) !important;
+  padding: 6px 10px;
+  height: auto;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  outline: none !important;
+}
+.origin-seo-answer .sv-liquid-menu--how .sv-liquid-menu-item:hover,
+.origin-landing .origin-seo-answer .sv-liquid-menu--how .sv-liquid-menu-item:hover,
+.origin-seo-answer .sv-liquid-menu--how .sv-liquid-menu-item:focus-visible,
+.origin-landing .origin-seo-answer .sv-liquid-menu--how .sv-liquid-menu-item:focus-visible {
+  color: var(--o-coral) !important;
+  border-color: var(--o-coral);
+  outline: none !important;
+}
+@media (max-width: 640px) {
+  .origin-seo-answer .sv-liquid-menu--how[data-open="true"] .sv-liquid-menu-items {
+    gap: 10px;
+    padding-left: 8px;
+  }
+  .origin-seo-answer .sv-liquid-menu--how .sv-liquid-menu-item {
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+}
 .origin-teacher-copy {
   position:relative;
   z-index:2;

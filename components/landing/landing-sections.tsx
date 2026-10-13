@@ -4,11 +4,18 @@ import { motion, useReducedMotion } from "motion/react";
 
 import { LandingButtonMotion } from "@/components/landing/landing-hero";
 import { TeacherRibbons } from "@/components/landing/teacher-ribbons";
+import FloatingMenu from "@/components/ui/liquid-morph-floating-menu";
 import { fadeIn, fadeUp, scaleIn, staggerParent, viewportOnce } from "@/lib/landing-motion";
 
 function Arrow() {
   return <span aria-hidden="true">↗</span>;
 }
+
+const HOW_IT_WORKS_LINKS = [
+  { label: "Teacher workflow", href: "/for-teachers" },
+  { label: "Student experience", href: "/for-students" },
+  { label: "Whiteboard guide", href: "/guides/live-classroom-whiteboard" },
+] as const;
 
 export function LandingHowItWorks() {
   const reduceMotion = useReducedMotion();
@@ -59,17 +66,13 @@ export function LandingHowItWorks() {
           <span>Your view</span>
         </div>
       </motion.aside>
-      <motion.nav className="origin-answer-links" aria-label="Syncvas learning pages" variants={fadeIn}>
-        <a href="/for-teachers">
-          Teacher workflow <span aria-hidden="true">↗</span>
-        </a>
-        <a href="/for-students">
-          Student experience <span aria-hidden="true">↗</span>
-        </a>
-        <a href="/guides/live-classroom-whiteboard">
-          Live whiteboard guide <span aria-hidden="true">↗</span>
-        </a>
-      </motion.nav>
+      <motion.div className="origin-answer-links origin-answer-liquid" variants={fadeIn}>
+        <FloatingMenu
+          className="sv-liquid-menu--how"
+          items={[...HOW_IT_WORKS_LINKS]}
+          triggerLabel="Explore"
+        />
+      </motion.div>
     </motion.section>
   );
 }

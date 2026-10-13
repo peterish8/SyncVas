@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="460" viewBox="0 0 1280 460" role="img" aria-labelledby="arch-title arch-desc">
+  <title id="arch-title">Syncvas architecture</title>
+  <desc id="arch-desc">Browsers running the Next.js app send versioned board updates to an in-memory Socket.IO relay, which fans the latest scene out to students. Durable state lives in Convex, which revokes the relay room when a class ends. High-frequency board traffic never touches Convex.</desc>
+  <defs>
+    <style>
+      .sans { font-family: "Bricolage Grotesque", "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      .mono { font-family: "Geist Mono", ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+      .flow { stroke-dasharray: 2 14; animation: flow 1.1s linear infinite; }
+      .pulse { transform-box: fill-box; transform-origin: center; animation: pulse 1.8s ease-in-out infinite; }
+      @keyframes flow { to { stroke-dashoffset: -32; } }
+      @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.72); } }
+      @media (prefers-reduced-motion: reduce) { .flow, .pulse { animation: none; } }
+    </style>
+    <pattern id="arch-grid" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0H0V28" fill="none" stroke="#eeede9" stroke-width="1"/></pattern>
+    <filter id="arch-shadow" x="-10%" y="-15%" width="120%" height="140%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#171717" flood-opacity=".10"/></filter>
+    <marker id="arch-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#171717"/></marker>
+    <marker id="arch-arrow-coral" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#f47b68"/></marker>
+  </defs>
+
+  <rect width="1280" height="460" rx="32" fill="#fffefa"/>
+  <rect width="1280" height="460" rx="32" fill="url(#arch-grid)"/>
+  <rect x=".5" y=".5" width="1279" height="459" rx="31.5" fill="none" stroke="#dddcd7"/>
+
+  <!-- Browsers -->
+  <rect x="40" y="40" width="360" height="340" rx="26" fill="#f7f6f3" stroke="#dddcd7"/>
+  <text x="64" y="72" class="sans" font-size="12" font-weight="700" letter-spacing="1.4" fill="#6f6d66">NEXT.JS APP · BROWSERS</text>
+  <g filter="url(#arch-shadow)" fill="#ffffff" stroke="#dddcd7">
+    <rect x="64" y="92" width="312" height="118" rx="18"/>
+    <rect x="64" y="234" width="312" height="118" rx="18"/>
+  </g>
+  <rect x="82" y="112" width="44" height="44" rx="12" fill="#f4fcb8" stroke="#dae870"/>
+  <path d="M92 142 C97 128, 103 146, 108 134 S 114 126, 118 132" fill="none" stroke="#171717" stroke-width="2.5" stroke-linecap="round"/>
+  <rect x="82" y="254" width="44" height="44" rx="12" fill="#e6f1fb" stroke="#b9d9f5"/>
+  <g fill="#171717"><circle cx="95" cy="272" r="5"/><circle cx="104" cy="268" r="5"/><circle cx="113" cy="272" r="5"/></g>
+  <g fill="#171717" fill-opacity=".85"><rect x="89" y="280" width="30" height="8" rx="4"/></g>
+  <g class="sans">
+    <text x="140" y="130" font-size="18" font-weight="700" fill="#171717">Teacher board</text>
+    <text x="140" y="152" font-size="13" fill="#66645f">Excalidraw · the only writer</text>
+    <text x="140" y="172" font-size="13" fill="#66645f">publishes versioned scenes</text>
+    <text x="140" y="272" font-size="18" font-weight="700" fill="#171717">Student views</text>
+    <text x="140" y="294" font-size="13" fill="#66645f">read-only · local pan and zoom</text>
+    <text x="140" y="314" font-size="13" fill="#66645f">follow the teacher's viewport</text>
+  </g>
+
+  <!-- Relay -->
+  <g filter="url(#arch-shadow)"><rect x="700" y="40" width="540" height="150" rx="26" fill="#181917"/></g>
+  <g class="sans">
+    <text x="730" y="84" font-size="20" font-weight="700" fill="#f3f2eb">Socket.IO relay</text>
+    <text x="730" y="108" font-size="13" font-weight="700" letter-spacing=".4" fill="#d7f500">ephemeral · in memory · low latency</text>
+    <text x="730" y="140" font-size="13.5" fill="#b8b6ae">latest { version, scene, viewport } per room</text>
+    <text x="730" y="162" font-size="13.5" fill="#b8b6ae">signed SVRT1 admission · rate limits · writer lease</text>
+  </g>
+  <circle cx="1196" cy="76" r="6" fill="#d7f500" class="pulse"/>
+
+  <!-- Convex -->
+  <g filter="url(#arch-shadow)"><rect x="700" y="230" width="540" height="150" rx="26" fill="#ffffff" stroke="#dddcd7"/></g>
+  <g class="sans">
+    <text x="730" y="274" font-size="20" font-weight="700" fill="#171717">Convex</text>
+    <text x="730" y="298" font-size="13" font-weight="700" letter-spacing=".4" fill="#1d5a2c">durable source of truth</text>
+    <text x="730" y="330" font-size="13.5" fill="#66645f">sessions · participants · doubts · snapshots · exports</text>
+    <text x="730" y="352" font-size="13.5" fill="#66645f">AI moderation and post-class summary adapters</text>
+  </g>
+  <rect x="1162" y="252" width="56" height="24" rx="12" fill="#e8f5e9" stroke="#39a954"/>
+  <text x="1190" y="268" class="sans" font-size="11" font-weight="700" fill="#1d5a2c" text-anchor="middle">DB</text>
+
+  <!-- Teacher → relay -->
+  <path d="M376 140 C 520 140, 560 100, 694 100" fill="none" stroke="#171717" stroke-width="2.5" marker-end="url(#arch-arrow)"/>
+  <path class="flow" d="M376 140 C 520 140, 560 100, 690 100" fill="none" stroke="#d7f500" stroke-width="5" stroke-linecap="round"/>
+  <rect x="463" y="104" width="146" height="26" rx="13" fill="#d7f500" stroke="#171717" stroke-width="1.2"/>
+  <text x="536" y="122" class="mono" font-size="12" font-weight="700" fill="#171717" text-anchor="middle">board:update · v+1</text>
+
+  <!-- Relay → students -->
+  <path d="M700 150 C 560 150, 540 292, 382 292" fill="none" stroke="#171717" stroke-width="2.5" marker-end="url(#arch-arrow)"/>
+  <path class="flow" d="M700 150 C 560 150, 540 292, 386 292" fill="none" stroke="#d7f500" stroke-width="5" stroke-linecap="round"/>
+  <rect x="452" y="204" width="176" height="26" rx="13" fill="#ffffff" stroke="#171717" stroke-width="1.2"/>
+  <text x="540" y="222" class="mono" font-size="12" font-weight="700" fill="#171717" text-anchor="middle">fan-out · latest scene</text>
+
+  <!-- Browsers ↔ Convex -->
+  <path d="M400 340 C 520 352, 580 330, 694 318" fill="none" stroke="#171717" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arch-arrow)"/>
+  <rect x="470" y="330" width="160" height="26" rx="13" fill="#e6f1fb" stroke="#b9d9f5"/>
+  <text x="550" y="348" class="mono" font-size="12" font-weight="700" fill="#171717" text-anchor="middle">queries &amp; mutations</text>
+
+  <!-- Convex → relay -->
+  <path d="M1120 228 V198" fill="none" stroke="#f47b68" stroke-width="2.5" stroke-dasharray="5 4" marker-end="url(#arch-arrow-coral)"/>
+  <rect x="858" y="198" width="226" height="24" rx="12" fill="#fff1ed" stroke="#f47b68"/>
+  <text x="971" y="215" class="mono" font-size="11.5" font-weight="700" fill="#171717" text-anchor="middle">End Class → revoke room (HMAC)</text>
+
+  <!-- Invariant -->
+  <rect x="40" y="404" width="1200" height="36" rx="18" fill="#f4fcb8" stroke="#dae870"/>
+  <text x="640" y="427" class="sans" font-size="14" font-weight="700" fill="#4c5a00" text-anchor="middle">Invariant: high-frequency board and pointer traffic never touches Convex.</text>
+</svg>

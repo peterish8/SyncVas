@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="520" viewBox="0 0 1280 520" role="img" aria-labelledby="hero-title hero-desc">
+  <title id="hero-title">Syncvas — one board, every student, live</title>
+  <desc id="hero-desc">The Syncvas mark and wordmark beside a live teacher whiteboard. A hand-drawn parabola streams to a student's view in follow mode while an anonymous doubt arrives.</desc>
+  <defs>
+    <style>
+      .sans { font-family: "Bricolage Grotesque", "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      .hand { font-family: "Segoe Print", "Bradley Hand", "Chalkboard SE", "Comic Sans MS", cursive; }
+      .draw { stroke-dasharray: 1000; animation: draw 1.8s cubic-bezier(.22,1,.36,1) both; }
+      .d1 { animation-delay: .2s; } .d2 { animation-delay: .8s; } .d3 { animation-delay: 2s; } .d4 { animation-delay: 2.4s; }
+      .rise { animation: rise .9s cubic-bezier(.22,1,.36,1) both; }
+      .r1 { animation-delay: .1s; } .r2 { animation-delay: .25s; } .r3 { animation-delay: .4s; } .r4 { animation-delay: 2.6s; } .r5 { animation-delay: 3s; }
+      .pulse { transform-box: fill-box; transform-origin: center; animation: pulse 1.8s ease-in-out infinite; }
+      .float { animation: float 6s ease-in-out infinite; }
+      @keyframes draw { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
+      @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+      @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.72); } }
+      @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+      @media (prefers-reduced-motion: reduce) { .draw, .rise, .pulse, .float { animation: none; } }
+    </style>
+    <symbol id="mark" viewBox="85 80 330 335">
+      <g transform="skewY(-15)">
+        <rect x="85" y="173" width="245" height="160" rx="46" fill="#171717"/>
+        <rect x="148" y="316" width="267" height="135" rx="46" fill="#171717"/>
+        <rect x="148" y="272" width="182" height="108" rx="30" fill="#d7f500"/>
+      </g>
+    </symbol>
+    <clipPath id="hero-frame"><rect width="1280" height="520" rx="36"/></clipPath>
+    <filter id="hero-field" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="70"/></filter>
+    <filter id="hero-shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#171717" flood-opacity=".14"/></filter>
+    <filter id="hero-shadow-sm" x="-20%" y="-30%" width="140%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#171717" flood-opacity=".12"/></filter>
+    <pattern id="hero-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#e3e2dd" stroke-width="1"/></pattern>
+    <pattern id="hero-grid-sm" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M12 0H0V12" fill="none" stroke="#eeede9" stroke-width="1"/></pattern>
+  </defs>
+
+  <g clip-path="url(#hero-frame)">
+    <rect width="1280" height="520" fill="#f7f6f3"/>
+    <g filter="url(#hero-field)">
+      <circle cx="1150" cy="40" r="190" fill="#d7f500" fill-opacity=".5"/>
+      <circle cx="1270" cy="500" r="200" fill="#f47b68" fill-opacity=".36"/>
+      <circle cx="760" cy="560" r="210" fill="#39a954" fill-opacity=".26"/>
+      <circle cx="600" cy="-40" r="190" fill="#f6c96d" fill-opacity=".42"/>
+      <circle cx="930" cy="250" r="170" fill="#b9d9f5" fill-opacity=".5"/>
+    </g>
+
+    <!-- Brand + message -->
+    <g class="rise r1">
+      <use href="#mark" x="72" y="56" width="58" height="59"/>
+      <text x="142" y="101" class="sans" font-size="36" font-weight="700" letter-spacing="-1.4" fill="#171717">syncvas</text>
+    </g>
+    <g class="rise r2">
+      <rect x="72" y="150" width="252" height="30" rx="15" fill="#f4fcb8" stroke="#dae870"/>
+      <circle cx="92" cy="165" r="5" fill="#4c5a00" class="pulse"/>
+      <text x="106" y="170" class="sans" font-size="12" font-weight="700" letter-spacing="1.5" fill="#4c5a00">LIVE CLASSROOM WHITEBOARD</text>
+    </g>
+    <g class="rise r3">
+      <path class="draw d3" d="M74 330 C 200 321, 380 337, 560 324" fill="none" stroke="#d7f500" stroke-width="11" stroke-linecap="round"/>
+      <text class="sans" font-size="52" font-weight="700" letter-spacing="-2.3" fill="#171717">
+        <tspan x="70" y="252">One board.</tspan>
+        <tspan x="70" y="314">Every student, live.</tspan>
+      </text>
+      <text class="sans" font-size="18" fill="#66645f">
+        <tspan x="72" y="374">The teacher writes on a live canvas. Students watch,</tspan>
+        <tspan x="72" y="400">pan, zoom and ask anonymous doubts — no accounts.</tspan>
+      </text>
+      <g class="sans" font-size="13" font-weight="600" fill="#171717">
+        <rect x="72" y="432" width="194" height="34" rx="17" fill="#ffffff" stroke="#dddcd7"/>
+        <circle cx="92" cy="449" r="5" fill="#d7f500" stroke="#171717" stroke-width="1.5"/>
+        <text x="104" y="454">Teacher-only writing</text>
+        <rect x="278" y="432" width="179" height="34" rx="17" fill="#ffffff" stroke="#dddcd7"/>
+        <circle cx="298" cy="449" r="5" fill="#b9d9f5" stroke="#171717" stroke-width="1.5"/>
+        <text x="310" y="454">Join by QR or code</text>
+        <rect x="469" y="432" width="150" height="34" rx="17" fill="#ffffff" stroke="#dddcd7"/>
+        <circle cx="489" cy="449" r="5" fill="#f6c96d" stroke="#171717" stroke-width="1.5"/>
+        <text x="501" y="454">AI class notes</text>
+      </g>
+    </g>
+
+    <!-- Teacher board -->
+    <g filter="url(#hero-shadow)">
+      <rect x="664" y="52" width="552" height="416" rx="28" fill="#fffefa" stroke="#dddcd7"/>
+    </g>
+    <g class="sans">
+      <rect x="684" y="70" width="180" height="28" rx="14" fill="#f7f6f3" stroke="#dddcd7"/>
+      <text x="700" y="89" font-size="12.5" font-weight="600" fill="#45443f">Teacher canvas · v42</text>
+      <rect x="874" y="70" width="70" height="28" rx="14" fill="#d7f500"/>
+      <circle cx="890" cy="84" r="4.5" fill="#171717" class="pulse"/>
+      <text x="900" y="89" font-size="12.5" font-weight="700" fill="#171717">Live</text>
+      <rect x="1066" y="70" width="134" height="28" rx="14" fill="#ffffff" stroke="#dddcd7"/>
+      <circle cx="1084" cy="84" r="8" fill="#f47b68" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="1098" cy="84" r="8" fill="#b9d9f5" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="1112" cy="84" r="8" fill="#f6c96d" stroke="#ffffff" stroke-width="2"/>
+      <text x="1126" y="89" font-size="12.5" font-weight="600" fill="#45443f">32 joined</text>
+    </g>
+    <rect x="680" y="110" width="520" height="342" rx="18" fill="url(#hero-grid)"/>
+
+    <!-- Handwriting -->
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path class="draw d1" d="M724 356 H1004 M994 350 L1006 356 L994 362" stroke="#45443f" stroke-width="2.5"/>
+      <path class="draw d1" d="M864 380 V136 M858 146 L864 134 L870 146" stroke="#45443f" stroke-width="2.5"/>
+      <path class="draw d2" d="M792 150 Q864 562 936 150" stroke="#171717" stroke-width="4"/>
+      <ellipse class="draw d3" cx="864" cy="356" rx="24" ry="16" stroke="#f47b68" stroke-width="3"/>
+      <path class="draw d4" d="M900 378 Q889 377 886 369" stroke="#f47b68" stroke-width="2.5"/>
+    </g>
+    <g class="rise r4">
+      <rect x="952" y="160" width="150" height="36" rx="8" fill="#f4fcb8" transform="rotate(-3 1027 178)"/>
+      <text x="964" y="187" class="hand" font-size="26" fill="#171717">f(x) = x²</text>
+      <text x="904" y="390" class="hand" font-size="19" fill="#45443f">vertex</text>
+      <g transform="translate(944 134) rotate(35)">
+        <rect x="-5" y="-44" width="10" height="44" rx="4" fill="#171717"/>
+        <rect x="-5" y="-44" width="10" height="10" rx="4" fill="#d7f500"/>
+        <path d="M-5 0 L0 11 L5 0Z" fill="#171717"/>
+      </g>
+    </g>
+
+    <!-- Anonymous doubt -->
+    <g class="rise r5">
+      <g filter="url(#hero-shadow-sm)">
+        <rect x="696" y="398" width="270" height="48" rx="16" fill="#ffffff" stroke="#dddcd7"/>
+      </g>
+      <circle cx="716" cy="422" r="6" fill="#f47b68"/>
+      <text x="732" y="414" class="sans" font-size="10.5" font-weight="700" letter-spacing="1" fill="#6f6d66">ANONYMOUS DOUBT</text>
+      <text x="732" y="434" class="sans" font-size="14" font-weight="600" fill="#171717">Why is the vertex at (0, 0)?</text>
+    </g>
+
+    <!-- Student view, following the teacher -->
+    <g class="float">
+      <g filter="url(#hero-shadow)">
+        <rect x="1004" y="286" width="236" height="164" rx="20" fill="#ffffff" stroke="#dddcd7"/>
+      </g>
+      <text x="1022" y="313" class="sans" font-size="13" font-weight="700" fill="#171717">Student view</text>
+      <rect x="1146" y="298" width="80" height="22" rx="11" fill="#f4fcb8" stroke="#dae870"/>
+      <text x="1158" y="313" class="sans" font-size="11" font-weight="700" fill="#4c5a00">Following</text>
+      <rect x="1020" y="328" width="204" height="108" rx="12" fill="#fffefa" stroke="#eeede9"/>
+      <rect x="1021" y="329" width="202" height="106" rx="11" fill="url(#hero-grid-sm)"/>
+      <path d="M1044 406 H1206 M1122 426 V336" fill="none" stroke="#a8a69e" stroke-width="1.5"/>
+      <path d="M1076 342 Q1122 470 1168 342" fill="none" stroke="#171717" stroke-width="2.5" stroke-linecap="round"/>
+      <rect x="1082" y="348" width="80" height="66" rx="6" fill="#d7f500" fill-opacity=".14" stroke="#171717" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="4 3"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="Live board">
+  <style>.pulse { transform-box: fill-box; transform-origin: center; animation: pulse 1.8s ease-in-out infinite; } @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(.75); } } @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }</style>
+  <rect x="2" y="2" width="92" height="92" rx="26" fill="#f4fcb8" stroke="#dae870" stroke-width="2"/>
+  <rect x="20" y="26" width="56" height="42" rx="8" fill="#ffffff" stroke="#171717" stroke-width="3"/>
+  <path d="M28 56 C34 42, 42 60, 48 48 S 60 40, 68 52" fill="none" stroke="#171717" stroke-width="3" stroke-linecap="round"/>
+  <circle class="pulse" cx="70" cy="30" r="7" fill="#d7f500" stroke="#171717" stroke-width="2.5"/>
+  <path d="M40 76 H56" stroke="#171717" stroke-width="3" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SyncVas — Scroll Morph Hero Layout Prototype</title>
+  <style>
+    :root {
+      --ink: #161616;
+      --paper: #f5f4f0;
+      --line: rgba(69, 68, 64, 0.16);
+      --coral: #fa796c;
+      --lime: #d8f700;
+      --muted: #6b6a66;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    .note {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px 24px 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .note strong { color: var(--ink); }
+    .nav {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+    .nav .brand { font-weight: 700; letter-spacing: -0.03em; }
+    .nav .links { display: flex; gap: 18px; font-size: 13px; color: var(--muted); }
+    .nav .cta {
+      background: var(--ink);
+      color: white;
+      border: 0;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+    }
+
+    /* ===== HERO: copy left + morph stage right ===== */
+    .hero {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px 28px;
+      display: grid;
+      grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.1fr);
+      gap: 28px;
+      align-items: center;
+      min-height: 70vh;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0 0 14px;
+    }
+    .eyebrow i {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--coral); display: inline-block;
+    }
+    h1 {
+      margin: 0 0 22px;
+      font-size: clamp(2.2rem, 4vw, 3.4rem);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      font-weight: 560;
+    }
+    h1 em { font-style: italic; font-weight: 500; }
+    .ctas { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      border-radius: 999px; padding: 11px 16px; font-size: 14px;
+      text-decoration: none; border: 1px solid transparent;
+    }
+    .btn-dark { background: var(--ink); color: #fff; }
+    .btn-join { background: #fff; color: var(--ink); border-color: var(--line); }
+    .hint { width: 100%; font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .stage {
+      position: relative;
+      height: min(62vh, 560px);
+      border: 1px dashed rgba(69,68,64,0.35);
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(184,218,245,0.35), transparent 55%),
+        linear-gradient(180deg, #fafaf8, #f0efe9);
+      overflow: hidden;
+    }
+    .stage-label {
+      position: absolute;
+      top: 14px; left: 14px;
+      z-index: 5;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: rgba(255,255,255,0.8);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+    }
+    .stage-hint {
+      position: absolute;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      z-index: 5;
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.85);
+      border-radius: 999px;
+      padding: 6px 12px;
+      border: 1px solid var(--line);
+      pointer-events: none;
+    }
+    .cards {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+    }
+    .card {
+      position: absolute;
+      width: 54px;
+      height: 76px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+      background: #ddd;
+      transition: transform 0.55s cubic-bezier(.2,.8,.2,1), opacity 0.4s ease;
+      will-change: transform;
+    }
+    .card img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .arc-copy {
+      position: absolute;
+      top: 12%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(90%, 360px);
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .arc-copy.show { opacity: 1; }
+    .arc-copy h2 {
+      margin: 0 0 8px;
+      font-size: 1.35rem;
+      letter-spacing: -0.03em;
+    }
+    .arc-copy p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    /* ===== REST OF PAGE (wireframe) ===== */
+    .section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 36px 24px;
+      border-top: 1px solid var(--line);
+    }
+    .section h3 { margin: 0 0 8px; font-size: 1.35rem; letter-spacing: -0.03em; }
+    .section p { margin: 0; color: var(--muted); font-size: 14px; max-width: 52ch; }
+    .wire {
+      margin-top: 18px;
+      min-height: 88px;
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.45);
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .plan {
+      max-width: 1100px;
+      margin: 0 auto 48px;
+      padding: 0 24px;
+    }
+    .plan pre {
+      background: #171717;
+      color: #e8e8e8;
+      border-radius: 16px;
+      padding: 18px 20px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; min-height: auto; }
+      .stage { height: 420px; }
+    }
+  </style>
+</head>
+<body>
+  <p class="note">
+    <strong>Prototype only.</strong>
+    Placement: replace the current live board preview in the hero stage
+    (<code>LandingHero</code> → <code>origin-stage</code>).
+    Left copy + CTAs stay. Morph gallery becomes the visual.
+  </p>
+
+  <header class="nav">
+    <div class="brand">syncvas</div>
+    <div class="links">
+      <span>How it works</span>
+      <span>Experience</span>
+      <span>For teachers</span>
+    </div>
+    <button class="cta">Join a class</button>
+  </header>
+
+  <section class="hero">
+    <div class="copy">
+      <p class="eyebrow"><i></i> One live classroom, held in one place</p>
+      <h1>The lesson<br />has <em>room</em> to move.</h1>
+      <div class="ctas">
+        <a class="btn btn-dark" href="#">Start teaching ↗</a>
+        <a class="btn btn-join" href="#">Join a class ↗</a>
+        <span class="hint">No student accounts required</span>
+      </div>
+    </div>
+
+    <div class="stage" id="stage" aria-label="Scroll morph gallery prototype">
+      <div class="stage-label">NEW · scroll-morph hero</div>
+      <div class="arc-copy" id="arcCopy">
+        <h2>Moments from the thinking classroom</h2>
+        <p>Scroll to shuffle lesson snapshots — the arc stays in the hero stage where the board preview lived.</p>
+      </div>
+      <div class="cards" id="cards"></div>
+      <div class="stage-hint">Scroll / drag inside this panel</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h3>1. How it works (unchanged)</h3>
+    <p>Existing SEO answer section stays below the hero.</p>
+    <div class="wire">LandingHowItWorks</div>
+  </section>
+  <section class="section">
+    <h3>2. Experience (unchanged)</h3>
+    <p>Intro + capabilities + showcase keep their current order.</p>
+    <div class="wire">LandingIntro · LandingCapabilities · LandingShowcase</div>
+  </section>
+  <section class="section">
+    <h3>3. Teacher CTA + footer (unchanged)</h3>
+    <div class="wire">LandingTeacher · SiteFooter</div>
+  </section>
+
+  <div class="plan">
+    <pre>
+PAGE STACK (after swap)
+┌──────────────────────────────────────────────────────────────┐
+│ Nav                                                          │
+├────────────────────────────┬─────────────────────────────────┤
+│ HERO COPY                  │ HERO STAGE (REPLACED)           │
+│ • eyebrow                  │ ┌─────────────────────────────┐ │
+│ • title                    │ │  scroll-morph cards         │ │
+│ • Start teaching / Join    │ │  scatter → line → circle    │ │
+│                            │ │  → bottom arc on scroll     │ │
+│                            │ └─────────────────────────────┘ │
+├────────────────────────────┴─────────────────────────────────┤
+│ How it works                                                 │
+│ Experience / Capabilities / Showcase                         │
+│ Teacher CTA + Footer                                         │
+└──────────────────────────────────────────────────────────────┘
+
+WHY HERE
+• Same visual weight as today's BoardPreview
+• Keeps SyncVas CTA story intact
+• Morph gallery = "room to move" metaphor without a new page section
+    </pre>
+  </div>
+
+  <script>
+    const IMAGES = [
+      "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=200&h=280&fit=crop",
+      "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=200&h=280&fit=crop",
+      "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=200&h=280&fit=crop",
+      "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=200&h=280&fit=crop",
+      "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=200&h=280&fit=crop",
+      "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=200&h=280&fit=crop",
+      "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=200&h=280&fit=crop",
+      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200&h=280&fit=crop",
+      "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=200&h=280&fit=crop",
+      "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=200&h=280&fit=crop",
+      "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=200&h=280&fit=crop",
+      "https://images.unsplash.com/photo-1513258496099-48168024aec0?w=200&h=280&fit=crop",
+    ];
+
+    const stage = document.getElementById("stage");
+    const cardsEl = document.getElementById("cards");
+    const arcCopy = document.getElementById("arcCopy");
+    const cards = [];
+    let phase = "scatter"; // scatter | line | circle | arc
+    let scroll = 0;
+    const MAX = 900;
+
+    IMAGES.forEach((src, i) => {
+      const el = document.createElement("div");
+      el.className = "card";
+      el.innerHTML = `<img src="${src}" alt="classroom ${i + 1}" loading="lazy" />`;
+      cardsEl.appendChild(el);
+      cards.push({
+        el,
+        scatter: {
+          x: (Math.random() - 0.5) * 420,
+          y: (Math.random() - 0.5) * 280,
+          r: (Math.random() - 0.5) * 140,
+        },
+      });
+    });
+
+    function layout() {
+      const w = stage.clientWidth;
+      const h = stage.clientHeight;
+      const n = cards.length;
+      const morph = Math.min(Math.max(scroll / 320, 0), 1);
+      const rotProg = Math.min(Math.max((scroll - 320) / (MAX - 320), 0), 1);
+      arcCopy.classList.toggle("show", morph > 0.75);
+
+      cards.forEach((c, i) => {
+        let x = 0, y = 0, r = 0, s = 1, o = 1;
+
+        if (phase === "scatter") {
+          ({ x, y, r } = c.scatter);
+          s = 0.7; o = 0.15;
+        } else if (phase === "line") {
+          const spacing = 58;
+          x = i * spacing - ((n - 1) * spacing) / 2;
+          y = 0; r = 0; s = 1; o = 1;
+        } else {
+          const circleRadius = Math.min(w, h) * 0.28;
+          const circleAngle = (i / n) * Math.PI * 2;
+          const cx = Math.cos(circleAngle) * circleRadius;
+          const cy = Math.sin(circleAngle) * circleRadius;
+          const cr = (circleAngle * 180) / Math.PI + 90;
+
+          const arcRadius = Math.min(w * 0.95, h * 1.15);
+          const apexY = h * 0.18;
+          const centerY = apexY + arcRadius - h / 2;
+          const spread = 110;
+          const start = -90 - spread / 2;
+          const step = spread / (n - 1);
+          const bounded = -rotProg * spread * 0.75;
+          const ang = ((start + i * step + bounded) * Math.PI) / 180;
+          const ax = Math.cos(ang) * arcRadius;
+          const ay = Math.sin(ang) * arcRadius + centerY;
+          const ar = (ang * 180) / Math.PI + 90;
+
+          const t = morph;
+          x = cx + (ax - cx) * t;
+          y = cy + (ay - cy) * t;
+          r = cr + (ar - cr) * t;
+          s = 1 + 0.55 * t;
+          o = 1;
+        }
+
+        c.el.style.opacity = String(o);
+        c.el.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`;
+      });
+    }
+
+    // Intro sequence
+    setTimeout(() => { phase = "line"; layout(); }, 400);
+    setTimeout(() => { phase = "circle"; layout(); }, 1800);
+
+    stage.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      if (phase !== "circle" && phase !== "arc") return;
+      phase = "arc";
+      scroll = Math.min(Math.max(scroll + e.deltaY, 0), MAX);
+      layout();
+    }, { passive: false });
+
+    let touchY = 0;
+    stage.addEventListener("touchstart", (e) => { touchY = e.touches[0].clientY; }, { passive: true });
+    stage.addEventListener("touchmove", (e) => {
+      const y = e.touches[0].clientY;
+      const dy = touchY - y;
+      touchY = y;
+      if (phase !== "circle" && phase !== "arc") return;
+      phase = "arc";
+      scroll = Math.min(Math.max(scroll + dy, 0), MAX);
+      layout();
+    }, { passive: true });
+
+    window.addEventListener("resize", layout);
+    layout();
+  </script>
+</body>
+</html>
