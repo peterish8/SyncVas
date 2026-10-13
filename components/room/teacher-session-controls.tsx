@@ -369,8 +369,7 @@ export function TeacherSessionControls({
             ) : access === "signed-out" ? (
               <div className="syncvas-sunken p-4">
                 <p className="text-sm leading-6 text-ink-muted">
-                  Sign in with your teacher account to create a classroom. Authentication is
-                  provided by the deployment; this page never accepts a teacher ID from the browser.
+                  Sign in to create a classroom and keep your lessons and prepared boards in one place.
                 </p>
                 <Link href="/teacher/sign-in" className="syncvas-btn syncvas-btn-primary mt-4 inline-flex">
                   Teacher sign in

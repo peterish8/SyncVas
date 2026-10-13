@@ -145,6 +145,7 @@
   --text-sm: var(--sv-text-sm);
   --text-xl: var(--sv-text-xl);
   --tracking-tight: var(--sv-tracking-tight);
+  --touch-target: var(--sv-control-lg);
   --surface: var(--sv-neutral-0);
   --surface-muted: var(--sv-neutral-100);
   --surface-sunken: var(--sv-neutral-50);

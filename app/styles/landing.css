@@ -2868,6 +2868,10 @@ html[data-theme="dark"] .origin-landing-refined .origin-stage::before {backgroun
   .origin-landing-refined .origin-stage::before {inset:0;}
 }
 @media(max-width:640px) {
+  .origin-landing-refined .origin-nav {grid-template-columns:1fr auto;min-height:64px;width:calc(100% - 32px);padding:8px 12px;}
+  .origin-landing-refined .origin-nav .origin-links {display:none;}
+  .origin-landing-refined .origin-nav .origin-nav-action {white-space:nowrap;min-height:var(--touch-target);}
+  .origin-landing-refined .origin-nav .syncvas-theme-toggle {width:var(--touch-target);height:var(--touch-target);}
   .origin-landing-refined .origin-hero {width:calc(100% - 40px);padding:48px 0 64px;gap:30px;}
   .origin-landing-refined .origin-hero h1 {font-size:52px;letter-spacing:-.06em;}
   .origin-landing-refined .origin-stage {padding:16px 0;}

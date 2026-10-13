@@ -70,7 +70,7 @@ export function setHotViewport(sessionId: string, viewport: HotViewport): void {
   const current = rooms.get(sessionId);
   if (current?.viewport && viewport.ts < current.viewport.ts) return;
   if (!current) {
-    rooms.set(sessionId, { version: 0, scene: {}, updatedAt: Date.now(), viewport });
+    rooms.set(sessionId, { version: 0, scene: { elements: [] }, updatedAt: Date.now(), viewport });
     enforceRoomCap();
     return;
   }

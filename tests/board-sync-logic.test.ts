@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   HANDSHAKE_REFRESH_COOLDOWN_MS,
   MIN_TOKEN_REFRESH_DELAY_MS,
+  boardElementRevision,
   isTokenRefreshDue,
   mayRefreshAfterHandshakeFailure,
   nextVersionAfterAck,
@@ -14,6 +15,34 @@ import {
   tokenRefreshDelayMs,
 } from "@/lib/board-sync-logic";
 import { BOARD_UPDATE_MIN_MS, BOARD_UPDATE_PER_MINUTE, ROOM_TOKEN_TTL_SECONDS } from "@/shared/constants/limits";
+
+describe("board element revisions", () => {
+  it("detects continued drawing when Excalidraw mutates the same object", () => {
+    const element = { id: "stroke", version: 1, versionNonce: 12, isDeleted: false };
+    const elements = [element];
+    const before = boardElementRevision(elements);
+    element.version++;
+    element.versionNonce = 13;
+    expect(boardElementRevision(elements)).not.toBe(before);
+  });
+
+  it("detects deletion and stacking order changes", () => {
+    const first = { id: "first", version: 1, versionNonce: 12, isDeleted: false };
+    const second = { id: "second", version: 1, versionNonce: 13, isDeleted: false };
+    const before = boardElementRevision([first, second]);
+    expect(boardElementRevision([second, first])).not.toBe(before);
+    first.isDeleted = true;
+    expect(boardElementRevision([first, second])).not.toBe(before);
+  });
+
+  it("does not walk stroke geometry when deciding whether a scene changed", () => {
+    const element = {
+      id: "stroke", version: 1, versionNonce: 12, isDeleted: false,
+      get points(): never { throw new Error("Stroke geometry must only be serialized when publishing"); },
+    };
+    expect(boardElementRevision([element])).toBe('[["stroke",1,12,false]]');
+  });
+});
 
 describe("token renewal schedule", () => {
   it("renews a minute before the TTL, measured from receipt", () => {

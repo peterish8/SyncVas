@@ -13,10 +13,10 @@ let root: Root;
 let container: HTMLDivElement;
 afterEach(async () => { await act(async () => root?.unmount()); container?.remove(); vi.clearAllMocks(); });
 
-async function generate(onUseDraft: (board: PreparedBoard) => void) {
+async function generate(onUseDraft: (board: PreparedBoard) => void, disabled = false) {
   container = document.createElement("div"); document.body.append(container);
   root = createRoot(container);
-  await act(async () => root.render(createElement(BoardDraftPanel, { onUseDraft })));
+  await act(async () => root.render(createElement(BoardDraftPanel, { onUseDraft, disabled })));
   const input = container.querySelector("input")!;
   await act(async () => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "Algebra opener");
@@ -47,4 +47,10 @@ it("keeps a failed save reviewable and never changes the opening board", async (
   expect(useDraft).not.toHaveBeenCalled();
   expect(container.querySelector('[role="alert"]')?.textContent).toContain("could not be saved");
   expect(container.textContent).toContain("Accept as prepared board");
+});
+
+it("does not request a draft while teacher access is unavailable", async () => {
+  await generate(vi.fn(), true);
+  expect(mocks.draft).not.toHaveBeenCalled();
+  expect(container.querySelector("input")?.disabled).toBe(true);
 });

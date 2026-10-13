@@ -9,6 +9,13 @@
 import { ROOM_TOKEN_TTL_SECONDS } from "@/shared/constants/limits";
 import type { BoardUpdateAck } from "@/shared/protocol/socket";
 
+/** Snapshot mutation metadata without serializing high-frequency stroke points. */
+export function boardElementRevision(
+  elements: readonly { id: string; version: number; versionNonce: number; isDeleted: boolean }[],
+): string {
+  return JSON.stringify(elements.map(({ id, version, versionNonce, isDeleted }) => [id, version, versionNonce, isDeleted]));
+}
+
 /** Renew this long before the token lapses. */
 export const TOKEN_REFRESH_LEAD_SECONDS = 60;
 

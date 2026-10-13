@@ -218,7 +218,7 @@ export function attachClassroomHandlers(io: Server, socket: Socket, options: Cla
       sessionId: liveClaims.sessionId,
       ts: Date.now(),
       boardVersion: hot?.version ?? 0,
-      scene: hot?.scene ?? {},
+      scene: hot?.scene ?? { elements: [] },
       ...(hot?.files ? { files: hot.files } : {}),
       ...(hot?.viewport
         ? {

@@ -29,6 +29,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { serializeFinalBoardScene } from "@/lib/final-board-scene";
+import { canRunTeacherQuery, useTeacherAccess } from "@/lib/teacher-access";
 
 type LiveBoard = {
   session: TeacherSessionState;
@@ -42,6 +43,8 @@ type LatestScene = {
 };
 
 export default function TeacherPage() {
+  const access = useTeacherAccess();
+  const canPrepare = canRunTeacherQuery(access);
   const [liveBoard, setLiveBoard] = useState<LiveBoard | null>(null);
   // Phase 11: the prepared board this class opens on, chosen before it starts.
   const [preparedBoard, setPreparedBoard] = useState<PreparedBoard | null>(null);
@@ -168,9 +171,10 @@ export default function TeacherPage() {
                   ) : null}
                 </div>
 
-                <button type="button" className="syncvas-btn syncvas-btn-primary mt-8" onClick={() => setPreparing(true)}>
+                <button type="button" className="syncvas-btn syncvas-btn-primary mt-8" disabled={!canPrepare} onClick={() => setPreparing(true)}>
                   {preparedBoard ? "Edit opening board" : "Prepare a board"} <span aria-hidden="true">↗</span>
                 </button>
+                {!canPrepare ? <p className="mt-3 text-xs leading-5 text-ink-muted">Sign in to prepare and save your boards.</p> : null}
               </section>
 
               <section className="min-w-0 border-b border-border px-6 py-8 sm:px-8 lg:border-b-0 lg:border-r" aria-label="Prepared boards">
@@ -187,7 +191,8 @@ export default function TeacherPage() {
                 <div className="mb-5">
                   <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-ink-muted">Start from an idea</p>
                 </div>
-                <BoardDraftPanel onUseDraft={setPreparedBoard} />
+                <BoardDraftPanel onUseDraft={setPreparedBoard} disabled={!canPrepare} />
+                {!canPrepare ? <p className="mt-3 text-xs leading-5 text-ink-muted">Sign in to draft a lesson.</p> : null}
               </section>
             </div>
           )}

@@ -26,7 +26,7 @@ type DraftState = {
 
 const UNAVAILABLE_COPY = "AI drafting is not configured.";
 
-export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (board: PreparedBoard) => void }) {
+export function BoardDraftPanel({ onUseDraft, disabled = false }: { onUseDraft?: (board: PreparedBoard) => void; disabled?: boolean }) {
   const requestDraft = useAction(
     api.boardAuthoring.draft,
   );
@@ -43,7 +43,7 @@ export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (board: PreparedB
   const [error, setError] = useState<string | null>(null);
 
   const generate = async () => {
-    if (state !== "idle") return;
+    if (disabled || state !== "idle") return;
     const trimmed = topic.trim();
     if (trimmed.length < 3) {
       setError("Describe the lesson in a few words first.");
@@ -69,7 +69,7 @@ export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (board: PreparedB
   };
 
   const accept = async () => {
-    if (!pending || state !== "idle") return;
+    if (disabled || !pending || state !== "idle") return;
     setState("saving");
     setError(null);
     try {
@@ -90,7 +90,7 @@ export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (board: PreparedB
     }
   };
 
-  const busy = state !== "idle";
+  const busy = disabled || state !== "idle";
 
   return (
     <section aria-label="AI board draft" className="text-sm">
@@ -194,7 +194,7 @@ export function BoardDraftPanel({ onUseDraft }: { onUseDraft?: (board: PreparedB
             <button
               type="button"
               className="syncvas-btn syncvas-btn-primary syncvas-btn-sm"
-              disabled={state === "saving" || pending.draft.elements.length === 0}
+              disabled={busy || pending.draft.elements.length === 0}
               onClick={() => void accept()}
             >
               {state === "saving" ? "Saving…" : "Accept as prepared board"}

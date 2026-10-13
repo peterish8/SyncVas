@@ -121,6 +121,34 @@ describe("follow viewport ordering (unit)", () => {
 });
 
 describe("follow mode sockets", () => {
+  it("returns a valid empty board before the teacher draws", async () => {
+    const sessionId = "follow-empty-opening";
+    const { url } = await runningSocketServer();
+    const student = await connectReady(url, sessionId, "student");
+    const received = waitForEvent(student, SOCKET_EVENTS.boardCurrent);
+    student.emit(SOCKET_EVENTS.boardRequestCurrent, envelope(sessionId));
+    const current = boardCurrentSchema.parse(await received);
+    expect(current.scene.elements).toEqual([]);
+    expect(current.boardVersion).toBe(0);
+  });
+
+  it("includes the initial camera for a late student on an undrawn board", async () => {
+    const sessionId = "follow-blank-camera";
+    const { url } = await runningSocketServer();
+    const teacher = await connectReady(url, sessionId, "teacher");
+    const observer = await connectReady(url, sessionId, "student");
+    const seen = waitForEvent(observer, SOCKET_EVENTS.teacherViewport);
+    teacher.emit(SOCKET_EVENTS.teacherViewport, { ...envelope(sessionId), x: 0, y: 0, zoom: 1 });
+    await seen;
+    const student = await connectReady(url, sessionId, "student");
+    const received = waitForEvent(student, SOCKET_EVENTS.boardCurrent);
+    student.emit(SOCKET_EVENTS.boardRequestCurrent, envelope(sessionId));
+    const current = boardCurrentSchema.parse(await received);
+    expect(current.scene.elements).toEqual([]);
+    expect(current.boardVersion).toBe(0);
+    expect(current.teacherViewport).toMatchObject({ x: 0, y: 0, zoom: 1 });
+  });
+
   it("preserves the teacher camera after drawing for a late-joining student", async () => {
     const sessionId = "follow-camera-after-drawing";
     const { url } = await runningSocketServer();

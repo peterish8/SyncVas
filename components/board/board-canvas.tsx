@@ -48,7 +48,7 @@ import type { BlockHighlight } from "@/shared/protocol/socket";
 import { SOCKET_PROTOCOL_VERSION } from "@/shared/protocol/socket";
 import type { BoardCurrentInfo } from "@/components/board/use-board-sync";
 import { ClassEndedPanel } from "@/components/connection/class-ended-panel";
-import { reconcileTeacherScene, shouldRetryPublishImmediately } from "@/lib/board-sync-logic";
+import { boardElementRevision, reconcileTeacherScene, shouldRetryPublishImmediately } from "@/lib/board-sync-logic";
 
 import "@excalidraw/excalidraw/index.css";
 
@@ -141,7 +141,7 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
   } | null>(null);
   const broadcastTimerRef = useRef<number | null>(null);
   const lastPublishedElementsRef = useRef<string>("[]");
-  const observedSceneRef = useRef<{ elements: readonly ExcalidrawElement[]; background: string; files: BinaryFiles } | null>(null);
+  const observedSceneRef = useRef<{ revision: string; background: string; files: BinaryFiles } | null>(null);
   const publishInFlightRef = useRef(false);
   const lastFlushAtRef = useRef(0);
   const ackedVersionRef = useRef(0);
@@ -289,6 +289,8 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
             pendingRemoteSceneRef.current = null;
             pushSceneToApi(pending.scene, pending.files);
           }
+          // Initial camera state is reliable after Excalidraw's mount frames.
+          setCanvasReady(true);
         });
       });
       canvasInitFrameRef.current = firstFrame;
@@ -315,7 +317,6 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
   const onExcalidrawApi = useCallback(
     (api: ExcalidrawImperativeAPI) => {
       apiRef.current = api;
-      setCanvasReady(true);
       scheduleCanvasInitialization(api);
     },
     [scheduleCanvasInitialization],
@@ -496,11 +497,12 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
   const onChange = useCallback(
     (elements: readonly ExcalidrawElement[], appState: AppState, files: BinaryFiles) => {
       if (!isTeacher || applyingRemoteRef.current) return;
-      // Ignore Excalidraw mount/appState churn until the element set actually changes.
+      // Excalidraw mutates elements in place; retain their revision values, not references.
+      const revision = boardElementRevision(elements);
       const observed = observedSceneRef.current;
       if (observed && observed.background === appState.viewBackgroundColor && observed.files === files &&
-        elements.length === observed.elements.length && elements.every((element, index) => element === observed.elements[index])) return;
-      observedSceneRef.current = { elements, background: appState.viewBackgroundColor, files };
+        revision === observed.revision) return;
+      observedSceneRef.current = { revision, background: appState.viewBackgroundColor, files };
       pendingRef.current = { elements, background: appState.viewBackgroundColor, files };
       sceneElementsRef.current = elements;
       sceneFilesRef.current = files;
