@@ -1,0 +1,17 @@
+node_modules/
+node_modules.incomplete-*/
+.next/
+.git/
+.vercel/
+.convex/
+.gstack/
+graft/
+coverage/
+.env*
+*.tsbuildinfo
+socket-server/dist/
+.claude/
+.codex/
+.design/
+.planning/
+.mcp.json
