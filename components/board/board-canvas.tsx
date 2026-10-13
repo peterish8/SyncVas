@@ -280,7 +280,6 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
             elements: api.getSceneElements(),
             appState: {
               theme,
-              viewBackgroundColor: theme === "dark" ? "#1d1e1b" : "#ffffff",
             },
             captureUpdate: "NEVER",
           });
@@ -639,7 +638,8 @@ export function BoardCanvas({ sessionId, role, roomToken: roomTokenProp, refresh
             files: sceneSeed.files,
             appState: {
               theme,
-              viewBackgroundColor: theme === "dark" ? "#1d1e1b" : "#fffefa",
+              // Excalidraw's native dark filter transforms this paper and ink together.
+              viewBackgroundColor: "#fffefa",
             },
           }}
           theme={theme}

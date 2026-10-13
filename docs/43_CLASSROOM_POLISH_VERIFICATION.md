@@ -28,6 +28,7 @@ Tests used separate teacher and account-free student tabs in the Codex in-app br
 | Anonymous doubt | Student submitted a question, teacher received an anonymous doubt, answering cleared the open count. |
 | End classroom | Teacher confirmation saved the final board and displayed Ended. |
 | Continuous pen | A continuous stroke reached the student's read-only canvas at version 10 with its complete endpoint. |
+| Theme preservation | The saved ellipse remained readable across light → dark → light, with Following at 100% and board version 2 unchanged. Native Excalidraw filtering owns paper/ink conversion; theme changes do not recolor the saved scene. |
 | Mobile landing | Narrow viewport displayed brand, theme and join controls without wrapping navigation links or document horizontal overflow. |
 
 The inaccessible old development project's relay-revocation environment cannot be changed with the current account. Immediate end-room disconnect was therefore verified against the hosted relay separately, rather than claimed from this local UI test.
@@ -38,7 +39,7 @@ Using two isolated, short-lived signed test clients from the production website 
 
 ## Automated verification and delivery
 
-`npm run verify` covers lint, strict TypeScript, application/permission tests, relay tests and a production website build. GitHub CI additionally builds the production relay Docker image and checks its health endpoint. The first integrated release passed both jobs: https://github.com/peterish8/SyncVas/actions/runs/38388796878
+`npm run verify` passed lint (zero errors; two existing warnings), strict TypeScript, 375 application/permission tests, 32 relay tests and a production website build: **407 tests total**. GitHub CI additionally builds the production relay Docker image and checks its health endpoint. The camera/stroke release passed both jobs: https://github.com/peterish8/SyncVas/actions/runs/38394626023
 
 Production follows `main`: GitHub Actions verifies changes, Vercel builds the frontend and deploys matching production Convex functions, and Render waits for passing checks before deploying relevant relay changes. Preview builds do not deploy production Convex. See `42_HOSTING_SETUP.md` for configuration and operational limits.
 
